@@ -3123,14 +3123,54 @@ export class LoyKrathongScene {
         item.group.rotation.z = -slopeX * 0.4;
         item.group.rotation.x = slopeZ * 0.4;
 
-        // ป้องกันการติดค้างและไม่ชนฐานเจดีย์ / ลานวัด (Platform X: -4.0 ถึง 36.0, Z: -57.0 ถึง -24.5)
-        // ถ้วยตะไลที่อยู่ฝั่งซ้าย (X < 16) ให้ไหลเลี่ยงออกสู่ช่องน้ำตะวันตก (X <= -5.2)
-        // ถ้วยตะไลที่อยู่ฝั่งขวา (X >= 16) ให้ไหลเลี่ยงออกสู่ท้องน้ำเปิดกว้างฝั่งตะวันออก (X >= 38.0)
-        if (item.group.position.z < -18.0 && item.group.position.z > -54.0) {
-          if (item.group.position.x > -4.5 && item.group.position.x < 16.0) {
-            item.group.position.x -= 0.08;
-          } else if (item.group.position.x >= 16.0 && item.group.position.x < 37.5) {
-            item.group.position.x += 0.08;
+        // --- ระบบป้องกันกระทงสายชนทะลุฐานเจดีย์ ลานวัด และบันไดวัด 100% (Solid Collision Box & Hard Bounds) ---
+        // ฐานวัดและเจดีย์ครอบคลุมพื้นที่พิกัดโลก: X จาก -4.0 ถึง +36.0, Z จาก -57.0 ถึง -26.0
+        // บันไดหินอ่อนหน้าวัดครอบคลุม: X จาก 9.0 ถึง 23.0, Z จาก -26.0 ถึง -21.0
+
+        // ชั้นที่ 1: กระแสน้ำแยกสายล่วงหน้า (Early Divergence Current: Z ระหว่าง -5.0 ถึง -22.0)
+        // นำพาถ้วยตะไลแยกออกเป็น 2 สายก่อนถึงแนววัดอย่างนุ่มนวล
+        if (item.group.position.z < -5.0 && item.group.position.z > -22.0) {
+          if (item.group.position.x > -5.0 && item.group.position.x < 16.0) {
+            item.group.position.x -= 0.055;
+          } else if (item.group.position.x >= 16.0 && item.group.position.x < 38.0) {
+            item.group.position.x += 0.055;
+          }
+        }
+
+        // ชั้นที่ 2: แรงผลักด้านหน้าบันไดวัดและผนังฐานวัด (Front Obstacle Deflection)
+        // ป้องกันการชนบันไดหินอ่อนหน้าวัด (Stairs: X: 9.0 ถึง 23.0, Z: -20.5 ถึง -25.5)
+        if (item.group.position.x > 8.5 && item.group.position.x < 23.5 && item.group.position.z < -20.5 && item.group.position.z > -26.0) {
+          if (item.group.position.x < 16.0) {
+            item.group.position.x -= 0.18;
+          } else {
+            item.group.position.x += 0.18;
+          }
+          item.group.position.z = Math.max(item.group.position.z, -20.2);
+        }
+
+        // ป้องกันการชนผนังหน้าฐานวัด (South Front Wall: X: -5.0 ถึง 37.0, Z: -25.0 ถึง -27.0)
+        if (item.group.position.x > -5.2 && item.group.position.x < 37.2 && item.group.position.z <= -25.0 && item.group.position.z > -27.2) {
+          if (item.group.position.x < 16.0) {
+            item.group.position.x -= 0.25;
+          } else {
+            item.group.position.x += 0.25;
+          }
+          item.group.position.z = Math.max(item.group.position.z, -24.8);
+        }
+
+        // ชั้นที่ 3: กำแพงล็อกพิกัดเด็ดขาดรอบฐานเจดีย์และลานวัด (Impenetrable Hard Clamp: Z <= -25.0 ถึง -58.0)
+        // วัตถุที่อยู่ตลอดแนวความยาวของฐานวัดและเจดีย์ ห้ามมีพิกัด X อยู่ในเขตฐานเด็ดขาด 100%
+        if (item.group.position.z <= -25.0 && item.group.position.z >= -58.0) {
+          if (item.group.position.x < 16.0) {
+            // ฝั่งตะวันตก (West Wall เลียบฐานเจดีย์): ห้ามเกิน X = -5.5
+            if (item.group.position.x > -5.5) {
+              item.group.position.x = -5.5;
+            }
+          } else {
+            // ฝั่งตะวันออก (East Wall เลียบลานวัด): ห้ามต่ำกว่า X = 38.5
+            if (item.group.position.x < 38.5) {
+              item.group.position.x = 38.5;
+            }
           }
         }
 
