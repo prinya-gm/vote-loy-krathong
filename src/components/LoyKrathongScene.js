@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { OrbitControls } from "three-stdlib";
+import { OrbitControls, GLTFLoader } from "three-stdlib";
 
 export class LoyKrathongScene {
   constructor(container, onSelectKrathong) {
@@ -599,9 +599,78 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     REALISTIC THAI TRADITIONAL TEAK HOUSE (80%+ Detail)
+     REALISTIC THAI TRADITIONAL TEAK HOUSE
+     โหลดโมเดล 3D จาก 3D Warehouse (thai_house.glb)
   ========================================================== */
   createRealisticThaiHouse() {
+    const loader = new GLTFLoader();
+    const baseUrl = import.meta.env.BASE_URL || "/";
+    const modelUrl = `${baseUrl.endsWith("/") ? baseUrl : baseUrl + "/"}models/thai_house.glb`;
+
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        const houseModel = gltf.scene;
+
+        houseModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+              child.material.side = THREE.DoubleSide;
+              child.material.roughness = Math.max(0.4, child.material.roughness || 0.6);
+            }
+          }
+        });
+
+        // Compute model dimensions and scale to fit estate
+        const box = new THREE.Box3().setFromObject(houseModel);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+
+        const maxDim = Math.max(size.x, size.z);
+        const targetSize = 22.0;
+        const scale = targetSize / maxDim;
+
+        houseModel.scale.set(scale, scale, scale);
+        // Center houseModel so its horizontal center is (0,0) and base is at y = 0
+        houseModel.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+
+        const houseWrapper = new THREE.Group();
+        houseWrapper.add(houseModel);
+        houseWrapper.position.set(-27, 1.5, -6);
+        houseWrapper.rotation.y = Math.PI * 0.12;
+
+        this.scene.add(houseWrapper);
+        this.customHouse = houseWrapper;
+
+        // Warm atmospheric lighting for the 3D model
+        const houseWarmLight = new THREE.PointLight(0xffaa33, 4.5, 35, 1.3);
+        houseWarmLight.position.set(-25, 8, -4);
+        this.scene.add(houseWarmLight);
+
+        const houseWarmLight2 = new THREE.PointLight(0xff7711, 3.5, 25, 1.4);
+        houseWarmLight2.position.set(-20, 5, 2);
+        this.scene.add(houseWarmLight2);
+      },
+      undefined,
+      (err) => {
+        console.warn("Custom GLB load fallback to procedural house:", err);
+        this.buildProceduralThaiHouse();
+      }
+    );
+
+    const salaGroup = this.buildThaiSalaMesh();
+    salaGroup.position.set(-21, 1.8, 16);
+    salaGroup.scale.set(1.2, 1.2, 1.2);
+    this.scene.add(salaGroup);
+
+    this.createRiverbankPromenade();
+  }
+
+  buildProceduralThaiHouse() {
     const house = new THREE.Group();
     house.position.set(-25, 1.6, -6);
     house.scale.set(1.35, 1.35, 1.35);
