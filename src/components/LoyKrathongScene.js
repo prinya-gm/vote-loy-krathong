@@ -20,6 +20,9 @@ export class LoyKrathongScene {
     this.lotusBlossoms = [];
     this.lotusObstacles = []; // Positions & radius for collision avoidance
     this.thaiPeople = []; // โมเดลคนสวมชุดไทยหลากสี (เดินเล่น & ลอยกระทงริมท่าน้ำ)
+    this.activeFireworks = []; // ระบบพลุดอกไม้ไฟ 3D สมจริง 100%
+    this.fireworkTexture = null;
+    this.soundCtx = null;
 
     this.init();
   }
@@ -3154,6 +3157,8 @@ export class LoyKrathongScene {
   animate() {
     this.animId = requestAnimationFrame(this.animate.bind(this));
     const time = this.clock.getElapsedTime();
+    const dt = Math.min(time - (this.lastTime || time), 0.05) || 0.016;
+    this.lastTime = time;
 
     // 1. Controls
     this.controls.update();
@@ -3658,8 +3663,402 @@ export class LoyKrathongScene {
       });
     }
 
-    // 12. Render
+    // 12. อัปเดตระบบพลุดอกไม้ไฟ 3D ฟิสิกส์สมจริง 100%
+    this.updateFireworks(dt, time);
+
+    // 13. Render
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /* ==========================================================
+     100% REALISTIC 3D FIREWORKS & PYROTECHNICS SYSTEM
+     ระบบพลุดอกไม้ไฟ 3D ฟิสิกส์สมจริงระดับภาพยนตร์
+     - จรวดพุ่งทะยานพร้อมประกายไฟและเสียงหวีด
+     - แสงวาบ (Flash PointLight) ส่องสว่างท้องฟ้า เจดีย์ และผิวน้ำ
+     - สะเก็ดดาวพลุกว่า 180 อนุภาคแตกกระจายตามหลักอากาศพลศาสตร์
+     - สุ่มสีสันอัญมณีไทย (ทองคำ, ทับทิม, มรกต, ไพลิน, บุษราคัม, รุ้งราตรี)
+     - เสียงระเบิดทุ้มกึกก้องกังวาน (Deep Sub-bass Boom) และเสียงประทุเปรี๊ยะๆ
+  ========================================================== */
+
+  createFireworkSparkTexture() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    const grad = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+    grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+    grad.addColorStop(0.25, "rgba(255, 245, 215, 0.95)");
+    grad.addColorStop(0.55, "rgba(255, 195, 75, 0.45)");
+    grad.addColorStop(0.85, "rgba(255, 130, 20, 0.15)");
+    grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  playFireworkLaunchSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!this.soundCtx) this.soundCtx = new AudioCtx();
+      if (this.soundCtx.state === "suspended") this.soundCtx.resume();
+      const ctx = this.soundCtx;
+      const now = ctx.currentTime;
+
+      // เสียงจรวดพุ่งหวีดขึ้นสู่ท้องฟ้า (Whistling Rocket Jet)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(260, now);
+      filter.frequency.exponentialRampToValueAtTime(860, now + 0.85);
+      filter.Q.setValueAtTime(3.5, now);
+
+      const bufSize = ctx.sampleRate * 0.9;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.35;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.14, now + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 0.9);
+    } catch (e) {}
+  }
+
+  playFireworkBurstSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!this.soundCtx) this.soundCtx = new AudioCtx();
+      if (this.soundCtx.state === "suspended") this.soundCtx.resume();
+      const ctx = this.soundCtx;
+      const now = ctx.currentTime;
+
+      // 1. เสียงระเบิดทุ้มกึกก้อง (Sub-bass Shockwave Impact 110Hz -> 38Hz)
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(115, now);
+      osc.frequency.exponentialRampToValueAtTime(38, now + 0.42);
+
+      oscGain.gain.setValueAtTime(0.45, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.6);
+
+      // 2. เสียงกังวานสะท้อนคลื่นน้ำ (Acoustic Echo & Reverberation over River)
+      const bufSize = Math.floor(ctx.sampleRate * 2.2);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < bufSize; i++) {
+        const white = Math.random() * 2 - 1;
+        last = (last + 0.04 * white) / 1.04;
+        data[i] = last * 2.5;
+      }
+      const blast = ctx.createBufferSource();
+      blast.buffer = buf;
+
+      const blastFilter = ctx.createBiquadFilter();
+      blastFilter.type = "lowpass";
+      blastFilter.frequency.setValueAtTime(480, now);
+      blastFilter.frequency.exponentialRampToValueAtTime(110, now + 1.8);
+
+      const blastGain = ctx.createGain();
+      blastGain.gain.setValueAtTime(0.38, now);
+      blastGain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+
+      blast.connect(blastFilter);
+      blastFilter.connect(blastGain);
+      blastGain.connect(ctx.destination);
+      blast.start(now);
+      blast.stop(now + 2.1);
+    } catch (e) {}
+  }
+
+  // จุดดอกไม้ไฟขึ้นสู่ท้องฟ้า (Callable from UI button)
+  launchFirework() {
+    if (!this.fireworkTexture) {
+      this.fireworkTexture = this.createFireworkSparkTexture();
+    }
+
+    this.playFireworkLaunchSound();
+
+    // สุ่มตำแหน่งฐานยิงจากผิวน้ำหรือริมตลิ่ง (กระจายตัวกว้างขวางทั่วท้องน้ำ)
+    const startX = -10 + Math.random() * 46;
+    const startZ = -60 + Math.random() * 40;
+    const startY = 0.5;
+
+    // สุ่มระดับความสูงที่ระเบิดบนท้องฟ้า (Apex Height 42 - 56 เมตร)
+    const targetY = 42 + Math.random() * 14;
+    const speedY = 32 + Math.random() * 6; // ความเร็วพุ่งขึ้น
+
+    // หางสะเก็ดไฟลากเป็นทางยาว (Rocket Trailing Embers)
+    const trailCount = 28;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPos = new Float32Array(trailCount * 3);
+    const trailCol = new Float32Array(trailCount * 3);
+
+    for (let i = 0; i < trailCount; i++) {
+      trailPos[i * 3] = startX;
+      trailPos[i * 3 + 1] = startY;
+      trailPos[i * 3 + 2] = startZ;
+
+      trailCol[i * 3] = 1.0;
+      trailCol[i * 3 + 1] = 0.85;
+      trailCol[i * 3 + 2] = 0.4;
+    }
+    trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPos, 3));
+    trailGeo.setAttribute("color", new THREE.BufferAttribute(trailCol, 3));
+
+    const trailMat = new THREE.PointsMaterial({
+      size: 1.8,
+      map: this.fireworkTexture,
+      transparent: true,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
+    });
+    const trailPoints = new THREE.Points(trailGeo, trailMat);
+    this.scene.add(trailPoints);
+
+    this.activeFireworks.push({
+      type: "rocket",
+      pos: new THREE.Vector3(startX, startY, startZ),
+      velY: speedY,
+      targetY,
+      trailPoints,
+      trailPos,
+      trailCol,
+      trailCount,
+      history: [],
+      age: 0,
+    });
+  }
+
+  // ระเบิดแตกกระจายกลางเวหา (Multi-stage Burst Explosion)
+  detonateFirework(rocket) {
+    this.playFireworkBurstSound();
+    const burstX = rocket.pos.x;
+    const burstY = rocket.pos.y;
+    const burstZ = rocket.pos.z;
+
+    // ชุดคู่สีอัญมณีไทยวิจิตรตระการตา (Thai Royal Gemstone Palettes)
+    const palettes = [
+      { name: "ทองคำวันเพ็ญ (Royal Gold)", primary: 0xfacc15, secondary: 0xf59e0b, spark: 0xffffff, light: 0xffd56b },
+      { name: "ทับทิมสยาม (Siam Ruby)", primary: 0xf43f5e, secondary: 0xe11d48, spark: 0xffedd5, light: 0xf43f5e },
+      { name: "มรกตไพฑูรย์ (Emerald Jade)", primary: 0x10b981, secondary: 0x059669, spark: 0xd1fae5, light: 0x34d399 },
+      { name: "ไพลินฟ้าน้ำเอก (Sapphire Cyan)", primary: 0x06b6d4, secondary: 0x0284c7, spark: 0xe0f2fe, light: 0x38bdf8 },
+      { name: "บุษราคัมอำพัน (Amethyst Violet)", primary: 0xd946ef, secondary: 0x8b5cf6, spark: 0xfdf4ff, light: 0xc084fc },
+      { name: "ฝอยทองหลั่งไหล (Golden Kamuro)", primary: 0xfbbf24, secondary: 0xd97706, spark: 0xfef08a, light: 0xfbbf24, isWillow: true },
+      { name: "รุ้งราตรีเพ็ญ (Rainbow Sparkle)", primary: 0, secondary: 0, spark: 0xffffff, light: 0xffe88a, isRainbow: true },
+    ];
+    const pal = palettes[Math.floor(Math.random() * palettes.length)];
+
+    // 1. แสงสว่างวาบจำลองจริง (Flash PointLight ส่องสะท้อนเจดีย์และผิวน้ำ)
+    const flashLight = new THREE.PointLight(pal.light, 18.0, 150, 1.3);
+    flashLight.position.set(burstX, burstY, burstZ);
+    this.scene.add(flashLight);
+
+    // 2. สะเก็ดดาวพลุกว่า 180-200 อนุภาค
+    const count = pal.isWillow ? 200 : 180;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const velocities = [];
+
+    const pColor1 = new THREE.Color(pal.primary);
+    const pColor2 = new THREE.Color(pal.secondary);
+    const pColorSpark = new THREE.Color(pal.spark);
+
+    const rainbowColors = [
+      new THREE.Color(0xf43f5e), new THREE.Color(0xfbbf24),
+      new THREE.Color(0x10b981), new THREE.Color(0x06b6d4),
+      new THREE.Color(0xa855f7), new THREE.Color(0xffffff)
+    ];
+
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = burstX;
+      positions[i * 3 + 1] = burstY;
+      positions[i * 3 + 2] = burstZ;
+
+      // กระจายตัวเป็นทรงกลม 3 มิติสมบูรณ์แบบ (Fibonacci Spherical Shell)
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const sinPhi = Math.sin(phi);
+
+      const dirX = sinPhi * Math.cos(theta);
+      const dirY = Math.cos(phi);
+      const dirZ = sinPhi * Math.sin(theta);
+
+      const speed = pal.isWillow
+        ? (14.0 + Math.random() * 12.0)
+        : (20.0 + Math.random() * 14.0);
+
+      velocities.push({
+        x: dirX * speed,
+        y: dirY * speed,
+        z: dirZ * speed,
+      });
+
+      let col = pColor1;
+      if (pal.isRainbow) {
+        col = rainbowColors[i % rainbowColors.length];
+      } else if (i % 3 === 0) {
+        col = pColorSpark;
+      } else if (i % 2 === 0) {
+        col = pColor2;
+      }
+
+      colors[i * 3] = col.r;
+      colors[i * 3 + 1] = col.g;
+      colors[i * 3 + 2] = col.b;
+    }
+
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size: pal.isWillow ? 2.4 : 2.0,
+      map: this.fireworkTexture,
+      transparent: true,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
+      opacity: 1.0,
+    });
+
+    const points = new THREE.Points(geo, mat);
+    this.scene.add(points);
+
+    this.activeFireworks.push({
+      type: "burst",
+      points,
+      positions,
+      colors,
+      baseColors: Float32Array.from(colors),
+      velocities,
+      count,
+      age: 0,
+      maxAge: pal.isWillow ? 3.4 : 2.4,
+      isWillow: pal.isWillow || false,
+      flashLight,
+      flashAge: 0,
+    });
+  }
+
+  // อัปเดตฟิสิกส์พลุไฟทุกเฟรม (Aerodynamic Drag, Gravity, Color Cooling & Twinkle)
+  updateFireworks(dt, time) {
+    if (!this.activeFireworks || this.activeFireworks.length === 0) return;
+
+    for (let i = this.activeFireworks.length - 1; i >= 0; i--) {
+      const fw = this.activeFireworks[i];
+
+      if (fw.type === "rocket") {
+        fw.age += dt;
+        fw.pos.y += fw.velY * dt;
+        fw.velY -= 9.8 * 0.45 * dt;
+
+        fw.history.unshift(new THREE.Vector3().copy(fw.pos));
+        if (fw.history.length > fw.trailCount) fw.history.pop();
+
+        for (let j = 0; j < fw.trailCount; j++) {
+          const pt = fw.history[j] || fw.pos;
+          const driftX = (Math.random() - 0.5) * 0.16;
+          const driftZ = (Math.random() - 0.5) * 0.16;
+          fw.trailPos[j * 3] = pt.x + driftX;
+          fw.trailPos[j * 3 + 1] = pt.y - j * 0.12;
+          fw.trailPos[j * 3 + 2] = pt.z + driftZ;
+
+          const ratio = 1.0 - j / fw.trailCount;
+          fw.trailCol[j * 3] = 1.0 * ratio;
+          fw.trailCol[j * 3 + 1] = (0.7 + ratio * 0.3) * ratio;
+          fw.trailCol[j * 3 + 2] = (0.2 + ratio * 0.6) * ratio;
+        }
+        fw.trailPoints.geometry.attributes.position.needsUpdate = true;
+        fw.trailPoints.geometry.attributes.color.needsUpdate = true;
+
+        // เมื่อถึงจุดสูงสุด (Apex) ให้ระเบิดแตกตัว
+        if (fw.pos.y >= fw.targetY || fw.velY <= 3.0) {
+          this.scene.remove(fw.trailPoints);
+          fw.trailPoints.geometry.dispose();
+          fw.trailPoints.material.dispose();
+          this.activeFireworks.splice(i, 1);
+
+          this.detonateFirework(fw);
+        }
+      } else if (fw.type === "burst") {
+        fw.age += dt;
+        const progress = fw.age / fw.maxAge;
+
+        // แสงสว่างวาบดับลงอย่างรวดเร็ว
+        if (fw.flashLight) {
+          fw.flashAge += dt;
+          if (fw.flashAge < 0.38) {
+            fw.flashLight.intensity = Math.max(0, 18.0 * (1.0 - fw.flashAge / 0.38));
+          } else {
+            this.scene.remove(fw.flashLight);
+            fw.flashLight.dispose?.();
+            fw.flashLight = null;
+          }
+        }
+
+        // ฟิสิกส์แรงต้านอากาศและแรงโน้มถ่วง
+        const drag = fw.isWillow ? 0.985 : 0.965;
+        const gravity = fw.isWillow ? 3.4 : 6.8;
+
+        for (let j = 0; j < fw.count; j++) {
+          const v = fw.velocities[j];
+          v.x *= drag;
+          v.y = v.y * drag - gravity * dt;
+          v.z *= drag;
+
+          fw.positions[j * 3] += v.x * dt;
+          fw.positions[j * 3 + 1] += v.y * dt;
+          fw.positions[j * 3 + 2] += v.z * dt;
+
+          // สะเก็ดไฟกะพริบระยิบระยับ (Twinkle effect)
+          const twinkle = Math.sin(time * 30.0 + j * 1.7) * 0.35 + 0.65;
+          const fade = Math.max(0, 1.0 - Math.pow(progress, 1.5)) * twinkle;
+
+          fw.colors[j * 3] = fw.baseColors[j * 3] * fade;
+          fw.colors[j * 3 + 1] = fw.baseColors[j * 3 + 1] * fade;
+          fw.colors[j * 3 + 2] = fw.baseColors[j * 3 + 2] * fade;
+        }
+
+        fw.points.geometry.attributes.position.needsUpdate = true;
+        fw.points.geometry.attributes.color.needsUpdate = true;
+        fw.points.material.opacity = Math.max(0, 1.0 - progress);
+
+        // สิ้นสุดอายุพลุ
+        if (fw.age >= fw.maxAge) {
+          if (fw.flashLight) {
+            this.scene.remove(fw.flashLight);
+            fw.flashLight = null;
+          }
+          this.scene.remove(fw.points);
+          fw.points.geometry.dispose();
+          fw.points.material.dispose();
+          this.activeFireworks.splice(i, 1);
+        }
+      }
+    }
   }
 
   destroy() {
@@ -3667,6 +4066,19 @@ export class LoyKrathongScene {
       cancelAnimationFrame(this.animId);
     }
     window.removeEventListener("resize", this.handleResize);
+    if (this.activeFireworks) {
+      this.activeFireworks.forEach((fw) => {
+        if (fw.trailPoints) this.scene.remove(fw.trailPoints);
+        if (fw.points) this.scene.remove(fw.points);
+        if (fw.flashLight) this.scene.remove(fw.flashLight);
+      });
+      this.activeFireworks = [];
+    }
+    if (this.soundCtx) {
+      try {
+        this.soundCtx.close();
+      } catch (e) {}
+    }
     if (this.renderer?.domElement) {
       this.renderer.domElement.removeEventListener("pointerdown", this.handleClick);
       if (this.container && this.container.contains(this.renderer.domElement)) {

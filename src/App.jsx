@@ -10,7 +10,8 @@ import {
   RotateCcw,
   Volume2,
   VolumeX,
-  Settings
+  Settings,
+  Flame
 } from "lucide-react";
 import { LoyKrathongScene } from "./components/LoyKrathongScene";
 import CreateKrathongModal from "./components/CreateKrathongModal";
@@ -47,6 +48,47 @@ export default function App() {
 
     return () => {
       scene.destroy();
+    };
+  }, []);
+
+  // Auto-play music 3 seconds after opening app
+  useEffect(() => {
+    let fallbackCleanup = null;
+    const startMusic = () => {
+      if (!audioRef.current) {
+        const audio = new Audio(`${import.meta.env.BASE_URL}audio/kangkaw-kin-kluay.mp3`);
+        audio.loop = true;
+        audio.volume = 0.65;
+        audioRef.current = audio;
+      }
+      audioRef.current
+        .play()
+        .then(() => {
+          setSoundEnabled(true);
+          if (fallbackCleanup) fallbackCleanup();
+        })
+        .catch(() => {
+          // If browser policy blocks unprompted autoplay, start on first touch
+          const onFirstTouch = () => {
+            if (audioRef.current) {
+              audioRef.current.play().then(() => setSoundEnabled(true)).catch(() => {});
+            }
+            cleanup();
+          };
+          const cleanup = () => {
+            window.removeEventListener("pointerdown", onFirstTouch);
+            window.removeEventListener("touchstart", onFirstTouch);
+          };
+          window.addEventListener("pointerdown", onFirstTouch, { once: true });
+          window.addEventListener("touchstart", onFirstTouch, { once: true });
+          fallbackCleanup = cleanup;
+        });
+    };
+
+    const timer = setTimeout(startMusic, 3000);
+    return () => {
+      clearTimeout(timer);
+      if (fallbackCleanup) fallbackCleanup();
     };
   }, []);
 
@@ -92,6 +134,12 @@ export default function App() {
     if (sceneInstanceRef.current) {
       sceneInstanceRef.current.camera.position.set(0, 18, 38);
       sceneInstanceRef.current.controls.target.set(0, 2, 0);
+    }
+  };
+
+  const handleLaunchFirework = () => {
+    if (sceneInstanceRef.current) {
+      sceneInstanceRef.current.launchFirework();
     }
   };
 
@@ -177,8 +225,22 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3D Navigation Controls Widget (Responsive: Bottom-Right on mobile, Bottom-Left on tablet/desktop) */}
-      <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col gap-2">
+      {/* 3D Navigation & Firework Controls Widget (Responsive: Bottom-Right on mobile, Bottom-Left on tablet/desktop) */}
+      <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col items-center gap-2">
+        {/* Firework Launch Button - วางอยู่เหนือปุ่ม Zoom In / Zoom Out */}
+        <button
+          onClick={handleLaunchFirework}
+          className="group relative p-2.5 sm:p-3 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white shadow-xl shadow-orange-500/40 hover:shadow-orange-500/60 ring-2 ring-amber-300/80 active:scale-90 transition-all cursor-pointer flex items-center justify-center animate-pulse"
+          title="จุดดอกไม้ไฟขึ้นสู่ท้องฟ้า 🎆"
+        >
+          <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-100 group-hover:scale-110 transition-transform" />
+          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300"></span>
+          </span>
+        </button>
+
+        {/* Zoom & Camera Controls Pill */}
         <div className="bg-slate-900/85 backdrop-blur-md border border-slate-800 rounded-2xl p-1 sm:p-1.5 flex flex-col shadow-2xl">
           <button
             onClick={() => {
