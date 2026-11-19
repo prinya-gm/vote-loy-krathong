@@ -10,7 +10,7 @@ export class LoyKrathongScene {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    // Animated dynamic object collections
+    // Dynamic animated object collections
     this.skyLanterns = [];
     this.riverCandles = [];
     this.torchFlames = [];
@@ -18,6 +18,7 @@ export class LoyKrathongScene {
     this.swayingPalms = [];
     this.flickerLights = [];
     this.lotusBlossoms = [];
+    this.lotusObstacles = []; // Positions & radius for collision avoidance
 
     this.init();
   }
@@ -53,7 +54,7 @@ export class LoyKrathongScene {
     this.controls.maxDistance = 110;
     this.controls.target.set(0, 3, 0);
 
-    // 5. Generate Procedural Textures (Thai Architecture & Flora)
+    // 5. Generate Procedural Textures (Thai Architecture, Flora, Realistic Palm Fronds)
     this.createTextures();
 
     // 6. Lighting
@@ -73,10 +74,10 @@ export class LoyKrathongScene {
     // 10. Realistic Thai Traditional Teak House (เรือนไทยไม้สักฝาปะกนแท้)
     this.createRealisticThaiHouse();
 
-    // 11. Realistic Trees & Palms (ต้นจามจุรีโบราณ & ต้นมะพร้าวริมน้ำ)
+    // 11. Realistic Trees & Photorealistic Coconut Palms (ต้นมะพร้าวธรรมชาติสมจริง 80%+)
     this.createRealisticTrees();
 
-    // 12. Water Lilies / Lotus Pads (กอบัวหลวงริมฝั่งน้ำ ตามรูป 3)
+    // 12. Water Lilies / Lotus Pads (กอบัวหลวงริมน้ำ - จัดแนวชิดตลิ่ง ไม่เกะกะทางลอยกระทง)
     this.createWaterLilies();
 
     // 13. Bamboo Torches (คบเพลิงไม้ไผ่โบราณ ตามรูป 3)
@@ -97,20 +98,18 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     TEXTURE GENERATION (Authentic Thai Craftsmanship Details)
+     TEXTURE GENERATION
   ========================================================== */
   createTextures() {
-    // 1. Thai Teak Pagon Wall Texture (ฝาปะกนเรือนไทยแท้ ลูกฟักไม้สัก)
+    // 1. Thai Teak Pagon Wall Texture
     const pagonCanvas = document.createElement("canvas");
     pagonCanvas.width = 512;
     pagonCanvas.height = 512;
     const pCtx = pagonCanvas.getContext("2d");
 
-    // Base teak wood color with subtle grain
     pCtx.fillStyle = "#63381a";
     pCtx.fillRect(0, 0, 512, 512);
 
-    // Wood grain lines
     pCtx.strokeStyle = "rgba(45, 23, 10, 0.35)";
     pCtx.lineWidth = 1.5;
     for (let i = 0; i < 512; i += 4) {
@@ -120,7 +119,6 @@ export class LoyKrathongScene {
       pCtx.stroke();
     }
 
-    // Grid of recessed Pagon panels (ลูกฟักฝาปะกน)
     const cols = 4;
     const rows = 3;
     const cellW = 512 / cols;
@@ -133,20 +131,16 @@ export class LoyKrathongScene {
         const w = cellW - 16;
         const h = cellH - 16;
 
-        // Outer stiles/rails shadow (ร่องคิ้วไม้)
         pCtx.fillStyle = "#381c0c";
         pCtx.fillRect(x - 3, y - 3, w + 6, h + 6);
 
-        // Recessed panel
         pCtx.fillStyle = "#7c4420";
         pCtx.fillRect(x, y, w, h);
 
-        // Inner beveled highlight
         pCtx.fillStyle = "rgba(255, 210, 150, 0.12)";
         pCtx.fillRect(x + 4, y + 4, w - 8, 4);
         pCtx.fillRect(x + 4, y + 4, 4, h - 8);
 
-        // Inner bevel shadow
         pCtx.fillStyle = "rgba(20, 10, 5, 0.4)";
         pCtx.fillRect(x + 4, y + h - 8, w - 8, 4);
         pCtx.fillRect(x + w - 8, y + 4, 4, h - 8);
@@ -156,13 +150,13 @@ export class LoyKrathongScene {
     this.pagonTexture.wrapS = THREE.RepeatWrapping;
     this.pagonTexture.wrapT = THREE.RepeatWrapping;
 
-    // 2. Thai Terracotta Fish-Scale Roof Tiles (กระเบื้องดินเผาเกล็ดเต่าหลังคาวัดและเรือนไทย)
+    // 2. Thai Terracotta Fish-Scale Roof Tiles
     const tileCanvas = document.createElement("canvas");
     tileCanvas.width = 512;
     tileCanvas.height = 512;
     const tCtx = tileCanvas.getContext("2d");
 
-    tCtx.fillStyle = "#a83515"; // Rich terracotta base
+    tCtx.fillStyle = "#a83515";
     tCtx.fillRect(0, 0, 512, 512);
 
     const tileW = 32;
@@ -173,7 +167,6 @@ export class LoyKrathongScene {
         const tx = col * tileW + offsetX;
         const ty = row * tileH;
 
-        // Fish scale tile shingle with curved bottom
         tCtx.beginPath();
         tCtx.moveTo(tx, ty);
         tCtx.lineTo(tx + tileW, ty);
@@ -181,7 +174,6 @@ export class LoyKrathongScene {
         tCtx.fillStyle = (row + col) % 3 === 0 ? "#b83f1d" : "#982d11";
         tCtx.fill();
 
-        // Shingle highlight edge
         tCtx.strokeStyle = "rgba(255, 170, 120, 0.25)";
         tCtx.lineWidth = 1;
         tCtx.stroke();
@@ -192,17 +184,15 @@ export class LoyKrathongScene {
     this.roofTileTexture.wrapT = THREE.RepeatWrapping;
     this.roofTileTexture.repeat.set(3, 3);
 
-    // 3. Golden Thai Kanok Pediment Motif (ลายกนกหน้าบันช่อฟ้าสีทองอร่าม)
+    // 3. Golden Thai Kanok Pediment Motif
     const kanokCanvas = document.createElement("canvas");
     kanokCanvas.width = 512;
     kanokCanvas.height = 256;
     const kCtx = kanokCanvas.getContext("2d");
 
-    // Dark crimson lacquered ground (พื้นรักสีแดงชาด)
     kCtx.fillStyle = "#630b14";
     kCtx.fillRect(0, 0, 512, 256);
 
-    // Golden sunburst rays & lotus filigree
     kCtx.strokeStyle = "#facc15";
     kCtx.fillStyle = "#eab308";
     kCtx.lineWidth = 3;
@@ -210,12 +200,10 @@ export class LoyKrathongScene {
     const centerX = 256;
     const centerY = 210;
 
-    // Center lotus flower
     kCtx.beginPath();
     kCtx.arc(centerX, centerY, 28, 0, Math.PI * 2);
     kCtx.fill();
 
-    // Radiating stylized flame petals (กนกเปลว)
     for (let a = -Math.PI * 0.85; a <= -Math.PI * 0.15; a += 0.15) {
       const len = 90 + Math.sin(a * 4) * 35;
       const ex = centerX + Math.cos(a) * len;
@@ -246,17 +234,54 @@ export class LoyKrathongScene {
     this.barkTexture = new THREE.CanvasTexture(barkCanvas);
     this.barkTexture.wrapS = THREE.RepeatWrapping;
     this.barkTexture.wrapT = THREE.RepeatWrapping;
+
+    // 5. Photorealistic Feathered Palm Frond Leaflet Texture (ทางมะพร้าวขนนกเสมือนจริง)
+    const frondCanvas = document.createElement("canvas");
+    frondCanvas.width = 256;
+    frondCanvas.height = 512;
+    const fCtx = frondCanvas.getContext("2d");
+    fCtx.clearRect(0, 0, 256, 512);
+
+    // Central golden-green spine (ก้านทางมะพร้าว)
+    fCtx.strokeStyle = "#a3e635";
+    fCtx.lineWidth = 5;
+    fCtx.beginPath();
+    fCtx.moveTo(128, 0);
+    fCtx.lineTo(128, 512);
+    fCtx.stroke();
+
+    // 60 paired tapering drooping leaflets
+    const pinnaeCount = 60;
+    for (let i = 0; i < pinnaeCount; i++) {
+      const y = (i / pinnaeCount) * 490 + 12;
+      // Leaflets are longest in middle and taper toward tip
+      const span = Math.sin((i / pinnaeCount) * Math.PI) * 115 + 10;
+
+      // Left leaflet
+      fCtx.strokeStyle = i % 2 === 0 ? "#15803d" : "#22c55e";
+      fCtx.lineWidth = 2.4;
+      fCtx.beginPath();
+      fCtx.moveTo(128, y);
+      fCtx.quadraticCurveTo(128 - span * 0.55, y + 15, 128 - span, y + 26);
+      fCtx.stroke();
+
+      // Right leaflet
+      fCtx.strokeStyle = i % 2 === 0 ? "#166534" : "#16a34a";
+      fCtx.beginPath();
+      fCtx.moveTo(128, y);
+      fCtx.quadraticCurveTo(128 + span * 0.55, y + 15, 128 + span, y + 26);
+      fCtx.stroke();
+    }
+    this.palmFrondTexture = new THREE.CanvasTexture(frondCanvas);
   }
 
   /* ==========================================================
      LIGHTING
   ========================================================== */
   setupLighting() {
-    // 1. Ambient Light - twilight sky blue & warm reflection
     const ambientLight = new THREE.AmbientLight(0x406295, 2.1);
     this.scene.add(ambientLight);
 
-    // 2. Moonlight Directional Light
     const moonLight = new THREE.DirectionalLight(0xfffaea, 2.5);
     moonLight.position.set(22, 58, -42);
     moonLight.castShadow = true;
@@ -271,18 +296,15 @@ export class LoyKrathongScene {
     moonLight.shadow.bias = -0.0005;
     this.scene.add(moonLight);
 
-    // 3. Warm Festival River Ambient (Golden water glow)
     const riverGlowLight = new THREE.DirectionalLight(0xff9e24, 1.4);
     riverGlowLight.position.set(-15, 20, 20);
     this.scene.add(riverGlowLight);
 
-    // 4. Temple Architectural Floodlight (สปอตไลต์ส่องเจดีย์เรืองรอง)
     const templeFlood = new THREE.PointLight(0xffd56b, 5.5, 80, 1.2);
     templeFlood.position.set(16, 20, -42);
     this.scene.add(templeFlood);
     this.templeLight = templeFlood;
 
-    // 5. Pier Warm Festival Glow
     const pierLight = new THREE.PointLight(0xff8811, 4.2, 36, 1.3);
     pierLight.position.set(-15, 6, 8);
     this.scene.add(pierLight);
@@ -299,13 +321,13 @@ export class LoyKrathongScene {
     const ctx = canvas.getContext("2d");
 
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0.0, "#081b3c"); // Midnight royal navy
-    grad.addColorStop(0.3, "#102c5e"); // Deep cerulean
-    grad.addColorStop(0.55, "#341d58"); // Royal indigo violet
-    grad.addColorStop(0.72, "#742458"); // Sunset magenta / plum
-    grad.addColorStop(0.85, "#bd4925"); // Rich warm sunset orange
-    grad.addColorStop(0.94, "#e57c1d"); // Horizon warm amber
-    grad.addColorStop(1.0, "#fde047"); // Golden horizon line glow
+    grad.addColorStop(0.0, "#081b3c");
+    grad.addColorStop(0.3, "#102c5e");
+    grad.addColorStop(0.55, "#341d58");
+    grad.addColorStop(0.72, "#742458");
+    grad.addColorStop(0.85, "#bd4925");
+    grad.addColorStop(0.94, "#e57c1d");
+    grad.addColorStop(1.0, "#fde047");
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
@@ -329,7 +351,6 @@ export class LoyKrathongScene {
     this.moon.position.set(32, 54, -75);
     this.scene.add(this.moon);
 
-    // Multi-layered Glowing Halo
     const haloGeo = new THREE.PlaneGeometry(36, 36);
     const canvas = document.createElement("canvas");
     canvas.width = 256;
@@ -406,9 +427,7 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     1. GRAND THAI CHEDI & TEMPLE (เจดีย์สุโขทัย / วัดอรุณ 80%+ Detail)
-     อ้างอิงตามรูป 2, 3, 4: เจดีย์ทรงระฆังคว่ำสีทอง, พระวิหารเสาขาว,
-     หลังคาซ้อน 3 ชั้น, ช่อฟ้า ใบระกา หางหงส์, แสงสะท้อนผิวน้ำ
+     GRAND THAI CHEDI & TEMPLE (80%+ Detail)
   ========================================================== */
   createRealisticTempleComplex() {
     const templeGroup = new THREE.Group();
@@ -435,19 +454,17 @@ export class LoyKrathongScene {
       map: this.kanokTexture,
     });
 
-    // --- A. Grand Riverbank Foundation Platform (ฐานไพทีหินอ่อนริมน้ำ) ---
+    // 1. Foundation Platform
     const platform = new THREE.Mesh(new THREE.BoxGeometry(40, 3.2, 30), whiteStoneMat);
     platform.position.set(0, 1.6, 0);
     platform.receiveShadow = true;
     templeGroup.add(platform);
 
-    // Marble balustrade (ราวลูกกรงหินอ่อนรอบลานประทักษิณ)
     const railingGeo = new THREE.BoxGeometry(39, 0.6, 0.4);
     const railFront = new THREE.Mesh(railingGeo, whiteStoneMat);
     railFront.position.set(0, 3.4, 14.6);
     templeGroup.add(railFront);
 
-    // Grand Stairs descending toward the water (บันไดนาคทอดลงท่าน้ำวัด)
     for (let s = 0; s < 5; s++) {
       const step = new THREE.Mesh(new THREE.BoxGeometry(10, 0.35, 1.2), marbleStairsMat);
       step.position.set(0, 1.4 - s * 0.35, 15.6 + s * 1.0);
@@ -455,11 +472,10 @@ export class LoyKrathongScene {
       templeGroup.add(step);
     }
 
-    // --- B. Grand Sukhothai Golden Bell Chedi (เจดีย์ทรงระฆังคว่ำสีทองอร่าม) ---
+    // 2. Grand Sukhothai Golden Bell Chedi
     const chediGroup = new THREE.Group();
     chediGroup.position.set(-6, 3.2, -3);
 
-    // 1. ฐานเขียง 3 ชั้น (Tiered Square Plinths with stepped moldings)
     const baseTiers = [
       { w: 13, h: 1.4 },
       { w: 10.8, h: 1.2 },
@@ -475,7 +491,6 @@ export class LoyKrathongScene {
       chediY += tier.h;
     });
 
-    // 2. ฐานบัวคว่ำบัวหงาย & มาลัยเถา (Octagonal / Cylindrical Lotus Rings)
     const ring1 = new THREE.Mesh(new THREE.CylinderGeometry(4.0, 4.4, 1.0, 24), goldMat);
     ring1.position.y = chediY + 0.5;
     chediGroup.add(ring1);
@@ -486,7 +501,6 @@ export class LoyKrathongScene {
     chediGroup.add(ring2);
     chediY += 0.8;
 
-    // 3. องค์ระฆังคว่ำสีทอง (Golden Bell-shaped Stupa Dome)
     const bellGeo = new THREE.SphereGeometry(3.5, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.65);
     const bellMesh = new THREE.Mesh(bellGeo, goldMat);
     bellMesh.position.y = chediY + 1.2;
@@ -495,13 +509,11 @@ export class LoyKrathongScene {
     chediGroup.add(bellMesh);
     chediY += 3.8;
 
-    // 4. บัลลังก์สี่เหลี่ยม (Square Harmika Throne)
     const harmika = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, 2.4), goldMat);
     harmika.position.y = chediY + 0.55;
     chediGroup.add(harmika);
     chediY += 1.1;
 
-    // 5. ปล้องไฉน 13 ชั้น (13-Tiered Spire Rings tapering to sky)
     const spireRingsCount = 13;
     for (let r = 0; r < spireRingsCount; r++) {
       const radius = 1.1 * (1 - (r / spireRingsCount) * 0.82);
@@ -512,13 +524,11 @@ export class LoyKrathongScene {
     }
     chediY += spireRingsCount * 0.44;
 
-    // 6. ปลียอด / เม็ดน้ำค้าง / ยอดฉัตรทอง (Lotus Bud Finial & Spire Peak)
     const finialGeo = new THREE.ConeGeometry(0.25, 2.5, 12);
     const finial = new THREE.Mesh(finialGeo, goldMat);
     finial.position.y = chediY + 1.25;
     chediGroup.add(finial);
 
-    // Sparkling pinnacle gem
     const gemGeo = new THREE.SphereGeometry(0.35, 10, 10);
     const gemMesh = new THREE.Mesh(gemGeo, new THREE.MeshBasicMaterial({ color: 0xfff3a8 }));
     gemMesh.position.y = chediY + 2.4;
@@ -526,11 +536,10 @@ export class LoyKrathongScene {
 
     templeGroup.add(chediGroup);
 
-    // --- C. Royal Viharn / Ordination Hall (พระวิหารหลวงทรงไทยประดับมุข) ---
+    // 3. Royal Viharn
     const viharn = new THREE.Group();
     viharn.position.set(10, 3.2, 2);
 
-    // 1. Colonnade of White Pillars (เสาสี่เหลี่ยมสีขาวหัวบัว)
     const pillarGeo = new THREE.BoxGeometry(0.5, 4.8, 0.5);
     const pillarCoords = [];
     for (let px = -3.5; px <= 3.5; px += 2.3) {
@@ -542,23 +551,19 @@ export class LoyKrathongScene {
       pil.castShadow = true;
       viharn.add(pil);
 
-      // Lotus capital top
       const cap = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.7), goldMat);
       cap.position.set(px, 4.8, pz);
       viharn.add(cap);
     });
 
-    // 2. Interior Sanctuary & Golden Buddha (พระพุทธรูปทองคำในวิหาร)
     const innerWall = new THREE.Mesh(new THREE.BoxGeometry(5.2, 4.6, 7.2), whiteStoneMat);
     innerWall.position.set(0, 2.3, 0);
     viharn.add(innerWall);
 
-    // Glowing Viharn Doorway
     const door = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 3.2), new THREE.MeshBasicMaterial({ color: 0xffd56b }));
     door.position.set(0, 2.1, 3.65);
     viharn.add(door);
 
-    // 3. Multi-tiered Overlapping Thai Gable Roof (หลังคาซ้อน 3 ชั้นลด)
     for (let t = 0; t < 3; t++) {
       const roofCone = new THREE.Mesh(new THREE.ConeGeometry(5.6 - t * 0.7, 2.8, 4), thaiRoofMat);
       roofCone.rotateY(Math.PI / 4);
@@ -567,7 +572,6 @@ export class LoyKrathongScene {
       roofCone.castShadow = true;
       viharn.add(roofCone);
 
-      // Chofa (ช่อฟ้า ปลายจั่วทุกชั้น)
       [1, -1].forEach((dir) => {
         const chofa = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1.6, 6), goldMat);
         chofa.position.set(0, 7.2 + t * 1.3, dir * (4.8 - t * 0.6));
@@ -576,14 +580,12 @@ export class LoyKrathongScene {
       });
     }
 
-    // 4. Carved Golden Pediment (หน้าบันลายกนกปิดทอง)
     const gPedi = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.2), pedimentMat);
     gPedi.position.set(0, 6.2, 4.9);
     viharn.add(gPedi);
 
     templeGroup.add(viharn);
 
-    // --- D. Temple Floodlights casting dramatic golden water reflections ---
     const spot1 = new THREE.PointLight(0xffbe42, 6.5, 60, 1.2);
     spot1.position.set(-6, 8, 10);
     templeGroup.add(spot1);
@@ -597,9 +599,7 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     2. REALISTIC THAI TRADITIONAL TEAK HOUSE (เรือนไทยไม้สักฝาปะกน 80%+ Detail)
-     เสาเรือนโอนสอบยกใต้ถุนสูง, ฝาปะกนลูกฟักแท้, หน้าต่างลูกกรงมะหวด,
-     หลังคาจั่วไทยแอ่นโค้ง, หน้าบันลายไทย, ช่อฟ้า ใบระกา หางหงส์, ชานเรือน, โอ่งน้ำ
+     REALISTIC THAI TRADITIONAL TEAK HOUSE (80%+ Detail)
   ========================================================== */
   createRealisticThaiHouse() {
     const house = new THREE.Group();
@@ -632,18 +632,15 @@ export class LoyKrathongScene {
     });
     const warmLightMat = new THREE.MeshBasicMaterial({ color: 0xffdf78 });
 
-    // --- 1. Elevated Stilts with Stone Plinths (เสาเรือนไทย 12 ต้นพร้อมตอม่อ) ---
     const pillarRows = [-4.5, 0, 4.5];
     const pillarCols = [-3.5, -1.2, 1.2, 3.5];
 
     pillarCols.forEach((pz) => {
       pillarRows.forEach((px) => {
-        // Concrete/stone stilt footing (ตอม่อหิน)
         const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.7), plinthMat);
         plinth.position.set(px, 0.3, pz);
         house.add(plinth);
 
-        // Teak stilt tapering inward slightly (เสาเรือนไม้สักกลมโอนสอบ)
         const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 4.2, 10), woodBeamMat);
         stilt.position.set(px * 0.96, 2.4, pz * 0.96);
         stilt.castShadow = true;
@@ -651,31 +648,26 @@ export class LoyKrathongScene {
       });
     });
 
-    // --- 2. Under-floor Beams & Joists (รอด ตง คาน) ---
     const beamX = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.45, 0.3), woodBeamMat);
     beamX.position.set(0, 4.4, 0);
     house.add(beamX);
 
-    // --- 3. Elevated Teak Plank Deck (ชานเรือนและนอกชาน) ---
     const deck = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.35, 9.6), woodBeamMat);
     deck.position.set(0, 4.6, 0);
     deck.castShadow = true;
     deck.receiveShadow = true;
     house.add(deck);
 
-    // Veranda balustrade (ราวระเบียงโปร่ง)
     const railingBack = new THREE.Mesh(new THREE.BoxGeometry(10.8, 0.8, 0.15), woodBeamMat);
     railingBack.position.set(0, 5.2, -4.5);
     house.add(railingBack);
 
-    // Traditional glazed Dragon Water Jar / Lotus Pot on veranda (โอ่งมังกร / อ่างบัวบนชาน)
     const jarGeo = new THREE.CylinderGeometry(0.55, 0.35, 1.1, 14);
     const jarMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.3 });
     const jar = new THREE.Mesh(jarGeo, jarMat);
     jar.position.set(4.2, 5.2, 3.2);
     house.add(jar);
 
-    // --- 4. Authentic Teak Pagon House Walls (ตัวเรือนฝาปะกนไม้สัก) ---
     const bodyGeo = new THREE.BoxGeometry(7.8, 4.4, 6.0);
     const body = new THREE.Mesh(bodyGeo, teakMat);
     body.position.set(-0.8, 6.8, -0.6);
@@ -683,7 +675,6 @@ export class LoyKrathongScene {
     body.receiveShadow = true;
     house.add(body);
 
-    // Windows with Carved Spindle Shutters & Warm Glow (หน้าต่างลูกกรงมะหวด)
     [-2.2, 1.2].forEach((wx) => {
       const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.0, 0.2), woodBeamMat);
       winFrame.position.set(-0.8 + wx, 7.0, 2.45);
@@ -693,7 +684,6 @@ export class LoyKrathongScene {
       winGlow.position.set(-0.8 + wx, 7.0, 2.56);
       house.add(winGlow);
 
-      // 3 vertical wooden bars (ลูกกรงมะหวด)
       for (let b = -0.35; b <= 0.35; b += 0.35) {
         const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 6), woodBeamMat);
         bar.position.set(-0.8 + wx + b, 7.0, 2.58);
@@ -701,13 +691,10 @@ export class LoyKrathongScene {
       }
     });
 
-    // Traditional Raised Door Threshold (ธรณีประตูและบานประตูไม้)
     const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.8, 0.15), woodBeamMat);
     doorFrame.position.set(2.4, 6.2, 2.42);
     house.add(doorFrame);
 
-    // --- 5. Sweeping Curved Thai Gable Roof (หลังคาเรือนไทยแอ่นโค้งอ่อนช้อย) ---
-    // Primary roof cone
     const roofGeo = new THREE.ConeGeometry(6.4, 4.2, 4);
     roofGeo.rotateY(Math.PI / 4);
     const roof = new THREE.Mesh(roofGeo, roofMat);
@@ -716,25 +703,20 @@ export class LoyKrathongScene {
     roof.castShadow = true;
     house.add(roof);
 
-    // Overhang Eaves & Rafters (ชายคาปีกนกยื่นยาว)
     const eave = new THREE.Mesh(new THREE.BoxGeometry(10.8, 0.3, 8.8), roofMat);
     eave.position.set(-0.8, 9.2, -0.6);
     house.add(eave);
 
-    // Carved Golden Tympanum (หน้าบันไม้แกะสลักสีทอง)
     const pediment = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.4), pediMat);
     pediment.position.set(-0.8, 9.8, 2.45);
     house.add(pediment);
 
-    // --- 6. Chofa, Bai Raka, Hang Hong (ช่อฟ้า ใบระกา หางหงส์) ---
-    // Chofa peaks
     [1, -1].forEach((dir) => {
       const chofa = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.8, 6), goldMat);
       chofa.position.set(-0.8, 12.3, -0.6 + dir * 3.8);
       chofa.rotation.x = dir * 0.38;
       house.add(chofa);
 
-      // Hang Hong at lower eave corners (หางหงส์ปลายชายคา)
       const hangHongL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 1.0, 5), goldMat);
       hangHongL.position.set(-5.6, 9.1, -0.6 + dir * 4.2);
       hangHongL.rotation.z = -0.5;
@@ -746,7 +728,6 @@ export class LoyKrathongScene {
       house.add(hangHongR);
     });
 
-    // Hanging Woven Thai Festival Lanterns under veranda eaves
     const lanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa22 });
     [-1.5, 1.5].forEach((lx) => {
       const hLantern = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 0.7, 8), lanternMat);
@@ -754,7 +735,6 @@ export class LoyKrathongScene {
       house.add(hLantern);
     });
 
-    // --- 7. Wooden Staircase down to Pier (บันไดเรือนไทยไม้สัก) ---
     for (let st = 0; st < 6; st++) {
       const stair = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.25, 0.6), woodBeamMat);
       stair.position.set(3.2, 4.4 - st * 0.7, 4.6 + st * 0.7);
@@ -763,13 +743,11 @@ export class LoyKrathongScene {
 
     this.scene.add(house);
 
-    // Traditional Thai Riverside Pavilion (ศาลาริมน้ำทรงไทย)
     const salaGroup = this.buildThaiSalaMesh();
     salaGroup.position.set(-21, 1.8, 16);
     salaGroup.scale.set(1.2, 1.2, 1.2);
     this.scene.add(salaGroup);
 
-    // River embankment & wooden pier
     this.createRiverbankPromenade();
   }
 
@@ -779,7 +757,6 @@ export class LoyKrathongScene {
     const roofMat = new THREE.MeshStandardMaterial({ map: this.roofTileTexture, roughness: 0.45 });
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xf5b041, metalness: 0.7 });
 
-    // 4 Columns
     const colGeo = new THREE.CylinderGeometry(0.18, 0.24, 3.6, 8);
     [[-2, 1.8, -2], [2, 1.8, -2], [-2, 1.8, 2], [2, 1.8, 2]].forEach(([x, y, z]) => {
       const col = new THREE.Mesh(colGeo, woodMat);
@@ -819,14 +796,13 @@ export class LoyKrathongScene {
     stoneEdge.receiveShadow = true;
     this.scene.add(stoneEdge);
 
-    // Wooden Pier
+    // Wooden Pier - located at X = -16, Z = 6
     const pierMat = new THREE.MeshStandardMaterial({ color: 0x422d19, roughness: 0.7 });
     const deck = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, 14), pierMat);
     deck.position.set(-16, 0.8, 6);
     deck.receiveShadow = true;
     this.scene.add(deck);
 
-    // Pilings
     const pileGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 8);
     [[-13, 0, 0], [-13, 0, 12], [-18, 0, 0], [-18, 0, 12]].forEach(([x, y, z]) => {
       const pile = new THREE.Mesh(pileGeo, pierMat);
@@ -834,7 +810,6 @@ export class LoyKrathongScene {
       this.scene.add(pile);
     });
 
-    // Stairs down to water
     for (let i = 0; i < 3; i++) {
       const step = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 2.5), pierMat);
       step.position.set(-11.5 + i * 0.8, 0.6 - i * 0.25, 6);
@@ -843,35 +818,25 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     3. REALISTIC TREES & PALMS (ต้นจามจุรีโบราณ & ต้นมะพร้าวริมน้ำ 80%+ Detail)
-     อ้างอิงรูป 3: ต้นจามจุรีทรงพุ่มกว้าง ลำต้นแตกกิ่งแผ่เงาเหนือผืนน้ำ
-     มีไฟส่องโคนต้นไม้สีเขียว-ทอง, ต้นมะพร้าวโน้มกิ่งลงสู่แม่น้ำ
+     REALISTIC TREES & PHOTOREALISTIC COCONUT PALMS (80%+)
+     แก้ปัญหารูป 4 (ต้นมะพร้าวเป็นก้านร่ม) ให้กลายเป็นต้นมะพร้าวธรรมชาติ
+     ก้านทางมะพร้าวโค้งแอ่นทิ้งตัวสวยงาม มีใบขนนก ใบย่อยสองข้าง
+     มีคอมะพร้าว กาบมะพร้าว ทะลายลูกมะพร้าว และลำต้นโค้งปล้องเสมือนจริง
   ========================================================== */
   createRealisticTrees() {
-    const leafMat = new THREE.MeshStandardMaterial({
-      color: 0x1f5c22,
-      roughness: 0.65,
-    });
-    const darkLeafMat = new THREE.MeshStandardMaterial({
-      color: 0x144018,
-      roughness: 0.7,
-    });
-    const trunkMat = new THREE.MeshStandardMaterial({
-      map: this.barkTexture,
-      roughness: 0.85,
-    });
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x1f5c22, roughness: 0.65 });
+    const darkLeafMat = new THREE.MeshStandardMaterial({ color: 0x144018, roughness: 0.7 });
+    const trunkMat = new THREE.MeshStandardMaterial({ map: this.barkTexture, roughness: 0.85 });
 
-    // --- A. Ancient Rain Tree / Banyan Tree (ต้นจามจุรีโบราณทรงพุ่มแผ่กว้างริมน้ำ แบบในรูป 3) ---
+    // --- A. Ancient Rain Tree / Banyan Tree (ต้นจามจุรีโบราณริมน้ำ) ---
     const banyan = new THREE.Group();
     banyan.position.set(-27, 1.5, -20);
 
-    // 1. Massive Gnarled Trunk with Buttress Roots (โคนต้นและพอนรากไม้)
     const baseTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.6, 6.0, 12), trunkMat);
     baseTrunk.position.y = 3.0;
     baseTrunk.castShadow = true;
     banyan.add(baseTrunk);
 
-    // Buttress roots sprawling along the bank
     for (let r = 0; r < 5; r++) {
       const angle = (r / 5) * Math.PI * 2;
       const root = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.5, 6), trunkMat);
@@ -881,11 +846,10 @@ export class LoyKrathongScene {
       banyan.add(root);
     }
 
-    // 2. Multi-forked Spreading Boughs (กิ่งไม้ใหญ่แยก 3 ทิศทาง)
     const boughConfigs = [
       { rx: 0.45, rz: 0.35, len: 7.5, py: 5.5 },
       { rx: -0.35, rz: -0.45, len: 7.0, py: 5.8 },
-      { rx: 0.2, rz: -0.6, len: 8.5, py: 5.2 }, // Overhanging the water
+      { rx: 0.2, rz: -0.6, len: 8.5, py: 5.2 },
     ];
 
     const foliageCanopy = new THREE.Group();
@@ -899,7 +863,6 @@ export class LoyKrathongScene {
       bough.castShadow = true;
       banyan.add(bough);
 
-      // Layered Foliage Clouds on each limb (พุ่มใบไม้แน่นหนาเป็นชั้นๆ)
       for (let fc = 0; fc < 4; fc++) {
         const fMesh = new THREE.Mesh(
           new THREE.SphereGeometry(3.2 - fc * 0.4, 10, 8),
@@ -918,7 +881,6 @@ export class LoyKrathongScene {
 
     banyan.add(foliageCanopy);
 
-    // Green & Amber Uplights illuminating the ancient tree from below (เหมือนในรูป 3)
     const treeUplight = new THREE.PointLight(0x22c55e, 4.0, 30, 1.3);
     treeUplight.position.set(0, 1.5, 0);
     banyan.add(treeUplight);
@@ -930,83 +892,206 @@ export class LoyKrathongScene {
     this.scene.add(banyan);
     this.swayingTrees.push({ group: foliageCanopy, speed: 1.1, phase: 0.5 });
 
-    // --- B. Curved Coconut Palms leaning toward water (ต้นมะพร้าวริมน้ำ) ---
-    const palmPositions = [
-      { x: -24, z: 28, rotY: 0.2, leanAngle: 0.28 },
-      { x: -26, z: -38, rotY: -0.4, leanAngle: 0.32 },
-      { x: -25, z: 40, rotY: 0.6, leanAngle: 0.25 },
+    // --- B. PHOTOREALISTIC COCONUT PALM TREES (ต้นมะพร้าวริมน้ำเสมือนจริง 80%+) ---
+    // ตำแหน่งริมฝั่งตลิ่ง โดยไม่ขวางทางเดินและไม่เกะกะสายตา
+    const palmConfigs = [
+      { x: -24, z: 28, rotY: 0.3, leanAngle: 0.22, heightScale: 1.1 },
+      { x: -26, z: -38, rotY: -0.5, leanAngle: 0.26, heightScale: 1.05 },
+      { x: -25, z: 42, rotY: 0.8, leanAngle: 0.2, heightScale: 1.0 },
     ];
 
-    palmPositions.forEach((pCfg) => {
-      const palm = new THREE.Group();
-      palm.position.set(pCfg.x, 1.5, pCfg.z);
-
-      // Segmented Curved Trunk (ลำต้นมะพร้าวมีปล้องโค้งโน้มลงสู่แม่น้ำ)
-      let curPalmY = 0;
-      let curPalmX = 0;
-      const trunkSegments = 10;
-      for (let s = 0; s < trunkSegments; s++) {
-        const segH = 1.3;
-        const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, segH, 8), trunkMat);
-        seg.position.set(curPalmX, curPalmY + segH / 2, 0);
-        seg.rotation.z = -pCfg.leanAngle * (s / trunkSegments);
-        seg.castShadow = true;
-        palm.add(seg);
-
-        curPalmX += Math.sin(pCfg.leanAngle) * 0.45;
-        curPalmY += Math.cos(pCfg.leanAngle) * 1.15;
-      }
-
-      // Crown of Drooping Feathered Fronds (ยอดและทางมะพร้าว 14 ทาง)
-      const crown = new THREE.Group();
-      crown.position.set(curPalmX, curPalmY, 0);
-
-      // Coconuts cluster
-      const nutMat = new THREE.MeshStandardMaterial({ color: 0x4d3811, roughness: 0.7 });
-      for (let n = 0; n < 5; n++) {
-        const nut = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), nutMat);
-        nut.position.set(Math.cos(n * 1.2) * 0.5, -0.4, Math.sin(n * 1.2) * 0.5);
-        crown.add(nut);
-      }
-
-      // 14 Curved Fronds
-      for (let fr = 0; fr < 14; fr++) {
-        const fAngle = (fr / 14) * Math.PI * 2;
-        const frondRib = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.04, 0.1, 5.5, 6),
-          new THREE.MeshStandardMaterial({ color: 0x84cc16 })
-        );
-        frondRib.position.set(Math.cos(fAngle) * 2.2, -0.8, Math.sin(fAngle) * 2.2);
-        frondRib.rotation.y = -fAngle;
-        frondRib.rotation.z = 0.85;
-
-        // Leaf blade on frond
-        const leafBlade = new THREE.Mesh(
-          new THREE.PlaneGeometry(1.4, 4.8),
-          new THREE.MeshStandardMaterial({
-            color: 0x16a34a,
-            side: THREE.DoubleSide,
-            roughness: 0.5,
-          })
-        );
-        leafBlade.rotation.x = Math.PI / 2;
-        frondRib.add(leafBlade);
-
-        crown.add(frondRib);
-      }
-
-      palm.add(crown);
-      this.scene.add(palm);
-      this.swayingPalms.push({ group: crown, speed: 1.4, phase: Math.random() * Math.PI });
+    palmConfigs.forEach((pCfg) => {
+      const palm = this.buildPhotorealisticPalmTree(pCfg, trunkMat);
+      this.scene.add(palm.rootGroup);
+      this.swayingPalms.push({ group: palm.crownGroup, speed: 1.3, phase: Math.random() * Math.PI });
     });
   }
 
+  // สร้างต้นมะพร้าวเสมือนจริง: ลำต้นโค้งงอนวลตา + ทางมะพร้าวโค้งแอ่นทิ้งตัว + ใบขนนกย่อย + ทะลายมะพร้าว
+  buildPhotorealisticPalmTree(pCfg, trunkMat) {
+    const rootGroup = new THREE.Group();
+    rootGroup.position.set(pCfg.x, 1.5, pCfg.z);
+
+    // 1. Swollen Root Base (โคนต้นมะพร้าวป่องตามธรรมชาติ)
+    const bulbMat = new THREE.MeshStandardMaterial({ color: 0x3d2716, roughness: 0.9 });
+    const bulb = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.8, 1.2, 10), bulbMat);
+    bulb.position.y = 0.6;
+    bulb.castShadow = true;
+    rootGroup.add(bulb);
+
+    // 2. Segmented Sweeping Curved Trunk (ลำต้นมะพร้าวโค้งเอียงโน้มเข้าหาแม่น้ำอย่างอ่อนช้อย)
+    let curY = 1.0;
+    let curX = 0;
+    const trunkSegments = 14;
+    const segH = 0.95 * pCfg.heightScale;
+
+    for (let s = 0; s < trunkSegments; s++) {
+      // Tapering: 0.42 at bottom to 0.25 near crown
+      const rBottom = 0.42 - (s / trunkSegments) * 0.16;
+      const rTop = 0.42 - ((s + 1) / trunkSegments) * 0.16;
+
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, segH, 10), trunkMat);
+      seg.position.set(curX, curY + segH / 2, 0);
+      seg.rotation.z = -pCfg.leanAngle * (s / trunkSegments);
+      seg.castShadow = true;
+      rootGroup.add(seg);
+
+      // Distinct Palm Ring Scars (รอยปล้องมะพร้าว)
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(rTop + 0.02, 0.025, 4, 12),
+        new THREE.MeshStandardMaterial({ color: 0x26170d, roughness: 0.9 })
+      );
+      ring.position.set(curX, curY + segH, 0);
+      ring.rotateX(Math.PI / 2);
+      rootGroup.add(ring);
+
+      curX += Math.sin(pCfg.leanAngle) * (segH * 0.45);
+      curY += Math.cos(pCfg.leanAngle) * (segH * 0.96);
+    }
+
+    // 3. Green Crownshaft & Brown Coir Sheath (คอมะพร้าวสีเขียวอ่อนและรกกาบมะพร้าวสีน้ำตาล)
+    const crownShaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.24, 0.26, 1.6, 8),
+      new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.6 })
+    );
+    crownShaft.position.set(curX, curY + 0.8, 0);
+    crownShaft.rotation.z = -pCfg.leanAngle;
+    rootGroup.add(crownShaft);
+
+    // Brown fibrous coir collar (รกมะพร้าว)
+    const coir = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.26, 0.8, 8),
+      new THREE.MeshStandardMaterial({ color: 0x543212, roughness: 0.95 })
+    );
+    coir.position.set(curX, curY + 1.2, 0);
+    coir.rotation.z = -pCfg.leanAngle;
+    rootGroup.add(coir);
+
+    // 4. Crown of Fronds (พุ่มทางมะพร้าวโค้งแอ่นทิ้งตัวเสมือนจริง 20 ทาง)
+    const crownGroup = new THREE.Group();
+    crownGroup.position.set(curX, curY + 1.6, 0);
+
+    // Coconut Fruit Clusters (ทะลายลูกมะพร้าว 8-10 ผล)
+    const nutMatGreen = new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.5 });
+    const nutMatBrown = new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.6 });
+    for (let n = 0; n < 9; n++) {
+      const nAng = (n / 9) * Math.PI * 2;
+      const nut = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 8, 8),
+        n % 3 === 0 ? nutMatBrown : nutMatGreen
+      );
+      nut.scale.set(1.0, 1.35, 1.0); // Ovoid coconut shape
+      nut.position.set(Math.cos(nAng) * 0.6, -0.35 + (n % 2) * 0.2, Math.sin(nAng) * 0.6);
+      crownGroup.add(nut);
+    }
+
+    // Frond material with alpha transparency for realistic feathered leaflets
+    const frondMat = new THREE.MeshStandardMaterial({
+      map: this.palmFrondTexture,
+      transparent: true,
+      alphaTest: 0.25,
+      side: THREE.DoubleSide,
+      roughness: 0.45,
+    });
+
+    const frondConfigs = [
+      // Tier 1: Young fronds (พุ่งขึ้นบนและโค้งออก - 6 ทาง)
+      { count: 6, pitch: 0.55, length: 5.2, width: 1.4, droop: 0.6, yOffset: 0.3 },
+      // Tier 2: Prime arching fronds (แอ่นโค้งทิ้งตัวรอบทิศ - 8 ทาง)
+      { count: 8, pitch: 1.05, length: 6.4, width: 1.6, droop: 1.4, yOffset: 0.0 },
+      // Tier 3: Mature low-drooping fronds (ทิ้งตัวลงต่ำล้อมรอบต้น - 6 ทาง)
+      { count: 6, pitch: 1.45, length: 6.8, width: 1.7, droop: 2.2, yOffset: -0.35 },
+    ];
+
+    frondConfigs.forEach((tier) => {
+      for (let i = 0; i < tier.count; i++) {
+        const yaw = (i / tier.count) * Math.PI * 2 + Math.random() * 0.2;
+        const frondMesh = this.buildCurvedFrondMesh(tier, frondMat);
+
+        frondMesh.position.y = tier.yOffset;
+        frondMesh.rotation.y = yaw;
+        // Natural tilt
+        frondMesh.rotation.x = 0;
+        crownGroup.add(frondMesh);
+      }
+    });
+
+    // 2-3 dried brown fronds hanging limp downwards along trunk (ทางมะพร้าวแห้งสีน้ำตาล)
+    const dryFrondMat = new THREE.MeshStandardMaterial({
+      map: this.palmFrondTexture,
+      color: 0x854d0e,
+      transparent: true,
+      alphaTest: 0.25,
+      side: THREE.DoubleSide,
+      roughness: 0.8,
+    });
+    for (let d = 0; d < 3; d++) {
+      const dYaw = d * 2.1 + 0.5;
+      const dryMesh = this.buildCurvedFrondMesh({ length: 4.8, width: 1.3, droop: 2.8, pitch: 1.8 }, dryFrondMat);
+      dryMesh.position.y = -0.5;
+      dryMesh.rotation.y = dYaw;
+      crownGroup.add(dryMesh);
+    }
+
+    rootGroup.add(crownGroup);
+    return { rootGroup, crownGroup };
+  }
+
+  // สร้างทางมะพร้าวที่มีความโค้งแอ่นตามธรรมชาติ (Gracefully Arched Frond Spine)
+  buildCurvedFrondMesh(cfg, material) {
+    const frondGroup = new THREE.Group();
+
+    // Central arching rib (กระดูกทางมะพร้าวโค้งแอ่น)
+    const segs = 6;
+    const len = cfg.length;
+    const ribMat = new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.6 });
+
+    let lastX = 0;
+    let lastY = 0;
+    for (let s = 1; s <= segs; s++) {
+      const t = s / segs;
+      // Parabolic arch formula: rises initially, then gracefully droops down
+      const curX = t * len;
+      const curY = Math.sin(t * Math.PI * 0.7) * 1.5 - Math.pow(t, 2.2) * cfg.droop;
+
+      const dx = curX - lastX;
+      const dy = curY - lastY;
+      const segLen = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+
+      const rib = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03 * (1 - t * 0.7), 0.05 * (1 - (t - 1 / segs) * 0.7), segLen, 5),
+        ribMat
+      );
+      rib.position.set((lastX + curX) / 2, (lastY + curY) / 2, 0);
+      rib.rotation.z = angle - Math.PI / 2;
+      frondGroup.add(rib);
+
+      // Feathered Leaflet Quad along this segment - angled like an inverted roof V (^)
+      const leafGeo = new THREE.PlaneGeometry(cfg.width * Math.sin(t * Math.PI), segLen * 1.05);
+      const leafMesh = new THREE.Mesh(leafGeo, material);
+      leafMesh.position.set((lastX + curX) / 2, (lastY + curY) / 2, 0);
+      leafMesh.rotation.z = angle - Math.PI / 2;
+      leafMesh.rotation.y = Math.PI / 2; // Face outward
+      leafMesh.rotation.x = -0.35; // Droop downward angle
+      frondGroup.add(leafMesh);
+
+      lastX = curX;
+      lastY = curY;
+    }
+
+    return frondGroup;
+  }
+
   /* ==========================================================
-     4. WATER LILIES / LOTUS PADS (กอบัวหลวงริมน้ำ ตามรูป 3)
-     ใบบัวลอยบนผิวน้ำ มีรอยเว้า V-notch + ดอกบัวหลวงสีชมพูบาน
+     WATER LILIES / LOTUS PADS (กอบัวหลวงริมตลิ่ง)
+     วางตำแหน่งชิดตลิ่งอย่างเป็นธรรมชาติ (X <= -13)
+     ไม่ขวางเส้นทางลอยของกระทง (Fairway X: -6 ถึง +16)
   ========================================================== */
   createWaterLilies() {
     this.lotusBlossoms = [];
+    this.lotusObstacles = [];
+
     const padMat = new THREE.MeshStandardMaterial({
       color: 0x15803d,
       roughness: 0.4,
@@ -1014,35 +1099,36 @@ export class LoyKrathongScene {
       side: THREE.DoubleSide,
     });
     const lotusPetalMat = new THREE.MeshStandardMaterial({
-      color: 0xf472b6, // Pink royal lotus
+      color: 0xf472b6,
       roughness: 0.35,
     });
     const pollenMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
 
+    // วางกอบัวชิดริมตลิ่งฝั่งซ้าย (X: -16 ถึง -13.5) ห่างจากร่องน้ำลอยกระทง
     const clusterCenters = [
-      [-13, -15],
-      [-12, -2],
-      [-11, 18],
-      [-12, 32],
+      { x: -15.5, z: -20, r: 3.2 },
+      { x: -14.8, z: -6, r: 3.0 },
+      { x: -14.2, z: 18, r: 3.2 },
+      { x: -15.0, z: 32, r: 3.4 },
     ];
 
-    clusterCenters.forEach(([cx, cz]) => {
-      for (let i = 0; i < 7; i++) {
+    clusterCenters.forEach((cl) => {
+      this.lotusObstacles.push(cl);
+
+      for (let i = 0; i < 6; i++) {
         const padGroup = new THREE.Group();
-        const px = cx + (Math.random() - 0.5) * 6;
-        const pz = cz + (Math.random() - 0.5) * 8;
+        const px = cl.x + (Math.random() - 0.5) * 3.5;
+        const pz = cl.z + (Math.random() - 0.5) * 4.5;
         padGroup.position.set(px, 0.08, pz);
 
-        // Circular lily pad with V-slit (ใบบัวผ่าแฉก)
-        const padGeo = new THREE.CircleGeometry(0.85 + Math.random() * 0.4, 20, 0, Math.PI * 1.85);
+        const padGeo = new THREE.CircleGeometry(0.85 + Math.random() * 0.35, 18, 0, Math.PI * 1.85);
         padGeo.rotateX(-Math.PI / 2);
         const pad = new THREE.Mesh(padGeo, padMat);
         padGroup.add(pad);
 
-        // 30% chance of blooming pink lotus flower on pad
-        if (i % 3 === 0) {
+        if (i % 2 === 0) {
           const lotus = new THREE.Group();
-          lotus.position.y = 0.2;
+          lotus.position.y = 0.18;
 
           for (let p = 0; p < 8; p++) {
             const pAng = (p / 8) * Math.PI * 2;
@@ -1052,7 +1138,6 @@ export class LoyKrathongScene {
             petal.rotation.x = Math.sin(pAng) * 0.5;
             lotus.add(petal);
           }
-          // Pollen center
           const pol = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), pollenMat);
           pol.position.y = 0.2;
           lotus.add(pol);
@@ -1067,8 +1152,7 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     5. BAMBOO FIRE TORCHES (คบเพลิงไม้ไผ่โบราณ ตามรูป 3)
-     ปักเรียงรายริมน้ำตลอดแนวตลิ่ง เบ้าสาน เปลวไฟสะบัดไหวสะท้อนน้ำ
+     BAMBOO FIRE TORCHES
   ========================================================== */
   createBambooTorches() {
     const torchCount = 12;
@@ -1080,18 +1164,15 @@ export class LoyKrathongScene {
       const torch = new THREE.Group();
       torch.position.set(-18.2, 1.0, zPos);
 
-      // Slender Bamboo Stake
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 4.8, 8), bambooMat);
       pole.position.y = 2.4;
       pole.castShadow = true;
       torch.add(pole);
 
-      // Woven Flared Torch Basket (เบ้าคบเพลิงทรงกรวยสานแบบล้านนา/สุโขทัย)
       const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.18, 0.75, 8), coneMat);
       basket.position.y = 4.8;
       torch.add(basket);
 
-      // Dynamic Animated Fire Flame (เปลวไฟลุกโชน)
       const flame = new THREE.Mesh(
         new THREE.ConeGeometry(0.28, 0.9, 8),
         new THREE.MeshBasicMaterial({ color: 0xff6600 })
@@ -1099,7 +1180,6 @@ export class LoyKrathongScene {
       flame.position.y = 5.4;
       torch.add(flame);
 
-      // Bright Core Glow
       const core = new THREE.Mesh(
         new THREE.ConeGeometry(0.16, 0.65, 8),
         new THREE.MeshBasicMaterial({ color: 0xffea33 })
@@ -1107,7 +1187,6 @@ export class LoyKrathongScene {
       core.position.y = 5.3;
       torch.add(core);
 
-      // Vertical reflection PointLight onto water
       const fLight = new THREE.PointLight(0xff7700, 3.4, 19, 1.3);
       fLight.position.set(0, 5.6, 0);
       torch.add(fLight);
@@ -1125,7 +1204,7 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     FLOATING SKY LANTERNS (โคมลอยยี่เป็ง นับร้อยดวง)
+     FLOATING SKY LANTERNS
   ========================================================== */
   createSkyLanterns() {
     this.skyLanterns = [];
@@ -1172,11 +1251,12 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     KRATHONG SAI / RIVER CANDLES (กระทงสายลอยสว่างทั่วแม่น้ำ)
+     KRATHONG SAI / RIVER CANDLES
+     ลอยอยู่ในร่องน้ำเปิด ไม่ไปทับกอบัวหรือกระทงหลัก
   ========================================================== */
   createKrathongSai() {
     this.riverCandles = [];
-    const count = 60;
+    const count = 55;
     const bowlGeo = new THREE.CylinderGeometry(0.45, 0.25, 0.22, 10);
     const bowlMat = new THREE.MeshStandardMaterial({ color: 0xc49a45, roughness: 0.5 });
     const flameGeo = new THREE.ConeGeometry(0.15, 0.45, 6);
@@ -1193,7 +1273,8 @@ export class LoyKrathongScene {
       flame.position.y = 0.38;
       candleGroup.add(flame);
 
-      const posX = (Math.random() - 0.5) * 45 + Math.sin(i) * 5;
+      // กระจายอยู่ในร่องน้ำเปิด X: -4 ถึง +18
+      const posX = -4 + Math.random() * 22;
       const posZ = -30 + Math.random() * 75;
       candleGroup.position.set(posX, 0.1, posZ);
 
@@ -1220,7 +1301,6 @@ export class LoyKrathongScene {
     const themeColor = new THREE.Color(data.color || "#f59e0b");
     const leafColor = 0x2e7d32;
 
-    // 1. Base Trunk
     const baseGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.45, 24);
     const baseMat = new THREE.MeshStandardMaterial({
       color: 0x3d6b24,
@@ -1231,7 +1311,6 @@ export class LoyKrathongScene {
     base.castShadow = true;
     group.add(base);
 
-    // 2. Folded Banana Leaves
     const petalCount = 14;
     const petalGeo = new THREE.ConeGeometry(0.4, 1.2, 4);
     petalGeo.scale(1.2, 1, 0.3);
@@ -1250,7 +1329,6 @@ export class LoyKrathongScene {
       group.add(petal);
     }
 
-    // 3. Flower Bed
     const flowerBedGeo = new THREE.TorusGeometry(1.1, 0.28, 8, 18);
     flowerBedGeo.rotateX(Math.PI / 2);
     const flowerBedMat = new THREE.MeshStandardMaterial({
@@ -1262,7 +1340,6 @@ export class LoyKrathongScene {
     flowerBed.position.y = 0.45;
     group.add(flowerBed);
 
-    // 4. Candle & Dynamic Flame
     const candleGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.1, 10);
     const candleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
     const candle = new THREE.Mesh(candleGeo, candleMat);
@@ -1280,7 +1357,6 @@ export class LoyKrathongScene {
     flameLight.position.set(0.3, 1.85, 0.2);
     group.add(flameLight);
 
-    // 5. Incense Sticks
     const incenseGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.6, 6);
     const incenseMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
     const tipMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
@@ -1296,7 +1372,6 @@ export class LoyKrathongScene {
       group.add(tip);
     });
 
-    // 6. User Photo Stand Billboard
     const photoGroup = new THREE.Group();
     photoGroup.position.set(0, 1.6, -0.4);
 
@@ -1352,7 +1427,6 @@ export class LoyKrathongScene {
 
     group.add(photoGroup);
 
-    // 7. Interactive selection highlight ring
     const ringGeo = new THREE.RingGeometry(1.9, 2.3, 32);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -1374,6 +1448,17 @@ export class LoyKrathongScene {
     return group;
   }
 
+  // กำหนดเลนลอยของกระทงในร่องน้ำเปิด เพื่อไม่ให้เกิดการทับซ้อนตั้งแต่เริ่ม
+  assignKrathongInitialPosition(index) {
+    // 5 เลนลอยที่ปลอดภัยในร่องน้ำหลัก (ห่างจากกอบัว X <= -13 และสะพาน X <= -11)
+    const lanes = [-5.0, -1.0, 3.5, 8.0, 13.0];
+    const laneIndex = index % lanes.length;
+    const x = lanes[laneIndex] + (Math.random() - 0.5) * 1.2;
+    // ระยะห่างในแนวสายน้ำ (Z) อย่างน้อย 9-12 เมตรต่อลำ
+    const z = 12 + index * 10;
+    return { x, z };
+  }
+
   updateKrathongs(entries) {
     const currentIds = new Set(entries.map((e) => e.id));
 
@@ -1387,9 +1472,10 @@ export class LoyKrathongScene {
     entries.forEach((entry, index) => {
       let mesh = this.krathongMeshes.get(entry.id);
       if (!mesh) {
-        if (entry.x === undefined) {
-          entry.x = ((index % 5) - 2) * 7 + (Math.random() - 0.5) * 3;
-          entry.z = 5 + index * 6;
+        if (entry.x === undefined || entry.x < -6.5 || entry.x > 16.5) {
+          const initPos = this.assignKrathongInitialPosition(index);
+          entry.x = initPos.x;
+          entry.z = initPos.z;
         }
         mesh = this.buildKrathongMesh(entry);
         this.scene.add(mesh);
@@ -1461,7 +1547,7 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     ANIMATION LOOP ("วัตถุทุกอย่างมีความเคลื่อนไหว")
+     ANIMATION LOOP ("วัตถุทุกอย่างมีความเคลื่อนไหว & ระบบป้องกันการชน/ทับซ้อน")
   ========================================================== */
   animate() {
     this.animId = requestAnimationFrame(this.animate.bind(this));
@@ -1484,28 +1570,89 @@ export class LoyKrathongScene {
       this.riverPositions.needsUpdate = true;
     }
 
-    // 3. Krathongs Flow Downstream & Rocking (กระทงลอยและโคลงเคลง)
-    for (const mesh of this.krathongMeshes.values()) {
+    // 3. Krathongs Downstream Movement with Collision Avoidance & Physics
+    const krathongs = Array.from(this.krathongMeshes.values());
+
+    krathongs.forEach((mesh, idx) => {
       const speed = mesh.userData.speed || 0.009;
       const bob = mesh.userData.bobOffset || 0;
 
-      mesh.position.z -= speed * 4.6;
+      // ไหลตามกระแสน้ำ Z (จาก +Z ไปสู่ -Z)
+      mesh.position.z -= speed * 4.2;
+
+      // วนกลับขึ้นต้นน้ำเมื่อลอยพ้นสายตา
       if (mesh.position.z < -46) {
-        mesh.position.z = 36 + Math.random() * 15;
-        mesh.position.x = (Math.random() - 0.5) * 26;
+        // กำหนดเลนลอยใหม่ให้กระจายตัวในร่องน้ำเปิด X: -5 ถึง +14
+        const lanes = [-5.0, -1.0, 3.5, 8.0, 13.0];
+        mesh.position.x = lanes[idx % lanes.length] + (Math.random() - 0.5) * 1.2;
+        mesh.position.z = 36 + Math.random() * 16;
       }
 
+      // การโคลงเคลงตามระลอกคลื่นน้ำ
       mesh.position.y = Math.sin(time * 2.8 + bob) * 0.1 + 0.06;
       mesh.rotation.z = Math.sin(time * 2.0 + bob) * 0.035;
       mesh.rotation.x = Math.cos(time * 1.7 + bob) * 0.03;
       mesh.rotation.y += mesh.userData.rotSpeed || 0.002;
 
+      // เปลวไฟเทียนสะบัดไหว
       const flame = mesh.getObjectByName("candleFlame");
       if (flame) {
         const flicker = Math.sin(time * 16.0 + bob) * 0.15 + 1.0;
         flame.scale.set(flicker, flicker * 1.1, flicker);
       }
+    });
+
+    // --- ระบบฟิสิกส์ป้องกันกระทงชนหรือทับกันเอง (Krathong-Krathong Repulsion) ---
+    const minDistKrathong = 5.2; // รัศมีความปลอดภัย 5.2 เมตร (เส้นผ่านศูนย์กลางกระทง 3.6 เมตร)
+    for (let i = 0; i < krathongs.length; i++) {
+      for (let j = i + 1; j < krathongs.length; j++) {
+        const kA = krathongs[i];
+        const kB = krathongs[j];
+        const dx = kA.position.x - kB.position.x;
+        const dz = kA.position.z - kB.position.z;
+        const distSq = dx * dx + dz * dz;
+
+        if (distSq < minDistKrathong * minDistKrathong && distSq > 0.0001) {
+          const dist = Math.sqrt(distSq);
+          const overlap = (minDistKrathong - dist) * 0.5;
+          const nx = dx / dist;
+          const nz = dz / dist;
+
+          // ดันออกจากกันอย่างนุ่มนวล
+          kA.position.x += nx * overlap * 0.18;
+          kA.position.z += nz * overlap * 0.18;
+          kB.position.x -= nx * overlap * 0.18;
+          kB.position.z -= nz * overlap * 0.18;
+        }
+      }
     }
+
+    // --- ระบบป้องกันกระทงลอยไปทับกอบัวริมน้ำ (Lotus Avoidance) ---
+    krathongs.forEach((mesh) => {
+      if (this.lotusObstacles) {
+        this.lotusObstacles.forEach((cl) => {
+          const dx = mesh.position.x - cl.x;
+          const dz = mesh.position.z - cl.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          const safeDist = cl.r + 2.5; // รัศมีปลอดภัยจากใจกลางกอบัว
+
+          if (dist < safeDist && dist > 0.001) {
+            // ดันกระทงออกจากกอบัว เข้าสู่ร่องน้ำหลัก (+X) ทันที
+            const push = (safeDist - dist) * 0.25;
+            mesh.position.x += Math.max(0.08, (dx / dist) * push);
+          }
+        });
+      }
+
+      // ป้องกันไม่ให้กระทงชนเสาและบันไดท่าน้ำ (Pier: X <= -11.5, Z ระหว่าง -2 ถึง 14)
+      if (mesh.position.x < -6.8 && mesh.position.z > -2 && mesh.position.z < 15) {
+        mesh.position.x += (-6.8 - mesh.position.x) * 0.2;
+      }
+
+      // จำกัดขอบเขตช่องน้ำลอยกระทงที่ปลอดภัย (Fairway Boundary: X ระหว่าง -6.5 ถึง +16.5)
+      if (mesh.position.x < -6.5) mesh.position.x = -6.5;
+      if (mesh.position.x > 16.5) mesh.position.x = 16.5;
+    });
 
     // 4. Sky Lanterns Rising & Swaying (โคมลอยลอยขึ้นฟ้า)
     if (this.skyLanterns) {
@@ -1529,17 +1676,27 @@ export class LoyKrathongScene {
       });
     }
 
-    // 5. Krathong Sai / River Candles (กระทงสายลอยสว่าง)
+    // 5. Krathong Sai / River Candles (กระทงสายลอยสว่าง พร้อมหลบกระทงใหญ่)
     if (this.riverCandles) {
       this.riverCandles.forEach((item) => {
         item.group.position.z -= item.speed * 4.0;
         if (item.group.position.z < -45) {
           item.group.position.z = 40 + Math.random() * 15;
-          item.group.position.x = (Math.random() - 0.5) * 45;
+          item.group.position.x = -4 + Math.random() * 21;
           item.originX = item.group.position.x;
         }
         item.group.position.y = 0.08 + Math.sin(time * item.swaySpeed + item.bobPhase) * 0.08;
         item.group.position.x = item.originX + Math.sin(time * 1.2 + item.bobPhase) * 0.5;
+
+        // หลบกระทงใหญ่ ไม่ให้ลอยทะลุกัน
+        krathongs.forEach((kMesh) => {
+          const cdx = item.group.position.x - kMesh.position.x;
+          const cdz = item.group.position.z - kMesh.position.z;
+          const cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+          if (cdist < 3.2 && cdist > 0.001) {
+            item.group.position.x += (cdx / cdist) * 0.12;
+          }
+        });
 
         const fScale = 0.85 + Math.sin(time * 12.0 + item.bobPhase) * 0.2;
         item.flame.scale.set(fScale, fScale, fScale);
@@ -1557,7 +1714,7 @@ export class LoyKrathongScene {
       });
     }
 
-    // 7. Ancient Trees & Palms Swaying in Wind (ต้นจามจุรีและมะพร้าวไหวตามลม)
+    // 7. Ancient Trees & Realistic Palms Swaying in Wind (กิ่งจามจุรีและยอดทางมะพร้าวพลิ้วไหวตามลม)
     if (this.swayingTrees) {
       this.swayingTrees.forEach((item) => {
         item.group.rotation.z = Math.sin(time * item.speed + item.phase) * 0.05;
@@ -1567,8 +1724,9 @@ export class LoyKrathongScene {
 
     if (this.swayingPalms) {
       this.swayingPalms.forEach((item) => {
-        item.group.rotation.z = Math.sin(time * item.speed + item.phase) * 0.08;
-        item.group.rotation.x = Math.cos(time * (item.speed * 0.8) + item.phase) * 0.06;
+        // ยอดพุ่มมะพร้าวและทางมะพร้าวแกว่งไหวตามกระแสลมเบาๆ
+        item.group.rotation.z = Math.sin(time * item.speed + item.phase) * 0.045;
+        item.group.rotation.x = Math.cos(time * (item.speed * 0.8) + item.phase) * 0.035;
       });
     }
 
