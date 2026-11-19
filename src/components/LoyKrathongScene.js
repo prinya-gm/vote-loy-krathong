@@ -19,6 +19,7 @@ export class LoyKrathongScene {
     this.flickerLights = [];
     this.lotusBlossoms = [];
     this.lotusObstacles = []; // Positions & radius for collision avoidance
+    this.thaiPeople = []; // โมเดลคนสวมชุดไทยหลากสี (เดินเล่น & ลอยกระทงริมท่าน้ำ)
 
     this.init();
   }
@@ -86,6 +87,9 @@ export class LoyKrathongScene {
     // 14. Floating Elements (โคมลอยยี่เป็ง & กระทงสาย)
     this.createSkyLanterns();
     this.createKrathongSai();
+
+    // 15. Animated Thai People (โมเดลคนสวมชุดไทยหลากสี เดินเล่น และลอยกระทงริมท่าน้ำ)
+    this.createThaiPeople();
 
     // Event Listeners
     this.handleResize = this.onWindowResize.bind(this);
@@ -1949,6 +1953,520 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
+     ANIMATED THAI PEOPLE IN TRADITIONAL COSTUMES
+     (โมเดลคนสวมชุดไทยหลากสี เดินเล่น และลอยกระทงริมท่าน้ำ)
+  ========================================================== */
+  createThaiPeople() {
+    this.thaiPeople = [];
+
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.65 });
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.75, roughness: 0.25 });
+
+    const characterConfigs = [
+      // --- ก. กลุ่มคนลอยกระทงริมท่าน้ำ (Waterfront Floating Krathong Group) ---
+      // 1. หญิงสาวชุดไทยสไบสีแดงทับทิม คุกเข่าที่บันไดท่าน้ำ ยื่นกระทงลงสู่ผิวน้ำ
+      {
+        gender: "female",
+        role: "floating",
+        x: -12.05, y: 0.44, z: 4.2,
+        rotY: Math.PI / 2 - 0.08,
+        primary: 0xf43f5e, // สไบสีแดงทับทิม
+        secondary: 0x9f1239, // ผ้าซิ่นสีแดงเลือดนก
+        gold: 0xfacc15,
+        pose: "releasing_krathong",
+      },
+      // 2. ชายหนุ่มชุดราชปะแตนสีงาช้าง โจงกระเบนสีกรมท่า คุกเข่าพนมมือไหว้อธิษฐานเคียงข้าง
+      {
+        gender: "male",
+        role: "floating",
+        x: -12.05, y: 0.44, z: 5.3,
+        rotY: Math.PI / 2,
+        primary: 0xfefce8, // เสื้อราชปะแตนสีงาช้าง
+        secondary: 0x1e3a8a, // โจงกระเบนสีกรมท่า
+        sash: 0xf59e0b,
+        pose: "praying_wai",
+      },
+      // 3. หญิงสาวชุดไทยสไบสีเขียวมรกต คุกเข่าที่บันไดท่าน้ำขั้นต่ำ ประคองกระทงแตะผิวน้ำ
+      {
+        gender: "female",
+        role: "floating",
+        x: -11.45, y: 0.22, z: 6.2,
+        rotY: Math.PI / 2 + 0.12,
+        primary: 0x10b981, // สไบสีเขียวมรกต
+        secondary: 0x065f46, // ผ้าซิ่นสีเขียวหยก
+        gold: 0xfbbf24,
+        pose: "releasing_krathong",
+      },
+      // 4. ชายหนุ่มชุดไทยสีม่วงหลวง ยืนถือกระทงดอกบัวสว่างไสวบนชานท่าน้ำ ชมวิวแม่น้ำ
+      {
+        gender: "male",
+        role: "floating",
+        x: -13.4, y: 0.89, z: 3.4,
+        rotY: Math.PI / 2 - 0.22,
+        primary: 0x7c3aed, // เสื้อผ้าไหมสีม่วง
+        secondary: 0x4c1d95, // โจงกระเบนสีม่วงเข้ม
+        sash: 0xfbbf24,
+        pose: "standing_holding",
+      },
+
+      // --- ข. กลุ่มคนเดินเล่นไปมาบนทางเดินและท่าน้ำ (Walking Promenade & Pier Strollers) ---
+      // 5. คู่รัก: หญิงสาวสไบชมพูกลีบบัว เดินทอดน่องริมทางเดินเลียบแม่น้ำ
+      {
+        gender: "female",
+        role: "walking",
+        x: -19.4, y: 1.5, z: -8.0,
+        primary: 0xec4899, // สไบชมพูกลีบบัว
+        secondary: 0xbe185d, // ผ้าซิ่นชมพูเข้ม
+        gold: 0xfbbf24,
+        minPos: -30.0, maxPos: 26.0,
+        axis: "z", dir: 1, speed: 1.25, walkPhase: 0.0,
+      },
+      // 6. คู่รัก: ชายหนุ่มเสื้อผ้าไหมสีทอง เดินเคียงข้างหญิงสาวสไบชมพู
+      {
+        gender: "male",
+        role: "walking",
+        x: -19.9, y: 1.5, z: -6.5,
+        primary: 0xf59e0b, // เสื้อไหมสีทอง
+        secondary: 0x881337, // โจงกระเบนสีแดงเลือดหมู
+        sash: 0xd97706,
+        minPos: -30.0, maxPos: 26.0,
+        axis: "z", dir: 1, speed: 1.25, walkPhase: 0.2,
+      },
+      // 7. คู่รัก 2: หญิงสาวสไบสีฟ้าคราม เดินรับลมบนลานหญ้าท่าน้ำสีเขียวมุ่งสู่แม่น้ำ
+      {
+        gender: "female",
+        role: "walking",
+        x: -18.2, y: 0.89, z: 1.5,
+        primary: 0x06b6d4, // สไบสีฟ้าคราม
+        secondary: 0x1e40af, // ผ้าซิ่นสีน้ำเงิน
+        gold: 0xfacc15,
+        minPos: -19.2, maxPos: -14.2,
+        axis: "x", dir: 1, speed: 1.05, walkPhase: 1.2,
+      },
+      // 8. คู่รัก 2: ชายหนุ่มเสื้อผ้าไหมสีส้มทอง เดินบนลานหญ้าท่าน้ำสีเขียว
+      {
+        gender: "male",
+        role: "walking",
+        x: -18.2, y: 0.89, z: 0.4,
+        primary: 0xea580c, // เสื้อไหมสีส้มทอง
+        secondary: 0x292524, // โจงกระเบนสีศิลา
+        sash: 0xfbbf24,
+        minPos: -19.2, maxPos: -14.2,
+        axis: "x", dir: 1, speed: 1.05, walkPhase: 1.4,
+      },
+      // 9. หญิงสาวสไบสีม่วงกล้วยไม้ เดินชมความงดงามฝั่งเรือนไทย
+      {
+        gender: "female",
+        role: "walking",
+        x: -21.6, y: 1.5, z: 18.0,
+        primary: 0xa855f7, // สไบสีม่วงกล้วยไม้
+        secondary: 0x6b21a8, // ผ้าซิ่นสีม่วงเม็ดมะปราง
+        gold: 0xfef08a,
+        minPos: -22.0, maxPos: 32.0,
+        axis: "z", dir: -1, speed: 1.15, walkPhase: 2.8,
+      },
+      // 10. ชายหนุ่มเสื้อผ้าไหมสีเขียวมรกต เดินเล่นเลียบตลิ่งแม่น้ำ
+      {
+        gender: "male",
+        role: "walking",
+        x: -21.2, y: 1.5, z: -18.0,
+        primary: 0x10b981, // เสื้อสีเขียวมรกต
+        secondary: 0x064e3b, // โจงกระเบนสีเขียวพสุธา
+        sash: 0xf59e0b,
+        minPos: -32.0, maxPos: 14.0,
+        axis: "z", dir: 1, speed: 1.3, walkPhase: 3.9,
+      },
+      // 11. หญิงสาวสไบสีทองบุษราคัม เดินเล่นช่วงทางเดินหน้าวัด
+      {
+        gender: "female",
+        role: "walking",
+        x: -18.8, y: 1.5, z: 12.0,
+        primary: 0xf59e0b, // สไบสีทองบุษราคัม
+        secondary: 0x92400e, // ผ้าซิ่นสีทองอำพัน
+        gold: 0xfef08a,
+        minPos: -10.0, maxPos: 34.0,
+        axis: "z", dir: -1, speed: 1.2, walkPhase: 4.5,
+      },
+    ];
+
+    characterConfigs.forEach((cfg) => {
+      const char = cfg.gender === "female"
+        ? this.buildFemaleThaiCharacter(cfg, skinMat, hairMat, goldMat)
+        : this.buildMaleThaiCharacter(cfg, skinMat, hairMat, goldMat);
+
+      this.scene.add(char.group);
+      this.thaiPeople.push(char);
+    });
+  }
+
+  // สร้างพร็อพกระทงจิ๋วส่องสว่าง (Miniature Krathong Prop) ในมือคนลอยกระทง
+  buildMiniKrathongProp(hasLight = true) {
+    const kGroup = new THREE.Group();
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.5 });
+    const petalMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 });
+
+    // ฐานใบตอง
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.08, 10), baseMat);
+    kGroup.add(base);
+
+    // กลีบกระทงพับสามเหลี่ยมรอบฐาน 8 กลีบ
+    for (let p = 0; p < 8; p++) {
+      const pAng = (p / 8) * Math.PI * 2;
+      const petal = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.09, 4), petalMat);
+      petal.position.set(Math.cos(pAng) * 0.17, 0.04, Math.sin(pAng) * 0.17);
+      petal.rotation.y = pAng;
+      petal.rotation.x = 0.45;
+      kGroup.add(petal);
+    }
+
+    // ดอกไม้ประดับด้านในกระทง
+    const flowerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+    const flower = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), flowerMat);
+    flower.position.set(0.04, 0.06, 0.04);
+    kGroup.add(flower);
+
+    // เล่มเทียนสีเหลืองนวล
+    const candle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, 0.11, 6),
+      new THREE.MeshBasicMaterial({ color: 0xfffbeb })
+    );
+    candle.position.set(0, 0.08, 0);
+    kGroup.add(candle);
+
+    // เปลวไฟเทียนสีส้มทอง
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.032, 0.09, 6),
+      new THREE.MeshBasicMaterial({ color: 0xff8800 })
+    );
+    flame.position.set(0, 0.17, 0);
+    kGroup.add(flame);
+
+    // ธูป 3 ดอก
+    const incenseMat = new THREE.MeshBasicMaterial({ color: 0x78350f });
+    for (let i = 0; i < 3; i++) {
+      const inc = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.16, 4), incenseMat);
+      inc.position.set(-0.04 + i * 0.03, 0.1, -0.04);
+      inc.rotation.z = (i - 1) * 0.1;
+      kGroup.add(inc);
+    }
+
+    // แสงเทียนส่องสว่างกระทบมือและผิวน้ำ
+    let light = null;
+    if (hasLight) {
+      light = new THREE.PointLight(0xff9922, 2.0, 5.0, 1.4);
+      light.position.set(0, 0.22, 0);
+      kGroup.add(light);
+    }
+
+    return { group: kGroup, flame, light };
+  }
+
+  // สร้างโมเดลผู้หญิงสวมชุดไทย (สไบเฉียงพลิ้วไหว, ผ้านุ่ง/ผ้าซิ่นไหม, เข็มขัดทอง, มวยผมเกล้าสูงพร้อมดอกไม้ไหว)
+  buildFemaleThaiCharacter(cfg, skinMat, hairMat, goldMat) {
+    const root = new THREE.Group();
+    root.position.set(cfg.x, cfg.y, cfg.z);
+    root.rotation.y = cfg.rotY || 0;
+
+    const body = new THREE.Group();
+    root.add(body);
+
+    // 1. ศีรษะและใบหน้า
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), skinMat);
+    head.scale.set(1.0, 1.15, 0.95);
+    head.position.y = 1.44;
+    body.add(head);
+
+    // ทรงผมเกล้ามวยสูง (High Chignon)
+    const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.085, 8, 8), hairMat);
+    chignon.position.set(0, 1.54, -0.11);
+    body.add(chignon);
+
+    // ดอกไม้ไหวปักผมสีทอง (Dok Mai Wai)
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, 0.07, 6), goldMat);
+    pin.position.set(0.07, 1.6, -0.09);
+    pin.rotation.z = -0.5;
+    body.add(pin);
+
+    // 2. ลำตัวและชุดไทยสไบเฉียง
+    const topMat = new THREE.MeshStandardMaterial({ color: cfg.primary, roughness: 0.5 });
+    const skirtMat = new THREE.MeshStandardMaterial({ color: cfg.secondary, roughness: 0.55 });
+
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.42, 10), topMat);
+    torso.position.y = 1.12;
+    body.add(torso);
+
+    // สไบเฉียงพาดบ่าซ้ายด้านหน้า
+    const sabai = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.46, 0.03), topMat);
+    sabai.position.set(0.02, 1.14, 0.07);
+    sabai.rotation.z = -0.34;
+    body.add(sabai);
+
+    // ชายสไบยาวทอดตัวด้านหลัง (พลิ้วไหวตามการก้าวเดิน)
+    const sabaiTail = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.62, 0.02), topMat);
+    sabaiTail.position.set(-0.07, 0.94, -0.11);
+    body.add(sabaiTail);
+
+    // เข็มขัดทองพร้อมหัวเข็มขัดลายไทย
+    const belt = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.022, 6, 14), goldMat);
+    belt.position.y = 0.91;
+    belt.rotation.x = Math.PI / 2;
+    body.add(belt);
+
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.03), goldMat);
+    buckle.position.set(0, 0.91, 0.17);
+    body.add(buckle);
+
+    // ผ้านุ่ง / ผ้าซิ่นไหมยาว
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.22, 0.68, 12), skirtMat);
+    skirt.position.y = 0.57;
+    body.add(skirt);
+
+    // เชิงผ้าซิ่นขลิบทองด้านล่าง
+    const hem = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.018, 6, 14), goldMat);
+    hem.position.y = 0.24;
+    hem.rotation.x = Math.PI / 2;
+    body.add(hem);
+
+    // 3. แขนทั้งสองข้าง
+    const lArm = new THREE.Group();
+    lArm.position.set(-0.23, 1.28, 0);
+    const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.038, 0.48), skinMat);
+    lArmMesh.position.y = -0.24;
+    lArm.add(lArmMesh);
+    body.add(lArm);
+
+    const rArm = new THREE.Group();
+    rArm.position.set(0.23, 1.28, 0);
+    const rArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.038, 0.48), skinMat);
+    rArmMesh.position.y = -0.24;
+    rArm.add(rArmMesh);
+    body.add(rArm);
+
+    // กำไลข้อมือทอง
+    [-0.23, 0.23].forEach((ax, idx) => {
+      const bangle = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.012, 6, 10), goldMat);
+      bangle.position.y = -0.42;
+      bangle.rotation.x = Math.PI / 2;
+      (idx === 0 ? lArm : rArm).add(bangle);
+    });
+
+    // 4. ขาทั้งสองข้าง
+    const lLeg = new THREE.Group();
+    lLeg.position.set(-0.09, 0.45, 0);
+    const lLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.042, 0.44), skinMat);
+    lLegMesh.position.y = -0.22;
+    lLeg.add(lLegMesh);
+    root.add(lLeg);
+
+    const rLeg = new THREE.Group();
+    rLeg.position.set(0.09, 0.45, 0);
+    const rLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.042, 0.44), skinMat);
+    rLegMesh.position.y = -0.22;
+    rLeg.add(rLegMesh);
+    root.add(rLeg);
+
+    let miniFlame = null;
+    let candleLight = null;
+
+    // ท่าทางเฉพาะกรณีคนลอยกระทงริมท่าน้ำ
+    if (cfg.role === "floating") {
+      if (cfg.pose === "releasing_krathong") {
+        body.position.y = -0.32;
+        torso.rotation.x = 0.28;
+        head.rotation.x = 0.25;
+        skirt.rotation.x = -0.45;
+        lLeg.rotation.x = -1.25;
+        rLeg.rotation.x = -1.25;
+        lLeg.position.set(-0.09, 0.18, -0.15);
+        rLeg.position.set(0.09, 0.18, -0.15);
+
+        // ยื่นมือทั้งสองข้างประคองกระทงลงสู่ผิวน้ำ
+        lArm.rotation.x = -0.72;
+        lArm.rotation.y = 0.32;
+        rArm.rotation.x = -0.72;
+        rArm.rotation.y = -0.32;
+
+        const miniK = this.buildMiniKrathongProp(true);
+        miniK.group.position.set(0, 0.42, 0.52);
+        body.add(miniK.group);
+        miniFlame = miniK.flame;
+        candleLight = miniK.light;
+      }
+    }
+
+    return {
+      group: root,
+      body,
+      lArm,
+      rArm,
+      lLeg,
+      rLeg,
+      sabaiTail,
+      miniFlame,
+      candleLight,
+      baseY: cfg.y,
+      bodyBaseY: body.position.y,
+      speed: cfg.speed || 1.0,
+      walkPhase: cfg.walkPhase || 0,
+      dir: cfg.dir || 1,
+      minPos: cfg.minPos,
+      maxPos: cfg.maxPos,
+      axis: cfg.axis || "z",
+      role: cfg.role,
+      phase: Math.random() * Math.PI * 2,
+    };
+  }
+
+  // สร้างโมเดลผู้ชายสวมชุดไทย (เสื้อราชปะแตน/เสื้อผ้าไหมคอกลม, โจงกระเบนพอง, ผ้าคาดเอวไหม, รองเท้าหัวตัด)
+  buildMaleThaiCharacter(cfg, skinMat, hairMat, goldMat) {
+    const root = new THREE.Group();
+    root.position.set(cfg.x, cfg.y, cfg.z);
+    root.rotation.y = cfg.rotY || 0;
+
+    const body = new THREE.Group();
+    root.add(body);
+
+    // 1. ศีรษะและทรงผมหวีเรียบ
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.165, 12, 10), skinMat);
+    head.scale.set(1.0, 1.15, 0.95);
+    head.position.y = 1.50;
+    body.add(head);
+
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.175, 10, 8), hairMat);
+    hair.position.set(0, 1.54, -0.02);
+    body.add(hair);
+
+    // 2. ลำตัวและเสื้อราชปะแตน / เสื้อผ้าไหม
+    const shirtMat = new THREE.MeshStandardMaterial({ color: cfg.primary, roughness: 0.55 });
+    const chongMat = new THREE.MeshStandardMaterial({ color: cfg.secondary, roughness: 0.6 });
+    const sashMat = new THREE.MeshStandardMaterial({ color: cfg.sash || 0xf59e0b, roughness: 0.5 });
+
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.20, 0.50, 10), shirtMat);
+    torso.position.y = 1.18;
+    body.add(torso);
+
+    // คอเสื้อราชปะแตน (Mandarin Collar)
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.022, 6, 12), shirtMat);
+    collar.position.y = 1.43;
+    collar.rotation.x = Math.PI / 2;
+    body.add(collar);
+
+    // กระดุมทอง 4 เม็ดหน้าอก
+    for (let b = 0; b < 4; b++) {
+      const btn = new THREE.Mesh(new THREE.SphereGeometry(0.018, 4, 4), goldMat);
+      btn.position.set(0, 1.38 - b * 0.08, 0.22);
+      body.add(btn);
+    }
+
+    // ผ้าคาดเอวไหม (Sash / ผ้าเคียนพุง)
+    const sash = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.23, 0.14, 10), sashMat);
+    sash.position.y = 0.93;
+    body.add(sash);
+
+    const sashTie = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.32, 0.04), sashMat);
+    sashTie.position.set(-0.16, 0.82, 0.16);
+    body.add(sashTie);
+
+    // กางเกงโจงกระเบนผ้าไหมพองทรงสวยงาม
+    const chong = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), chongMat);
+    chong.scale.set(1.18, 0.9, 1.12);
+    chong.position.y = 0.76;
+    body.add(chong);
+
+    // 3. แขนทั้งสองข้าง
+    const lArm = new THREE.Group();
+    lArm.position.set(-0.27, 1.35, 0);
+    const lSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.32), shirtMat);
+    lSleeve.position.y = -0.16;
+    lArm.add(lSleeve);
+    const lHand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 0.24), skinMat);
+    lHand.position.y = -0.40;
+    lArm.add(lHand);
+    body.add(lArm);
+
+    const rArm = new THREE.Group();
+    rArm.position.set(0.27, 1.35, 0);
+    const rSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.32), shirtMat);
+    rSleeve.position.y = -0.16;
+    rArm.add(rSleeve);
+    const rHand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 0.24), skinMat);
+    rHand.position.y = -0.40;
+    rArm.add(rHand);
+    body.add(rArm);
+
+    // 4. ขาทั้งสองข้าง
+    const lLeg = new THREE.Group();
+    lLeg.position.set(-0.12, 0.62, 0);
+    const lLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.052, 0.62), skinMat);
+    lLegMesh.position.y = -0.31;
+    lLeg.add(lLegMesh);
+    root.add(lLeg);
+
+    const rLeg = new THREE.Group();
+    rLeg.position.set(0.12, 0.62, 0);
+    const rLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.052, 0.62), skinMat);
+    rLegMesh.position.y = -0.31;
+    rLeg.add(rLegMesh);
+    root.add(rLeg);
+
+    let miniFlame = null;
+    let candleLight = null;
+
+    // ท่าทางเฉพาะกรณีคนลอยกระทงริมท่าน้ำ
+    if (cfg.role === "floating") {
+      if (cfg.pose === "praying_wai") {
+        body.position.y = -0.35;
+        torso.rotation.x = 0.18;
+        head.rotation.x = 0.22;
+        lLeg.rotation.x = -1.25;
+        rLeg.rotation.x = -1.25;
+        lLeg.position.set(-0.12, 0.20, -0.16);
+        rLeg.position.set(0.12, 0.20, -0.16);
+
+        // ท่าพนมมือไหว้อธิษฐาน (Wai Prayer Pose)
+        lArm.rotation.x = -0.88;
+        lArm.rotation.z = -0.52;
+        rArm.rotation.x = -0.88;
+        rArm.rotation.z = 0.52;
+      } else if (cfg.pose === "standing_holding") {
+        // ยืนถือกระทงสว่างไสวที่ระดับอก
+        lArm.rotation.x = -0.65;
+        lArm.rotation.y = 0.35;
+        rArm.rotation.x = -0.65;
+        rArm.rotation.y = -0.35;
+
+        const miniK = this.buildMiniKrathongProp(true);
+        miniK.group.position.set(0, 0.92, 0.34);
+        body.add(miniK.group);
+        miniFlame = miniK.flame;
+        candleLight = miniK.light;
+      }
+    }
+
+    return {
+      group: root,
+      body,
+      lArm,
+      rArm,
+      lLeg,
+      rLeg,
+      miniFlame,
+      candleLight,
+      baseY: cfg.y,
+      bodyBaseY: body.position.y,
+      speed: cfg.speed || 1.0,
+      walkPhase: cfg.walkPhase || 0,
+      dir: cfg.dir || 1,
+      minPos: cfg.minPos,
+      maxPos: cfg.maxPos,
+      axis: cfg.axis || "z",
+      role: cfg.role,
+      phase: Math.random() * Math.PI * 2,
+    };
+  }
+
+  /* ==========================================================
      USER KRATHONG MESH
   ========================================================== */
   buildKrathongMesh(data) {
@@ -2437,7 +2955,78 @@ export class LoyKrathongScene {
       this.starField.rotation.y = time * 0.002;
     }
 
-    // 11. Render
+    // 11. Animated Thai People (คนสวมชุดไทยหลากสี เดินเล่น และลอยกระทงริมท่าน้ำ)
+    if (this.thaiPeople) {
+      this.thaiPeople.forEach((char) => {
+        if (char.role === "walking") {
+          // คำนวณเฟสรอบก้าวเดิน (Walking Cycle)
+          char.walkPhase += char.speed * 0.045;
+          const phase = char.walkPhase;
+
+          // การแกว่งขาสลับไปมาอย่างเป็นธรรมชาติ
+          const legSwing = Math.sin(phase) * 0.42;
+          char.lLeg.rotation.x = legSwing;
+          char.rLeg.rotation.x = -legSwing;
+
+          // การแกว่งแขนสลับตรงข้ามกับขา
+          char.lArm.rotation.x = -legSwing * 0.85;
+          char.rArm.rotation.x = legSwing * 0.85;
+
+          // การยกตัวขึ้น-ลงตามจังหวะก้าวเดิน (Vertical Gait Bobbing)
+          char.body.position.y = (char.bodyBaseY || 0) + Math.abs(Math.sin(phase)) * 0.038;
+
+          // ชายสไบพลิ้วไหวตามจังหวะก้าว
+          if (char.sabaiTail) {
+            char.sabaiTail.rotation.x = Math.sin(phase) * 0.12 - 0.08;
+          }
+
+          // เคลื่อนที่ไปตามเส้นทางเดิน
+          if (char.axis === "x") {
+            char.group.position.x += char.dir * char.speed * 0.022;
+            if (char.group.position.x > char.maxPos) {
+              char.dir = -1;
+              char.group.rotation.y = -Math.PI / 2;
+            } else if (char.group.position.x < char.minPos) {
+              char.dir = 1;
+              char.group.rotation.y = Math.PI / 2;
+            }
+          } else {
+            char.group.position.z += char.dir * char.speed * 0.024;
+            if (char.group.position.z > char.maxPos) {
+              char.dir = -1;
+              char.group.rotation.y = Math.PI;
+            } else if (char.group.position.z < char.minPos) {
+              char.dir = 1;
+              char.group.rotation.y = 0;
+            }
+          }
+        } else if (char.role === "floating") {
+          // แอนิเมชันการหายใจและการประคองกระทงแผ่วเบา
+          const breath = Math.sin(time * 2.2 + char.phase) * 0.018;
+          char.body.position.y = (char.bodyBaseY || 0) + breath;
+
+          // แขนขยับประคองกระทงไหวเล็กน้อยตามระลอกคลื่น
+          if (char.lArm && char.rArm && !char.miniFlame && !char.candleLight) {
+            // ท่านั่งพนมมือไหว้อธิษฐาน (Wai)
+            char.lArm.rotation.x = -0.88 + Math.sin(time * 1.5 + char.phase) * 0.02;
+            char.rArm.rotation.x = -0.88 + Math.sin(time * 1.5 + char.phase) * 0.02;
+          }
+
+          // เปลวไฟเทียนในกระทงระยิบระยับ
+          if (char.miniFlame) {
+            const fDance = 0.9 + Math.sin(time * 9.0 + char.phase) * 0.22;
+            char.miniFlame.scale.set(fDance, fDance * 1.25, fDance);
+          }
+
+          // แสงไฟกะพริบสะท้อนประกายน้ำ
+          if (char.candleLight) {
+            char.candleLight.intensity = 2.0 + Math.sin(time * 11.0 + char.phase) * 0.6;
+          }
+        }
+      });
+    }
+
+    // 12. Render
     this.renderer.render(this.scene, this.camera);
   }
 
