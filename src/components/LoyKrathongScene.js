@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { OrbitControls, GLTFLoader } from "three-stdlib";
+import { OrbitControls } from "three-stdlib";
 
 export class LoyKrathongScene {
   constructor(container, onSelectKrathong) {
@@ -273,6 +273,97 @@ export class LoyKrathongScene {
       fCtx.stroke();
     }
     this.palmFrondTexture = new THREE.CanvasTexture(frondCanvas);
+
+    // 6. Silver Corrugated Standing-Seam Metal Roof (ตามรูปแนบ 2 และ 3)
+    const roofCanvas = document.createElement("canvas");
+    roofCanvas.width = 512;
+    roofCanvas.height = 512;
+    const rCtx = roofCanvas.getContext("2d");
+    rCtx.fillStyle = "#bcc5ce";
+    rCtx.fillRect(0, 0, 512, 512);
+
+    const seamSpacing = 16;
+    for (let x = 0; x < 512; x += seamSpacing) {
+      rCtx.fillStyle = "#8795a3";
+      rCtx.fillRect(x, 0, 2, 512);
+      rCtx.fillStyle = "#eaf0f5";
+      rCtx.fillRect(x + 2, 0, 3, 512);
+      rCtx.fillStyle = "#cbd5df";
+      rCtx.fillRect(x + 5, 0, seamSpacing - 5, 512);
+    }
+    this.silverRoofTexture = new THREE.CanvasTexture(roofCanvas);
+    this.silverRoofTexture.wrapS = THREE.RepeatWrapping;
+    this.silverRoofTexture.wrapT = THREE.RepeatWrapping;
+    this.silverRoofTexture.repeat.set(3, 3);
+
+    // 7. Horizontal Teak Wood Siding / Clapboard (ตามรูปแนบ 2 และ 3)
+    const sidingCanvas = document.createElement("canvas");
+    sidingCanvas.width = 512;
+    sidingCanvas.height = 512;
+    const sCtx = sidingCanvas.getContext("2d");
+    sCtx.fillStyle = "#825d34";
+    sCtx.fillRect(0, 0, 512, 512);
+
+    const plankH = 24;
+    for (let y = 0; y < 512; y += plankH) {
+      sCtx.fillStyle = Math.floor(y / plankH) % 2 === 0 ? "#8c6538" : "#7c552b";
+      sCtx.fillRect(0, y, 512, plankH - 3);
+
+      sCtx.fillStyle = "#422812";
+      sCtx.fillRect(0, y + plankH - 3, 512, 3);
+
+      sCtx.fillStyle = "rgba(255, 230, 185, 0.16)";
+      sCtx.fillRect(0, y + 1, 512, 2);
+    }
+    this.teakSidingTexture = new THREE.CanvasTexture(sidingCanvas);
+    this.teakSidingTexture.wrapS = THREE.RepeatWrapping;
+    this.teakSidingTexture.wrapT = THREE.RepeatWrapping;
+    this.teakSidingTexture.repeat.set(2, 4);
+
+    // 8. Teak Terrace Deck Planks
+    const deckCanvas = document.createElement("canvas");
+    deckCanvas.width = 512;
+    deckCanvas.height = 512;
+    const dCtx = deckCanvas.getContext("2d");
+    dCtx.fillStyle = "#5c3318";
+    dCtx.fillRect(0, 0, 512, 512);
+
+    const boardW = 20;
+    for (let x = 0; x < 512; x += boardW) {
+      dCtx.fillStyle = Math.floor(x / boardW) % 2 === 0 ? "#6a3b1c" : "#562d14";
+      dCtx.fillRect(x, 0, boardW - 2, 512);
+
+      dCtx.fillStyle = "#2c1508";
+      dCtx.fillRect(x + boardW - 2, 0, 2, 512);
+    }
+    this.deckPlankTexture = new THREE.CanvasTexture(deckCanvas);
+    this.deckPlankTexture.wrapS = THREE.RepeatWrapping;
+    this.deckPlankTexture.wrapT = THREE.RepeatWrapping;
+    this.deckPlankTexture.repeat.set(4, 4);
+
+    // 9. Tropical Shade Tree Foliage Leaves (ตามรูปแนบ 2 และ 3)
+    const leafCanvas = document.createElement("canvas");
+    leafCanvas.width = 256;
+    leafCanvas.height = 256;
+    const lCtx = leafCanvas.getContext("2d");
+    lCtx.clearRect(0, 0, 256, 256);
+
+    for (let i = 0; i < 90; i++) {
+      const lx = 25 + Math.random() * 206;
+      const ly = 25 + Math.random() * 206;
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 10 + Math.random() * 12;
+
+      lCtx.save();
+      lCtx.translate(lx, ly);
+      lCtx.rotate(ang);
+      lCtx.beginPath();
+      lCtx.ellipse(0, 0, rad, rad * 0.45, 0, 0, Math.PI * 2);
+      lCtx.fillStyle = ["#2d6a2f", "#3c823f", "#1f4f21", "#48994b"][i % 4];
+      lCtx.fill();
+      lCtx.restore();
+    }
+    this.leafFoliageTexture = new THREE.CanvasTexture(leafCanvas);
   }
 
   /* ==========================================================
@@ -599,254 +690,581 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     REALISTIC THAI TRADITIONAL TEAK HOUSE
-     โหลดโมเดล 3D จาก 3D Warehouse (thai_house.glb)
+     AUTHENTIC THAI STILT HOUSE COMPOUND (หมู่เรือนไทยยกใต้ถุนสูง)
+     ออกแบบตรงตามรูปแนบที่ 2 และ 3 ความสมจริง 80-90%+
+     - ฐานสนามหญ้าและคันกั้นดินคอนกรีต
+     - เสาไม้เต็งยกใต้ถุนสูง พร้อมฐานตอม่อคอนกรีตทุกต้น
+     - ชานเรือนไม้กระดานกว้างเชื่อมต่อหมู่เรือน
+     - ซุ้มบันไดทางขึ้นคู่ (2 ฝั่ง) มีหลังคาคลุมและราวลูกกรงฉลุ
+     - ศาลาโถงชานเรือนเปิดโล่ง พร้อมม้านั่งไม้พนักพิงยาว
+     - เรือนนอนฝาไม้สักทองแนวนอน พร้อมหน้าต่างบานกระทุ้งมีไม้ค้ำเปิดออก
+     - เรือนหลังซ้ายเชื่อมต่อทางเดิน
+     - หลังคาทรงจั่วมนิลา/ปั้นหยา เมทัลชีท/ลอนคู่สีเทาเงิน เชิงชายสีขาว ยอดกาแล
+     - ต้นไม้ใหญ่ร่มรื่นทรงพุ่มหนาเสมือนจริงด้านหลังเรือน
   ========================================================== */
   createRealisticThaiHouse() {
-    const loader = new GLTFLoader();
-    const baseUrl = import.meta.env.BASE_URL || "/";
-    const modelUrl = `${baseUrl.endsWith("/") ? baseUrl : baseUrl + "/"}models/thai_house.glb`;
+    const compound = new THREE.Group();
+    // Position on riverbank lawn, angled gracefully toward river and camera
+    compound.position.set(-27, 0.4, -3);
+    compound.rotation.y = 0.16;
 
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        const houseModel = gltf.scene;
+    const mats = {
+      concrete: new THREE.MeshStandardMaterial({ color: 0xd6dbe0, roughness: 0.82 }),
+      grass: new THREE.MeshStandardMaterial({ color: 0x3d6624, roughness: 0.9 }),
+      silverRoof: new THREE.MeshStandardMaterial({ map: this.silverRoofTexture, roughness: 0.42, metalness: 0.28 }),
+      whiteFascia: new THREE.MeshStandardMaterial({ color: 0xf5f7fa, roughness: 0.35 }),
+      teakSiding: new THREE.MeshStandardMaterial({ map: this.teakSidingTexture, roughness: 0.65 }),
+      deckPlank: new THREE.MeshStandardMaterial({ map: this.deckPlankTexture, roughness: 0.7 }),
+      wood: new THREE.MeshStandardMaterial({ color: 0x7c3815, roughness: 0.62 }),
+      darkWood: new THREE.MeshStandardMaterial({ color: 0x481e0a, roughness: 0.72 }),
+      windowInterior: new THREE.MeshBasicMaterial({ color: 0x140c06 }),
+      lanternGlow: new THREE.MeshBasicMaterial({ color: 0xffaa33 }),
+      bark: new THREE.MeshStandardMaterial({ map: this.barkTexture, roughness: 0.85 }),
+      leafMat: new THREE.MeshStandardMaterial({
+        map: this.leafFoliageTexture,
+        transparent: true,
+        alphaTest: 0.35,
+        roughness: 0.65,
+        side: THREE.DoubleSide
+      }),
+      leafSolidMat: new THREE.MeshStandardMaterial({ color: 0x276328, roughness: 0.7 }),
+      leafDarkSolidMat: new THREE.MeshStandardMaterial({ color: 0x1a4a1c, roughness: 0.75 })
+    };
 
-        houseModel.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            if (child.material) {
-              child.material.side = THREE.DoubleSide;
-              child.material.roughness = Math.max(0.4, child.material.roughness || 0.6);
-            }
-          }
-        });
+    // 1. Raised Plot & Concrete Retaining Curb
+    this.buildCompoundGroundPlot(compound, mats);
 
-        // Compute model dimensions and scale to fit estate
-        const box = new THREE.Box3().setFromObject(houseModel);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
+    // 2. Concrete Footings & Elevated Stilt Columns
+    this.buildStiltFoundation(compound, mats);
 
-        const maxDim = Math.max(size.x, size.z);
-        const targetSize = 22.0;
-        const scale = targetSize / maxDim;
+    // 3. Elevated Main Terrace (ชานเรือนกลางแจ้ง)
+    this.buildElevatedTerrace(compound, mats);
 
-        houseModel.scale.set(scale, scale, scale);
-        // Center houseModel so its horizontal center is (0,0) and base is at y = 0
-        houseModel.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+    // 4. Two Covered Entrance Staircases (ซุ้มบันไดหน้าคู่)
+    this.buildFrontStaircases(compound, mats);
 
-        const houseWrapper = new THREE.Group();
-        houseWrapper.add(houseModel);
-        houseWrapper.position.set(-27, 1.5, -6);
-        houseWrapper.rotation.y = Math.PI * 0.12;
+    // 5. Front Open Pavilion with Bench (ศาลาโถงชานเรือนพร้อมม้านั่งยาว)
+    this.buildFrontOpenPavilion(compound, mats);
 
-        this.scene.add(houseWrapper);
-        this.customHouse = houseWrapper;
+    // 6. Main Teak House with Open Awning Shutters (เรือนนอนฝาไม้สักทอง หน้าต่างบานกระทุ้ง)
+    this.buildMainTeakHouse(compound, mats);
 
-        // Warm atmospheric lighting for the 3D model
-        const houseWarmLight = new THREE.PointLight(0xffaa33, 4.5, 35, 1.3);
-        houseWarmLight.position.set(-25, 8, -4);
-        this.scene.add(houseWarmLight);
+    // 7. Rear Left Pavilion / Extension (เรือนหลังซ้าย)
+    this.buildRearLeftPavilion(compound, mats);
 
-        const houseWarmLight2 = new THREE.PointLight(0xff7711, 3.5, 25, 1.4);
-        houseWarmLight2.position.set(-20, 5, 2);
-        this.scene.add(houseWarmLight2);
-      },
-      undefined,
-      (err) => {
-        console.warn("Custom GLB load fallback to procedural house:", err);
-        this.buildProceduralThaiHouse();
-      }
-    );
+    // 8. Lush Tropical Shade Tree Behind House (ต้นไม้ใหญ่ร่มรื่นหลังเรือน)
+    this.buildCompoundShadeTree(compound, mats);
 
-    const salaGroup = this.buildThaiSalaMesh();
-    salaGroup.position.set(-21, 1.8, 16);
-    salaGroup.scale.set(1.2, 1.2, 1.2);
-    this.scene.add(salaGroup);
+    // 9. Warm Illumination
+    const houseWarmLight = new THREE.PointLight(0xffaa33, 4.8, 38, 1.3);
+    houseWarmLight.position.set(-24, 8, -3);
+    this.scene.add(houseWarmLight);
+
+    const houseWarmLight2 = new THREE.PointLight(0xff7711, 3.8, 28, 1.4);
+    houseWarmLight2.position.set(-19, 5, 3);
+    this.scene.add(houseWarmLight2);
+
+    this.scene.add(compound);
+    this.customHouse = compound;
 
     this.createRiverbankPromenade();
   }
 
-  buildProceduralThaiHouse() {
-    const house = new THREE.Group();
-    house.position.set(-25, 1.6, -6);
-    house.scale.set(1.35, 1.35, 1.35);
+  // 1. Raised Ground Plot & Concrete Retaining Curb (ฐานสนามหญ้าและคันกั้นดิน)
+  buildCompoundGroundPlot(compound, mats) {
+    const retainingWall = new THREE.Mesh(new THREE.BoxGeometry(26.6, 0.7, 32.6), mats.concrete);
+    retainingWall.position.set(0, 0.35, 0);
+    retainingWall.receiveShadow = true;
+    compound.add(retainingWall);
 
-    const teakMat = new THREE.MeshStandardMaterial({
-      map: this.pagonTexture,
-      roughness: 0.65,
-    });
-    const woodBeamMat = new THREE.MeshStandardMaterial({
-      color: 0x4e2810,
-      roughness: 0.7,
-    });
-    const plinthMat = new THREE.MeshStandardMaterial({
-      color: 0x78716c,
-      roughness: 0.8,
-    });
-    const roofMat = new THREE.MeshStandardMaterial({
-      map: this.roofTileTexture,
-      roughness: 0.45,
-    });
-    const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xf5b041,
-      metalness: 0.6,
-      roughness: 0.3,
-    });
-    const pediMat = new THREE.MeshBasicMaterial({
-      map: this.kanokTexture,
-    });
-    const warmLightMat = new THREE.MeshBasicMaterial({ color: 0xffdf78 });
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(26.2, 0.25, 32.2), mats.grass);
+    lawn.position.set(0, 0.72, 0);
+    lawn.receiveShadow = true;
+    compound.add(lawn);
 
-    const pillarRows = [-4.5, 0, 4.5];
-    const pillarCols = [-3.5, -1.2, 1.2, 3.5];
+    // Stone entrance pads
+    [-7.2, 5.8].forEach((sx) => {
+      const stonePad = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 1.6), mats.concrete);
+      stonePad.position.set(sx, 0.86, 12.2);
+      stonePad.receiveShadow = true;
+      compound.add(stonePad);
+    });
+  }
 
-    pillarCols.forEach((pz) => {
-      pillarRows.forEach((px) => {
-        const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.7), plinthMat);
-        plinth.position.set(px, 0.3, pz);
-        house.add(plinth);
+  // 2. Concrete Footings & Stilt Foundation (ฐานตอม่อคอนกรีตและเสาไม้ใต้ถุน)
+  buildStiltFoundation(compound, mats) {
+    const stiltLocations = [
+      // Left staircase
+      [-8.4, 8.2], [-8.4, 10.6], [-6.0, 8.2], [-6.0, 10.6],
+      // Right staircase
+      [4.6, 8.2], [4.6, 10.6], [7.0, 8.2], [7.0, 10.6],
+      // Front Open Pavilion
+      [-8.6, 1.2], [-3.8, 1.2], [-8.6, 6.2], [-3.8, 6.2],
+      // Central Terrace
+      [-3.8, -2.5], [1.8, -2.5], [-3.8, 1.2], [1.8, 1.2], [1.8, 6.2],
+      // Main Teak House
+      [2.8, -4.5], [7.8, -4.5], [2.8, 0.5], [7.8, 0.5], [2.8, 5.5], [7.8, 5.5],
+      // Rear Pavilion
+      [-8.6, -7.5], [-3.8, -7.5], [-8.6, -3.0], [-3.8, -3.0]
+    ];
 
-        const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 4.2, 10), woodBeamMat);
-        stilt.position.set(px * 0.96, 2.4, pz * 0.96);
-        stilt.castShadow = true;
-        house.add(stilt);
-      });
+    stiltLocations.forEach(([px, pz]) => {
+      // Concrete footing plinth (ฐานเสาคอนกรีตสีเทาขาว)
+      const footing = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 0.55), mats.concrete);
+      footing.position.set(px, 0.95, pz);
+      footing.castShadow = true;
+      footing.receiveShadow = true;
+      compound.add(footing);
+
+      // Wooden stilt column (เสาไม้เต็งสีน้ำตาลแดง)
+      const stilt = new THREE.Mesh(new THREE.BoxGeometry(0.28, 2.7, 0.28), mats.wood);
+      stilt.position.set(px, 2.4, pz);
+      stilt.castShadow = true;
+      compound.add(stilt);
     });
 
-    const beamX = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.45, 0.3), woodBeamMat);
-    beamX.position.set(0, 4.4, 0);
-    house.add(beamX);
+    // Horizontal structural floor joists
+    const joistConfigs = [
+      { x: -6.2, z: 3.7, w: 5.2, d: 5.2 },
+      { x: 5.3, z: 0.5, w: 5.4, d: 10.4 },
+      { x: -1.0, z: 1.8, w: 4.8, d: 9.2 },
+      { x: -6.2, z: -5.2, w: 5.2, d: 5.0 }
+    ];
 
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.35, 9.6), woodBeamMat);
-    deck.position.set(0, 4.6, 0);
+    joistConfigs.forEach((jc) => {
+      const beamX = new THREE.Mesh(new THREE.BoxGeometry(jc.w + 0.4, 0.25, 0.25), mats.darkWood);
+      beamX.position.set(jc.x, 3.55, jc.z);
+      compound.add(beamX);
+    });
+  }
+
+  // 3. Elevated Main Terrace (ชานเรือนกลางแจ้งพร้อมระเบียงลูกกรงไม้โปร่ง)
+  buildElevatedTerrace(compound, mats) {
+    // Terrace floor deck
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.18, 9.4), mats.deckPlank);
+    deck.position.set(-1.0, 3.65, 1.8);
     deck.castShadow = true;
     deck.receiveShadow = true;
-    house.add(deck);
+    compound.add(deck);
 
-    const railingBack = new THREE.Mesh(new THREE.BoxGeometry(10.8, 0.8, 0.15), woodBeamMat);
-    railingBack.position.set(0, 5.2, -4.5);
-    house.add(railingBack);
+    // Terrace perimeter railing (ด้านหน้าชานเรือน)
+    const frontRailTop = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.12, 0.12), mats.wood);
+    frontRailTop.position.set(-1.0, 4.45, 6.45);
+    compound.add(frontRailTop);
 
-    const jarGeo = new THREE.CylinderGeometry(0.55, 0.35, 1.1, 14);
-    const jarMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.3 });
-    const jar = new THREE.Mesh(jarGeo, jarMat);
-    jar.position.set(4.2, 5.2, 3.2);
-    house.add(jar);
+    const frontRailBot = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.08, 0.08), mats.wood);
+    frontRailBot.position.set(-1.0, 3.82, 6.45);
+    compound.add(frontRailBot);
 
-    const bodyGeo = new THREE.BoxGeometry(7.8, 4.4, 6.0);
-    const body = new THREE.Mesh(bodyGeo, teakMat);
-    body.position.set(-0.8, 6.8, -0.6);
-    body.castShadow = true;
-    body.receiveShadow = true;
-    house.add(body);
-
-    [-2.2, 1.2].forEach((wx) => {
-      const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.0, 0.2), woodBeamMat);
-      winFrame.position.set(-0.8 + wx, 7.0, 2.45);
-      house.add(winFrame);
-
-      const winGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.6), warmLightMat);
-      winGlow.position.set(-0.8 + wx, 7.0, 2.56);
-      house.add(winGlow);
-
-      for (let b = -0.35; b <= 0.35; b += 0.35) {
-        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 6), woodBeamMat);
-        bar.position.set(-0.8 + wx + b, 7.0, 2.58);
-        house.add(bar);
-      }
-    });
-
-    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.8, 0.15), woodBeamMat);
-    doorFrame.position.set(2.4, 6.2, 2.42);
-    house.add(doorFrame);
-
-    const roofGeo = new THREE.ConeGeometry(6.4, 4.2, 4);
-    roofGeo.rotateY(Math.PI / 4);
-    const roof = new THREE.Mesh(roofGeo, roofMat);
-    roof.scale.set(1.42, 0.88, 1.15);
-    roof.position.set(-0.8, 10.4, -0.6);
-    roof.castShadow = true;
-    house.add(roof);
-
-    const eave = new THREE.Mesh(new THREE.BoxGeometry(10.8, 0.3, 8.8), roofMat);
-    eave.position.set(-0.8, 9.2, -0.6);
-    house.add(eave);
-
-    const pediment = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.4), pediMat);
-    pediment.position.set(-0.8, 9.8, 2.45);
-    house.add(pediment);
-
-    [1, -1].forEach((dir) => {
-      const chofa = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.8, 6), goldMat);
-      chofa.position.set(-0.8, 12.3, -0.6 + dir * 3.8);
-      chofa.rotation.x = dir * 0.38;
-      house.add(chofa);
-
-      const hangHongL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 1.0, 5), goldMat);
-      hangHongL.position.set(-5.6, 9.1, -0.6 + dir * 4.2);
-      hangHongL.rotation.z = -0.5;
-      house.add(hangHongL);
-
-      const hangHongR = new THREE.Mesh(new THREE.ConeGeometry(0.12, 1.0, 5), goldMat);
-      hangHongR.position.set(4.0, 9.1, -0.6 + dir * 4.2);
-      hangHongR.rotation.z = 0.5;
-      house.add(hangHongR);
-    });
-
-    const lanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa22 });
-    [-1.5, 1.5].forEach((lx) => {
-      const hLantern = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 0.7, 8), lanternMat);
-      hLantern.position.set(lx, 8.5, 3.2);
-      house.add(hLantern);
-    });
-
-    for (let st = 0; st < 6; st++) {
-      const stair = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.25, 0.6), woodBeamMat);
-      stair.position.set(3.2, 4.4 - st * 0.7, 4.6 + st * 0.7);
-      house.add(stair);
+    for (let rx = -3.6; rx <= 1.6; rx += 0.38) {
+      const baluster = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.62, 0.06), mats.wood);
+      baluster.position.set(rx, 4.12, 6.45);
+      compound.add(baluster);
     }
-
-    this.scene.add(house);
-
-    const salaGroup = this.buildThaiSalaMesh();
-    salaGroup.position.set(-21, 1.8, 16);
-    salaGroup.scale.set(1.2, 1.2, 1.2);
-    this.scene.add(salaGroup);
-
-    this.createRiverbankPromenade();
   }
 
-  buildThaiSalaMesh() {
-    const sala = new THREE.Group();
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x4e2810, roughness: 0.7 });
-    const roofMat = new THREE.MeshStandardMaterial({ map: this.roofTileTexture, roughness: 0.45 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf5b041, metalness: 0.7 });
+  // 4. Two Covered Entrance Staircases (ซุ้มบันไดคู่พร้อมหลังคาคลุม)
+  buildFrontStaircases(compound, mats) {
+    const stairXCoords = [-7.2, 5.8];
 
-    const colGeo = new THREE.CylinderGeometry(0.18, 0.24, 3.6, 8);
-    [[-2, 1.8, -2], [2, 1.8, -2], [-2, 1.8, 2], [2, 1.8, 2]].forEach(([x, y, z]) => {
-      const col = new THREE.Mesh(colGeo, woodMat);
-      col.position.set(x, y, z);
-      sala.add(col);
+    stairXCoords.forEach((sx) => {
+      const stairGroup = new THREE.Group();
+      stairGroup.position.set(sx, 0, 0);
+
+      const numSteps = 7;
+      for (let s = 0; s < numSteps; s++) {
+        const stepY = 0.9 + s * 0.39;
+        const stepZ = 10.8 - s * 0.58;
+
+        const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.18, 0.52), mats.wood);
+        stepMesh.position.set(0, stepY, stepZ);
+        stepMesh.castShadow = true;
+        stepMesh.receiveShadow = true;
+        stairGroup.add(stepMesh);
+
+        // Stair handrail balusters on both sides
+        [-1.0, 1.0].forEach((sideX) => {
+          const bal = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), mats.wood);
+          bal.position.set(sideX, stepY + 0.44, stepZ);
+          stairGroup.add(bal);
+        });
+      }
+
+      // Diagonal handrails
+      [-1.0, 1.0].forEach((sideX) => {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 4.5), mats.wood);
+        rail.position.set(sideX, 2.65, 9.1);
+        rail.rotation.x = 0.58;
+        stairGroup.add(rail);
+      });
+
+      // 4 tall staircase posts supporting canopy roof
+      const postCoords = [[-1.2, 8.2], [1.2, 8.2], [-1.2, 10.6], [1.2, 10.6]];
+      postCoords.forEach(([px, pz]) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, 4.4, 0.24), mats.wood);
+        post.position.set(px, 3.2, pz);
+        post.castShadow = true;
+        stairGroup.add(post);
+
+        // Carved eave bracket (คันทวย)
+        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.35), mats.wood);
+        bracket.position.set(px, 5.15, pz + 0.15);
+        bracket.rotation.x = -0.4;
+        stairGroup.add(bracket);
+      });
+
+      // Staircase canopy roof (หลังคาซุ้มบันได)
+      const canopyRoof = this.buildThaiGableRoof(3.2, 3.8, 1.25, mats, true, 0.85);
+      canopyRoof.position.set(0, 5.5, 9.4);
+      stairGroup.add(canopyRoof);
+
+      compound.add(stairGroup);
+    });
+  }
+
+  // 5. Front Open Pavilion with Bench (ศาลาโถงชานเรือนพร้อมม้านั่งยาว)
+  buildFrontOpenPavilion(compound, mats) {
+    const pavGroup = new THREE.Group();
+    pavGroup.position.set(-6.2, 0, 3.7);
+
+    // Deck floor
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.18, 5.6), mats.deckPlank);
+    floor.position.set(0, 3.65, 0);
+    floor.receiveShadow = true;
+    pavGroup.add(floor);
+
+    // 4 tall polished wooden columns extending to roof
+    const cols = [[-2.4, -2.5], [2.4, -2.5], [-2.4, 2.5], [2.4, 2.5]];
+    cols.forEach(([cx, cz]) => {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.5, 0.3), mats.wood);
+      col.position.set(cx, 5.4, cz);
+      col.castShadow = true;
+      pavGroup.add(col);
     });
 
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.4, 5.4), woodMat);
-    floor.position.set(0, 0.2, 0);
-    sala.add(floor);
+    // Roof beam ring
+    const beamF = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.25, 0.25), mats.darkWood);
+    beamF.position.set(0, 7.05, 2.5);
+    pavGroup.add(beamF);
 
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(4.0, 2.6, 4), roofMat);
-    roof.rotateY(Math.PI / 4);
-    roof.position.set(0, 4.8, 0);
-    sala.add(roof);
+    const beamB = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.25, 0.25), mats.darkWood);
+    beamB.position.set(0, 7.05, -2.5);
+    pavGroup.add(beamB);
 
-    const apex = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.4, 6), goldMat);
-    apex.position.set(0, 6.4, 0);
-    sala.add(apex);
+    // Built-in wooden bench with slanted backrest (ม้านั่งไม้พนักพิงยาว ตามรูป 2)
+    const benchSeat = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.12, 0.58), mats.wood);
+    benchSeat.position.set(0, 4.18, 2.2);
+    pavGroup.add(benchSeat);
 
-    return sala;
+    const benchBack = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.52, 0.08), mats.wood);
+    benchBack.position.set(0, 4.58, 2.48);
+    benchBack.rotation.x = -0.28;
+    pavGroup.add(benchBack);
+
+    // Bench support brackets
+    [-1.6, -0.5, 0.5, 1.6].forEach((bx) => {
+      const bLeg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.45), mats.darkWood);
+      bLeg.position.set(bx, 3.92, 2.2);
+      pavGroup.add(bLeg);
+
+      const bBrace = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.65, 0.08), mats.darkWood);
+      bBrace.position.set(bx, 4.4, 2.44);
+      bBrace.rotation.x = -0.28;
+      pavGroup.add(bBrace);
+    });
+
+    // Pavilion roof: Manila / Hip-Gable Roof with silver corrugated roofing & white fascia
+    const pavRoof = this.buildThaiGableRoof(5.4, 5.8, 2.2, mats, true, 1.15);
+    pavRoof.position.set(0, 7.1, 0);
+    pavGroup.add(pavRoof);
+
+    // Hanging warm lantern inside pavilion
+    const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.55, 8), mats.lanternGlow);
+    lantern.position.set(0, 6.4, 0);
+    pavGroup.add(lantern);
+
+    compound.add(pavGroup);
+  }
+
+  // 6. Main Enclosed Teak House (เรือนนอนฝาไม้สักทอง พร้อมหน้าต่างบานกระทุ้งมีไม้ค้ำ)
+  buildMainTeakHouse(compound, mats) {
+    const houseGroup = new THREE.Group();
+    houseGroup.position.set(5.3, 0, 0.5);
+
+    // Floor deck
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.18, 8.8), mats.deckPlank);
+    floor.position.set(0, 3.65, 0);
+    floor.receiveShadow = true;
+    houseGroup.add(floor);
+
+    // Main walls with horizontal teak siding (ฝาไม้สักทองแนวนอน)
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(5.4, 3.4, 8.4), mats.teakSiding);
+    walls.position.set(0, 5.35, 0);
+    walls.castShadow = true;
+    walls.receiveShadow = true;
+    houseGroup.add(walls);
+
+    // Dark wood corner pilasters & frieze
+    [[-2.72, -4.22], [2.72, -4.22], [-2.72, 4.22], [2.72, 4.22]].forEach(([cx, cz]) => {
+      const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.5, 0.25), mats.darkWood);
+      pilaster.position.set(cx, 5.35, cz);
+      houseGroup.add(pilaster);
+    });
+
+    // Traditional Thai Awning Windows with Propped Shutters (หน้าต่างบานกระทุ้ง ตามรูป 2)
+    const windowConfigs = [
+      // Front wall windows
+      { x: -1.3, y: 5.3, z: 4.22, rotY: 0 },
+      { x: 1.3, y: 5.3, z: 4.22, rotY: 0 },
+      // Side wall windows
+      { x: 2.72, y: 5.3, z: 1.5, rotY: Math.PI / 2 },
+      { x: 2.72, y: 5.3, z: -1.8, rotY: Math.PI / 2 }
+    ];
+
+    windowConfigs.forEach((wc) => {
+      const winGroup = new THREE.Group();
+      winGroup.position.set(wc.x, wc.y, wc.z);
+      winGroup.rotation.y = wc.rotY;
+
+      // Dark opening inside
+      const opening = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.35), mats.windowInterior);
+      opening.position.set(0, 0, 0.02);
+      winGroup.add(opening);
+
+      // Wood frame around window
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.22, 1.55, 0.1), mats.darkWood);
+      frame.position.set(0, 0, 0.04);
+      winGroup.add(frame);
+
+      // Propped open shutter panel (บานกระทุ้งเปิดอ้าออก)
+      const shutter = new THREE.Mesh(new THREE.BoxGeometry(1.02, 1.32, 0.05), mats.wood);
+      shutter.position.set(0, 0.58, 0.42);
+      shutter.rotation.x = -0.55; // 31-degree open angle
+      winGroup.add(shutter);
+
+      // Wooden stay stick / prop (ไม้ค้ำบานกระทุ้ง)
+      const stayStick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 6), mats.darkWood);
+      stayStick.position.set(0, 0.15, 0.42);
+      stayStick.rotation.x = 0.52;
+      winGroup.add(stayStick);
+
+      houseGroup.add(winGroup);
+    });
+
+    // Double-Tiered Gabled Roof (หลังคาจั่วซ้อน 2 ชั้น ตามรูป 2)
+    const lowerEave = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.22, 10.2), mats.silverRoof);
+    lowerEave.position.set(0, 7.15, 0);
+    lowerEave.castShadow = true;
+    houseGroup.add(lowerEave);
+
+    const lowerFascia = new THREE.Mesh(new THREE.BoxGeometry(7.3, 0.24, 10.3), mats.whiteFascia);
+    lowerFascia.position.set(0, 7.1, 0);
+    houseGroup.add(lowerFascia);
+
+    const mainRoof = this.buildThaiGableRoof(5.6, 8.8, 2.45, mats, false, 1.25);
+    mainRoof.position.set(0, 7.25, 0);
+    houseGroup.add(mainRoof);
+
+    compound.add(houseGroup);
+  }
+
+  // 7. Rear Left Pavilion / Extension (เรือนหลังซ้าย)
+  buildRearLeftPavilion(compound, mats) {
+    const rearGroup = new THREE.Group();
+    rearGroup.position.set(-6.2, 0, -5.2);
+
+    // Floor deck
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.18, 5.2), mats.deckPlank);
+    floor.position.set(0, 3.65, 0);
+    floor.receiveShadow = true;
+    rearGroup.add(floor);
+
+    // Wooden columns
+    const cols = [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]];
+    cols.forEach(([cx, cz]) => {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.28, 3.3, 0.28), mats.wood);
+      col.position.set(cx, 5.3, cz);
+      col.castShadow = true;
+      rearGroup.add(col);
+    });
+
+    // Roof
+    const roof = this.buildThaiGableRoof(5.2, 5.2, 2.1, mats, true, 1.05);
+    roof.position.set(0, 6.9, 0);
+    rearGroup.add(roof);
+
+    // Walkway bridge connecting rear pavilion to central terrace
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 3.2), mats.deckPlank);
+    bridge.position.set(2.4, 3.65, 2.2);
+    rearGroup.add(bridge);
+
+    compound.add(rearGroup);
+  }
+
+  // 8. Lush Tropical Shade Tree Behind House (ต้นไม้ใหญ่ร่มรื่นหลังเรือน ตามรูป 2 และ 3)
+  buildCompoundShadeTree(compound, mats) {
+    const treeGroup = new THREE.Group();
+    treeGroup.position.set(0.5, 0.7, -13.5);
+
+    // Thick organic gnarled trunk
+    const baseTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.7, 5.5, 10), mats.bark);
+    baseTrunk.position.set(0, 2.75, 0);
+    baseTrunk.castShadow = true;
+    treeGroup.add(baseTrunk);
+
+    // Spreading organic boughs
+    const boughs = [
+      { rx: 0.35, rz: 0.45, len: 6.5, py: 5.2 },
+      { rx: -0.4, rz: -0.35, len: 6.2, py: 5.5 },
+      { rx: 0.2, rz: -0.55, len: 7.0, py: 5.0 },
+      { rx: -0.25, rz: 0.5, len: 6.8, py: 5.3 }
+    ];
+
+    boughs.forEach((bg) => {
+      const bMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.72, bg.len, 8), mats.bark);
+      bMesh.position.set(Math.sin(bg.rz) * 2.2, bg.py, Math.sin(bg.rx) * 2.2);
+      bMesh.rotation.x = bg.rx;
+      bMesh.rotation.z = bg.rz;
+      bMesh.castShadow = true;
+      treeGroup.add(bMesh);
+    });
+
+    // Voluminous, dense leafy canopy towering above the rooflines
+    const foliageCrown = new THREE.Group();
+    foliageCrown.position.set(0, 8.5, 0);
+
+    const clusterCoords = [
+      { x: 0, y: 3.5, z: 0, r: 4.8 },
+      { x: -3.2, y: 1.5, z: -1.2, r: 4.0 },
+      { x: 3.2, y: 1.8, z: -0.8, r: 4.2 },
+      { x: -1.5, y: 2.2, z: 2.6, r: 3.8 },
+      { x: 1.8, y: 2.0, z: 2.5, r: 3.9 },
+      { x: -2.0, y: 3.8, z: -2.0, r: 3.6 },
+      { x: 2.2, y: 4.0, z: -1.8, r: 3.7 },
+      { x: 0, y: 5.5, z: -0.5, r: 3.4 }
+    ];
+
+    clusterCoords.forEach((cl, idx) => {
+      // Core volumetric mass
+      const core = new THREE.Mesh(
+        new THREE.SphereGeometry(cl.r, 10, 8),
+        idx % 2 === 0 ? mats.leafSolidMat : mats.leafDarkSolidMat
+      );
+      core.scale.set(1.2, 0.85, 1.15);
+      core.position.set(cl.x, cl.y, cl.z);
+      core.castShadow = true;
+      foliageCrown.add(core);
+
+      // Textured leaf layer with alpha cutout for feathered silhouette
+      const leafLayer = new THREE.Mesh(
+        new THREE.SphereGeometry(cl.r * 1.08, 8, 7),
+        mats.leafMat
+      );
+      leafLayer.scale.set(1.22, 0.88, 1.18);
+      leafLayer.position.set(cl.x, cl.y, cl.z);
+      leafLayer.castShadow = true;
+      foliageCrown.add(leafLayer);
+    });
+
+    treeGroup.add(foliageCrown);
+    compound.add(treeGroup);
+
+    // Register for gentle wind sway
+    this.swayingTrees.push({ group: foliageCrown, speed: 1.0, phase: 0.3 });
+  }
+
+  // Reusable Thai Gable / Hip-Gable Roof Builder (หลังคาทรงจั่วมนิลา/ปั้นหยา)
+  buildThaiGableRoof(w, d, h, mats, hasHipSkirt = false, finialScale = 1.0) {
+    const roofGroup = new THREE.Group();
+    const halfW = w / 2;
+    const slopeLen = Math.sqrt(halfW * halfW + h * h) + 0.35;
+    const slopeAng = Math.atan2(h, halfW);
+
+    // Left slope
+    const leftSlope = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.08, d + 0.6), mats.silverRoof);
+    leftSlope.position.set(-halfW / 2, h / 2, 0);
+    leftSlope.rotation.z = -slopeAng;
+    leftSlope.castShadow = true;
+    leftSlope.receiveShadow = true;
+    roofGroup.add(leftSlope);
+
+    // Right slope
+    const rightSlope = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.08, d + 0.6), mats.silverRoof);
+    rightSlope.position.set(halfW / 2, h / 2, 0);
+    rightSlope.rotation.z = slopeAng;
+    rightSlope.castShadow = true;
+    rightSlope.receiveShadow = true;
+    roofGroup.add(rightSlope);
+
+    // White ridge cap along apex
+    const ridgeCap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, d + 0.68), mats.whiteFascia);
+    ridgeCap.position.set(0, h + 0.06, 0);
+    roofGroup.add(ridgeCap);
+
+    // White bargeboards (ปั้นลม) & Gable Pediment front & back
+    [-1, 1].forEach((dir) => {
+      const zPos = dir * (d / 2 + 0.31);
+      const bLeft = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.22, 0.06), mats.whiteFascia);
+      bLeft.position.set(-halfW / 2, h / 2, zPos);
+      bLeft.rotation.z = -slopeAng;
+      roofGroup.add(bLeft);
+
+      const bRight = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.22, 0.06), mats.whiteFascia);
+      bRight.position.set(halfW / 2, h / 2, zPos);
+      bRight.rotation.z = slopeAng;
+      roofGroup.add(bRight);
+
+      // Triangular timber gable pediment (หน้าบันไม้ระแนง)
+      const pShape = new THREE.Shape();
+      pShape.moveTo(-halfW + 0.1, 0);
+      pShape.lineTo(halfW - 0.1, 0);
+      pShape.lineTo(0, h - 0.08);
+      pShape.closePath();
+      const pGeo = new THREE.ShapeGeometry(pShape);
+      const pediment = new THREE.Mesh(pGeo, mats.wood);
+      pediment.position.set(0, 0, zPos - dir * 0.05);
+      if (dir === -1) pediment.rotation.y = Math.PI;
+      roofGroup.add(pediment);
+
+      // Galae finial at apex (ยอดกาแลไม้ฉลุ)
+      const galaeL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.85 * finialScale, 0.05), mats.wood);
+      galaeL.position.set(-0.15, h + 0.35 * finialScale, zPos);
+      galaeL.rotation.z = 0.45;
+      roofGroup.add(galaeL);
+
+      const galaeR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.85 * finialScale, 0.05), mats.wood);
+      galaeR.position.set(0.15, h + 0.35 * finialScale, zPos);
+      galaeR.rotation.z = -0.45;
+      roofGroup.add(galaeR);
+    });
+
+    // White fascia boards along lower eaves (เชิงชายสีขาว)
+    const eaveFasciaL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.26, d + 0.6), mats.whiteFascia);
+    eaveFasciaL.position.set(-halfW - 0.16, 0.02, 0);
+    roofGroup.add(eaveFasciaL);
+
+    const eaveFasciaR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.26, d + 0.6), mats.whiteFascia);
+    eaveFasciaR.position.set(halfW + 0.16, 0.02, 0);
+    roofGroup.add(eaveFasciaR);
+
+    // Optional lower hip skirt (ชายคาปั้นหยาชั้นล่าง)
+    if (hasHipSkirt) {
+      const skirtW = w + 1.6;
+      const skirtD = d + 1.6;
+      const skirtH = 0.75;
+      const skirtMesh = new THREE.Mesh(new THREE.ConeGeometry((skirtW + skirtD) / 3.4, skirtH, 4), mats.silverRoof);
+      skirtMesh.scale.set(skirtW / ((skirtW + skirtD) / 2), 1, skirtD / ((skirtW + skirtD) / 2));
+      skirtMesh.rotateY(Math.PI / 4);
+      skirtMesh.position.set(0, -skirtH / 2, 0);
+      skirtMesh.castShadow = true;
+      roofGroup.add(skirtMesh);
+
+      const fasciaRim = new THREE.Mesh(new THREE.BoxGeometry(skirtW + 0.2, 0.22, skirtD + 0.2), mats.whiteFascia);
+      fasciaRim.position.set(0, -skirtH + 0.05, 0);
+      roofGroup.add(fasciaRim);
+    }
+
+    return roofGroup;
   }
 
   createRiverbankPromenade() {
@@ -897,9 +1315,9 @@ export class LoyKrathongScene {
     const darkLeafMat = new THREE.MeshStandardMaterial({ color: 0x144018, roughness: 0.7 });
     const trunkMat = new THREE.MeshStandardMaterial({ map: this.barkTexture, roughness: 0.85 });
 
-    // --- A. Ancient Rain Tree / Banyan Tree (ต้นจามจุรีโบราณริมน้ำ) ---
+    // --- A. Ancient Rain Tree / Banyan Tree (ต้นจามจุรีโบราณริมน้ำต้นเดิม ย้ายไปเป็นฉากหลังต้นน้ำ) ---
     const banyan = new THREE.Group();
-    banyan.position.set(-27, 1.5, -20);
+    banyan.position.set(-30, 1.5, -42);
 
     const baseTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.6, 6.0, 12), trunkMat);
     baseTrunk.position.y = 3.0;
