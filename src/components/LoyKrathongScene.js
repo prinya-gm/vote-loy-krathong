@@ -3007,9 +3007,9 @@ export class LoyKrathongScene {
   ========================================================== */
   getWaterHeightAt(x, z, time) {
     return (
-      Math.sin(x * 0.12 + time * 2.0) * 0.22 +
-      Math.cos(z * 0.15 + time * 1.6) * 0.18 +
-      Math.sin((x + z) * 0.08 + time * 2.4) * 0.12
+      Math.sin(x * 0.12 + time * 0.70) * 0.14 +
+      Math.cos(z * 0.15 + time * 0.55) * 0.11 +
+      Math.sin((x + z) * 0.08 + time * 0.82) * 0.07
     );
   }
 
@@ -3046,15 +3046,15 @@ export class LoyKrathongScene {
       this.riverPositions.needsUpdate = true;
     }
 
-    // 3. Krathongs Downstream Movement with Dynamic Buoyancy (ลอยบนผิวน้ำจริง ไม่จม)
+    // 3. Krathongs Downstream Movement with Dynamic Buoyancy (ลอยบนผิวน้ำจริง ไม่จม ชะลอความเร็วให้สมจริง)
     const krathongs = Array.from(this.krathongMeshes.values());
 
     krathongs.forEach((mesh, idx) => {
       const speed = mesh.userData.speed || 0.009;
       const bob = mesh.userData.bobOffset || 0;
 
-      // ไหลตามกระแสน้ำ Z (จาก +Z ไปสู่ -Z)
-      mesh.position.z -= speed * 4.2;
+      // ไหลตามกระแสน้ำ Z อย่างเอื่อยๆ นุ่มนวล สง่างาม
+      mesh.position.z -= speed * 1.1;
 
       // วนกลับขึ้นต้นน้ำเมื่อลอยพ้นสายตา
       if (mesh.position.z < -46) {
@@ -3072,7 +3072,7 @@ export class LoyKrathongScene {
       const { slopeX, slopeZ } = this.getWaterNormalAt(mesh.position.x, mesh.position.z, time);
       mesh.rotation.z = -slopeX * 0.75;
       mesh.rotation.x = slopeZ * 0.75;
-      mesh.rotation.y += mesh.userData.rotSpeed || 0.002;
+      mesh.rotation.y += (mesh.userData.rotSpeed || 0.002) * 0.35;
 
       // เปลวไฟเทียนสะบัดไหว
       const flame = mesh.getObjectByName("candleFlame");
@@ -3159,17 +3159,17 @@ export class LoyKrathongScene {
       if (mesh.position.x > 16.5) mesh.position.x = 16.5;
     });
 
-    // 4. Sky Lanterns Rising & Swaying (โคมลอยลอยขึ้นฟ้า)
+    // 4. Sky Lanterns Rising & Swaying (โคมลอยลอยขึ้นฟ้าอย่างแช่มช้า สง่างาม)
     if (this.skyLanterns) {
       this.skyLanterns.forEach((item) => {
-        item.mesh.position.y += item.speedY;
+        item.mesh.position.y += item.speedY * 0.28;
         item.mesh.position.x =
-          item.baseX + Math.sin(time * item.driftFreq + item.phase) * item.driftAmp;
+          item.baseX + Math.sin(time * (item.driftFreq * 0.5) + item.phase) * (item.driftAmp * 0.7);
         item.mesh.position.z =
-          item.baseZ + Math.cos(time * (item.driftFreq * 0.8) + item.phase) * (item.driftAmp * 0.5);
+          item.baseZ + Math.cos(time * (item.driftFreq * 0.4) + item.phase) * (item.driftAmp * 0.35);
 
-        item.mesh.rotation.y += item.rotSpeed;
-        item.mesh.rotation.z = Math.sin(time * 1.5 + item.phase) * 0.04;
+        item.mesh.rotation.y += item.rotSpeed * 0.4;
+        item.mesh.rotation.z = Math.sin(time * 0.8 + item.phase) * 0.03;
 
         if (item.mesh.position.y > 75) {
           item.mesh.position.y = 8 + Math.random() * 8;
@@ -3181,17 +3181,17 @@ export class LoyKrathongScene {
       });
     }
 
-    // 5. Krathong Sai / River Candles (ถ้วยตะไลลอยกระจายเต็มท้องน้ำทุกทิศทาง เติมใหม่อย่างต่อเนื่องไม่ขาดสาย)
+    // 5. Krathong Sai / River Candles (ถ้วยตะไลลอยกระจายเต็มท้องน้ำทุกทิศทาง เคลื่อนไหวเอื่อยๆ ช้าๆ อย่างสมจริง)
     if (this.riverCandles) {
       this.riverCandles.forEach((item) => {
-        // กระแสน้ำไหลเอื่อยๆ ลงท้ายน้ำ (-Z) ร่วมกับแรงคลื่นพัดวนหลายทิศทาง (Multi-directional drift)
-        item.group.position.z -= item.driftSpeedZ * 4.0;
+        // กระแสน้ำไหลเอื่อยๆ ลงท้ายน้ำ (-Z) ช้าลงอย่างเป็นธรรมชาติ
+        item.group.position.z -= item.driftSpeedZ * 1.0;
         item.group.position.x +=
-          item.driftSpeedX +
-          Math.sin(time * item.curlFreq + item.bobPhase) * item.curlAmp +
-          Math.cos(time * 0.7 + item.group.position.z * 0.06) * 0.018;
+          item.driftSpeedX * 0.35 +
+          Math.sin(time * (item.curlFreq * 0.5) + item.bobPhase) * (item.curlAmp * 0.6) +
+          Math.cos(time * 0.35 + item.group.position.z * 0.06) * 0.008;
 
-        item.group.rotation.y += item.rotSpeed;
+        item.group.rotation.y += item.rotSpeed * 0.35;
 
         // วงจรการเติมถ้วยตะไลใหม่อย่างต่อเนื่อง (Continuous Replenishment)
         // เมื่อลอยเลยท้ายน้ำ (-52) จะวนกลับไปปล่อยที่ต้นน้ำ (+45 ถึง +70) ครอบคลุมเต็มความกว้างแม่น้ำ
@@ -3337,30 +3337,30 @@ export class LoyKrathongScene {
     if (this.thaiPeople) {
       this.thaiPeople.forEach((char) => {
         if (char.role === "walking") {
-          // คำนวณเฟสรอบก้าวเดิน (Walking Cycle)
-          char.walkPhase += char.speed * 0.045;
+          // คำนวณเฟสรอบก้าวเดิน (Walking Cycle เดินทอดน่องช้าๆ อย่างสงบเสงี่ยม)
+          char.walkPhase += char.speed * 0.022;
           const phase = char.walkPhase;
 
           // การแกว่งขาสลับไปมาอย่างเป็นธรรมชาติ
-          const legSwing = Math.sin(phase) * 0.42;
+          const legSwing = Math.sin(phase) * 0.38;
           char.lLeg.rotation.x = legSwing;
           char.rLeg.rotation.x = -legSwing;
 
           // การแกว่งแขนสลับตรงข้ามกับขา
-          char.lArm.rotation.x = -legSwing * 0.85;
-          char.rArm.rotation.x = legSwing * 0.85;
+          char.lArm.rotation.x = -legSwing * 0.75;
+          char.rArm.rotation.x = legSwing * 0.75;
 
           // การยกตัวขึ้น-ลงตามจังหวะก้าวเดิน (Vertical Gait Bobbing)
-          char.body.position.y = (char.bodyBaseY || 0) + Math.abs(Math.sin(phase)) * 0.038;
+          char.body.position.y = (char.bodyBaseY || 0) + Math.abs(Math.sin(phase)) * 0.028;
 
           // ชายสไบพลิ้วไหวตามจังหวะก้าว
           if (char.sabaiTail) {
-            char.sabaiTail.rotation.x = Math.sin(phase) * 0.12 - 0.08;
+            char.sabaiTail.rotation.x = Math.sin(phase) * 0.08 - 0.05;
           }
 
-          // เคลื่อนที่ไปตามเส้นทางเดิน
+          // เคลื่อนที่ไปตามเส้นทางเดินอย่างแช่มช้า (Slow Graceful Walk)
           if (char.axis === "x") {
-            char.group.position.x += char.dir * char.speed * 0.022;
+            char.group.position.x += char.dir * char.speed * 0.010;
             if (char.group.position.x > char.maxPos) {
               char.dir = -1;
               char.group.rotation.y = -Math.PI / 2;
@@ -3369,7 +3369,7 @@ export class LoyKrathongScene {
               char.group.rotation.y = Math.PI / 2;
             }
           } else {
-            char.group.position.z += char.dir * char.speed * 0.024;
+            char.group.position.z += char.dir * char.speed * 0.011;
             if (char.group.position.z > char.maxPos) {
               char.dir = -1;
               char.group.rotation.y = Math.PI;
@@ -3412,76 +3412,76 @@ export class LoyKrathongScene {
             }
           }
         } else if (char.role === "floating" || char.role === "standing" || char.role === "spectator") {
-          // --- 3. แอนิเมชันของคนที่กำลังลอยกระทงริมท่าน้ำ และคนยืนชมวิวริมตลิ่ง ให้มีการเคลื่อนไหวจริงอย่างต่อเนื่อง ---
-          const tCycle = time * 0.75 + char.phase;
+          // --- 3. แอนิเมชันของคนที่กำลังลอยกระทงริมท่าน้ำ และคนยืนชมวิวริมตลิ่ง ให้มีการเคลื่อนไหวช้า นุ่มนวล สมจริง ---
+          const tCycle = time * 0.38 + char.phase;
           const reachForward = Math.cos(tCycle);
 
           if (char.pose === "releasing_krathong") {
             // หญิงสาว/ชายหนุ่มที่คุกเข่าลอยกระทง:
             // 1. ลำตัวโน้มตัวลงสู่ผิวน้ำ สลับกับยกตัวขึ้นอธิษฐานอย่างนอบน้อม
             if (char.torso) {
-              char.torso.rotation.x = 0.28 + reachForward * 0.20;
-              char.torso.rotation.z = Math.sin(time * 1.5 + char.phase) * 0.04;
+              char.torso.rotation.x = 0.28 + reachForward * 0.18;
+              char.torso.rotation.z = Math.sin(time * 0.75 + char.phase) * 0.03;
             }
 
             // 2. แขนทั้งสองข้างยื่นประคองกระทงลงสู่ผิวน้ำ สลับกับยกขึ้นระดับอก
-            const armExt = -0.72 + reachForward * 0.24;
+            const armExt = -0.72 + reachForward * 0.22;
             char.lArm.rotation.x = armExt;
             char.rArm.rotation.x = armExt;
 
             // 3. ศีรษะก้มมองกระทงขณะยื่นลงน้ำ และเงยหน้าขึ้นมองสายน้ำเมื่อยกตัว
             if (char.head) {
-              char.head.rotation.x = 0.22 - reachForward * 0.16;
-              char.head.rotation.y = Math.sin(time * 0.8 + char.phase) * 0.14;
+              char.head.rotation.x = 0.22 - reachForward * 0.14;
+              char.head.rotation.y = Math.sin(time * 0.45 + char.phase) * 0.10;
             }
 
             // 4. กระทงในมือขยับแตะผิวน้ำและยื่นไปข้างหน้าตามจังหวะโน้มตัว
             if (char.miniKGroup) {
-              char.miniKGroup.position.y = 0.42 - reachForward * 0.18;
-              char.miniKGroup.position.z = 0.52 + reachForward * 0.16;
-              char.miniKGroup.rotation.z = Math.sin(time * 2.2) * 0.05;
+              char.miniKGroup.position.y = 0.42 - reachForward * 0.16;
+              char.miniKGroup.position.z = 0.52 + reachForward * 0.14;
+              char.miniKGroup.rotation.z = Math.sin(time * 1.1) * 0.03;
             }
           } else if (char.pose === "praying_wai") {
             // คุกเข่าพนมมือไหว้อธิษฐาน:
-            // 1. ท่าก้มกราบไหว้อย่างนอบน้อมต่อเนื่อง (Reverent Wai & Bowing)
-            const bowAngle = Math.sin(time * 1.3 + char.phase) * 0.18;
+            // 1. ท่าก้มกราบไหว้อย่างนอบน้อมต่อเนื่อง ช้าๆ
+            const bowAngle = Math.sin(time * 0.65 + char.phase) * 0.16;
             if (char.torso) char.torso.rotation.x = 0.20 + Math.max(0, bowAngle);
             if (char.head) {
-              char.head.rotation.x = 0.22 + Math.max(0, bowAngle * 1.3);
-              char.head.rotation.y = Math.sin(time * 0.5 + char.phase) * 0.32;
+              char.head.rotation.x = 0.22 + Math.max(0, bowAngle * 1.2);
+              char.head.rotation.y = Math.sin(time * 0.35 + char.phase) * 0.20;
             }
 
             // 2. มือพนมไหว้ยกขึ้น-ลงระหว่างหน้าอกและหน้าผาก
-            const handLift = Math.sin(time * 1.3 + char.phase) * 0.12;
+            const handLift = Math.sin(time * 0.65 + char.phase) * 0.10;
             char.lArm.rotation.x = -0.88 - handLift;
             char.rArm.rotation.x = -0.88 - handLift;
           } else if (char.pose === "standing_holding") {
             // ยืนถือกระทงสว่างไสว:
-            // 1. ถ่ายเทน้ำหนักตัว โยกตัวซ้าย-ขวาอย่างผ่อนคลาย
-            char.body.position.x = Math.sin(time * 0.9 + char.phase) * 0.05;
-            if (char.torso) char.torso.rotation.z = Math.sin(time * 0.9 + char.phase) * 0.04;
+            // 1. ถ่ายเทน้ำหนักตัว โยกตัวซ้าย-ขวาอย่างผ่อนคลาย ช้าๆ
+            char.body.position.x = Math.sin(time * 0.45 + char.phase) * 0.03;
+            if (char.torso) char.torso.rotation.z = Math.sin(time * 0.45 + char.phase) * 0.025;
 
             // 2. แขนขวายกขึ้นชี้ชวนมองโคมลอยบนท้องฟ้าและเจดีย์
-            char.rArm.rotation.x = -0.75 + Math.sin(time * 0.6 + char.phase) * 0.45;
-            char.rArm.rotation.z = -0.35 + Math.cos(time * 0.6 + char.phase) * 0.25;
+            char.rArm.rotation.x = -0.75 + Math.sin(time * 0.30 + char.phase) * 0.35;
+            char.rArm.rotation.z = -0.35 + Math.cos(time * 0.30 + char.phase) * 0.20;
 
-            // 3. หันมองรอบทิศทาง ชื่นชมบรรยากาศงานลอยกระทง
+            // 3. หันมองรอบทิศทาง ชื่นชมบรรยากาศงานลอยกระทงอย่างเนิบช้า
             if (char.head) {
-              char.head.rotation.y = Math.sin(time * 0.7 + char.phase) * 0.45;
-              char.head.rotation.x = 0.12 + Math.cos(time * 0.7 + char.phase) * 0.15;
+              char.head.rotation.y = Math.sin(time * 0.35 + char.phase) * 0.35;
+              char.head.rotation.x = 0.12 + Math.cos(time * 0.35 + char.phase) * 0.12;
             }
           } else if (char.pose === "standing_look") {
-            // ยืนชมวิวริมตลิ่ง: หันมองสายน้ำ แหงนมองโคมลอย
-            char.body.position.x = Math.sin(time * 0.8 + char.phase) * 0.03;
-            if (char.torso) char.torso.rotation.z = Math.sin(time * 0.8 + char.phase) * 0.03;
+            // ยืนชมวิวริมตลิ่ง: หันมองสายน้ำ แหงนมองโคมลอยอย่างสงบ
+            char.body.position.x = Math.sin(time * 0.40 + char.phase) * 0.025;
+            if (char.torso) char.torso.rotation.z = Math.sin(time * 0.40 + char.phase) * 0.02;
             if (char.head) {
-              char.head.rotation.y = Math.sin(time * 0.5 + char.phase) * 0.35;
-              char.head.rotation.x = -0.05 + Math.cos(time * 0.6 + char.phase) * 0.12;
+              char.head.rotation.y = Math.sin(time * 0.28 + char.phase) * 0.28;
+              char.head.rotation.x = -0.05 + Math.cos(time * 0.30 + char.phase) * 0.10;
             }
           }
 
-          // การหายใจขยับลำตัว
-          const breath = Math.sin(time * 2.2 + char.phase) * 0.02;
+          // การหายใจขยับลำตัวอย่างสงบ นุ่มนวล
+          const breath = Math.sin(time * 1.2 + char.phase) * 0.015;
           char.body.position.y = (char.bodyBaseY || 0) + breath;
 
           // เปลวไฟเทียนในกระทงระยิบระยับ
