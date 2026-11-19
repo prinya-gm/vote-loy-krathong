@@ -235,41 +235,92 @@ export class LoyKrathongScene {
     this.barkTexture.wrapS = THREE.RepeatWrapping;
     this.barkTexture.wrapT = THREE.RepeatWrapping;
 
-    // 5. Photorealistic Feathered Palm Frond Leaflet Texture (ทางมะพร้าวขนนกเสมือนจริง)
+    // 4B. Photorealistic Coconut Palm Bark with High-Contrast Ring Scars (ตามรูปแนบ 2 และ 3)
+    const cBarkCanvas = document.createElement("canvas");
+    cBarkCanvas.width = 256;
+    cBarkCanvas.height = 1024;
+    const cbCtx = cBarkCanvas.getContext("2d");
+    cbCtx.fillStyle = "#5c5046";
+    cbCtx.fillRect(0, 0, 256, 1024);
+
+    // Subtle vertical fibrous striations
+    for (let x = 0; x < 256; x += 2) {
+      cbCtx.strokeStyle = (x % 4 === 0) ? "#473c33" : "#695d52";
+      cbCtx.lineWidth = 1.2;
+      cbCtx.beginPath();
+      cbCtx.moveTo(x, 0);
+      cbCtx.lineTo(x, 1024);
+      cbCtx.stroke();
+    }
+
+    // Dense, high-contrast horizontal ring scars (รอยปล้องกาบมะพร้าวแบบรูป 2 และ 3)
+    const ringSpacing = 16;
+    for (let y = 0; y < 1024; y += ringSpacing) {
+      // Dark indented groove
+      cbCtx.strokeStyle = "#1b140e";
+      cbCtx.lineWidth = 3.5;
+      cbCtx.beginPath();
+      cbCtx.moveTo(0, y + (Math.random() - 0.5) * 2);
+      cbCtx.lineTo(256, y + (Math.random() - 0.5) * 2);
+      cbCtx.stroke();
+
+      // Pale greyish-buff fibrous scar ridge directly above groove
+      cbCtx.strokeStyle = "rgba(185, 175, 165, 0.75)";
+      cbCtx.lineWidth = 2.0;
+      cbCtx.beginPath();
+      cbCtx.moveTo(0, y - 2);
+      cbCtx.lineTo(256, y - 2);
+      cbCtx.stroke();
+    }
+    this.coconutBarkTexture = new THREE.CanvasTexture(cBarkCanvas);
+    this.coconutBarkTexture.wrapS = THREE.RepeatWrapping;
+    this.coconutBarkTexture.wrapT = THREE.RepeatWrapping;
+    this.coconutBarkTexture.repeat.set(1, 3);
+
+    // 5. Photorealistic Feathered Palm Frond Leaflet Texture 90%+ (ทางมะพร้าวขนนกเสมือนจริงตามรูป 2 และ 3)
     const frondCanvas = document.createElement("canvas");
-    frondCanvas.width = 256;
-    frondCanvas.height = 512;
+    frondCanvas.width = 512;
+    frondCanvas.height = 1024;
     const fCtx = frondCanvas.getContext("2d");
-    fCtx.clearRect(0, 0, 256, 512);
+    fCtx.clearRect(0, 0, 512, 1024);
 
     // Central golden-green spine (ก้านทางมะพร้าว)
-    fCtx.strokeStyle = "#a3e635";
-    fCtx.lineWidth = 5;
+    fCtx.strokeStyle = "#84cc16";
+    fCtx.lineWidth = 8;
     fCtx.beginPath();
-    fCtx.moveTo(128, 0);
-    fCtx.lineTo(128, 512);
+    fCtx.moveTo(256, 0);
+    fCtx.lineTo(256, 1024);
     fCtx.stroke();
 
-    // 60 paired tapering drooping leaflets
-    const pinnaeCount = 60;
+    fCtx.strokeStyle = "#a3e635";
+    fCtx.lineWidth = 3.5;
+    fCtx.beginPath();
+    fCtx.moveTo(256, 0);
+    fCtx.lineTo(256, 1024);
+    fCtx.stroke();
+
+    // 110 paired dense, sharp, tapering pinnae leaflets (ใบย่อยขนนกสองข้างเรียงถี่แบบรูป 2 และ 3)
+    const pinnaeCount = 110;
     for (let i = 0; i < pinnaeCount; i++) {
-      const y = (i / pinnaeCount) * 490 + 12;
-      // Leaflets are longest in middle and taper toward tip
-      const span = Math.sin((i / pinnaeCount) * Math.PI) * 115 + 10;
+      const y = (i / pinnaeCount) * 980 + 20;
+      const t = i / pinnaeCount;
+      // Natural palm taper: narrow at base, broadest at 40%, tapering to sharp needle tip
+      const span = Math.pow(Math.sin(t * Math.PI * 0.95), 0.75) * 225 + 18;
 
       // Left leaflet
-      fCtx.strokeStyle = i % 2 === 0 ? "#15803d" : "#22c55e";
-      fCtx.lineWidth = 2.4;
+      fCtx.strokeStyle = i % 3 === 0 ? "#14532d" : (i % 3 === 1 ? "#15803d" : "#22c55e");
+      fCtx.lineWidth = 3.0;
       fCtx.beginPath();
-      fCtx.moveTo(128, y);
-      fCtx.quadraticCurveTo(128 - span * 0.55, y + 15, 128 - span, y + 26);
+      fCtx.moveTo(256, y);
+      fCtx.quadraticCurveTo(256 - span * 0.55, y + 25, 256 - span, y + 42);
       fCtx.stroke();
 
       // Right leaflet
-      fCtx.strokeStyle = i % 2 === 0 ? "#166534" : "#16a34a";
+      fCtx.strokeStyle = i % 3 === 0 ? "#166534" : (i % 3 === 1 ? "#16a34a" : "#22c55e");
+      fCtx.lineWidth = 3.0;
       fCtx.beginPath();
-      fCtx.moveTo(128, y);
-      fCtx.quadraticCurveTo(128 + span * 0.55, y + 15, 128 + span, y + 26);
+      fCtx.moveTo(256, y);
+      fCtx.quadraticCurveTo(256 + span * 0.55, y + 25, 256 + span, y + 42);
       fCtx.stroke();
     }
     this.palmFrondTexture = new THREE.CanvasTexture(frondCanvas);
@@ -1426,144 +1477,176 @@ export class LoyKrathongScene {
     this.scene.add(banyan);
     this.swayingTrees.push({ group: foliageCanopy, speed: 1.1, phase: 0.5 });
 
-    // --- B. PHOTOREALISTIC COCONUT PALM TREES (ต้นมะพร้าวริมน้ำเสมือนจริง 80%+) ---
+    // --- B. PHOTOREALISTIC COCONUT PALM TREES (ต้นมะพร้าวริมน้ำเสมือนจริง 90%+ ตามรูป 2 และ 3) ---
     // ตำแหน่งริมฝั่งตลิ่ง โดยไม่ขวางทางเดินและไม่เกะกะสายตา
+    const coconutTrunkMat = new THREE.MeshStandardMaterial({
+      map: this.coconutBarkTexture,
+      roughness: 0.82,
+    });
+
     const palmConfigs = [
-      { x: -24, z: 28, rotY: 0.3, leanAngle: 0.22, heightScale: 1.1 },
-      { x: -26, z: -38, rotY: -0.5, leanAngle: 0.26, heightScale: 1.05 },
-      { x: -25, z: 42, rotY: 0.8, leanAngle: 0.2, heightScale: 1.0 },
+      { x: -24, z: 28, rotY: 0.3, leanAngle: 0.18, heightScale: 1.1 },
+      { x: -26, z: -38, rotY: -0.5, leanAngle: 0.22, heightScale: 1.05 },
+      { x: -25, z: 42, rotY: 0.8, leanAngle: 0.16, heightScale: 1.0 },
     ];
 
     palmConfigs.forEach((pCfg) => {
-      const palm = this.buildPhotorealisticPalmTree(pCfg, trunkMat);
+      const palm = this.buildPhotorealisticPalmTree(pCfg, coconutTrunkMat);
       this.scene.add(palm.rootGroup);
-      this.swayingPalms.push({ group: palm.crownGroup, speed: 1.3, phase: Math.random() * Math.PI });
+      this.swayingPalms.push({ group: palm.crownGroup, speed: 1.2, phase: Math.random() * Math.PI });
     });
   }
 
-  // สร้างต้นมะพร้าวเสมือนจริง: ลำต้นโค้งงอนวลตา + ทางมะพร้าวโค้งแอ่นทิ้งตัว + ใบขนนกย่อย + ทะลายมะพร้าว
+  // สร้างต้นมะพร้าวเสมือนจริง 90%+ ตามรูป 2 และ 3:
+  // โคนต้นบานผาย (Flared Root Bole) + ลำต้นปล้องลายขวางชัดเจน + คอมะพร้าวเขียว + พุ่มทางมะพร้าว 4 ชั้น 32 ทางพร้อมยอดแหลมชี้ฟ้า + ใบย่อยทรงจั่ว 3D
   buildPhotorealisticPalmTree(pCfg, trunkMat) {
     const rootGroup = new THREE.Group();
     rootGroup.position.set(pCfg.x, 1.5, pCfg.z);
 
-    // 1. Swollen Root Base (โคนต้นมะพร้าวป่องตามธรรมชาติ)
-    const bulbMat = new THREE.MeshStandardMaterial({ color: 0x3d2716, roughness: 0.9 });
-    const bulb = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.8, 1.2, 10), bulbMat);
-    bulb.position.y = 0.6;
-    bulb.castShadow = true;
-    rootGroup.add(bulb);
+    // 1. Flared Root Bole (โคนต้นมะพร้าวป่องผายออกที่ฐานดินตามรูป 2 และ 3)
+    const baseBole = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.92, 1.3, 16), trunkMat);
+    baseBole.position.y = 0.65;
+    baseBole.castShadow = true;
+    rootGroup.add(baseBole);
 
-    // 2. Segmented Sweeping Curved Trunk (ลำต้นมะพร้าวโค้งเอียงโน้มเข้าหาแม่น้ำอย่างอ่อนช้อย)
-    let curY = 1.0;
+    const baseCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.88, 1.05, 0.35, 16),
+      new THREE.MeshStandardMaterial({ color: 0x33251a, roughness: 0.95 })
+    );
+    baseCollar.position.y = 0.18;
+    baseCollar.castShadow = true;
+    rootGroup.add(baseCollar);
+
+    // 2. Segmented Sweeping Curved Trunk with High-Contrast Rings (ลำต้นมะพร้าวทรงเรียวสูง โค้งเอียงตามธรรมชาติ)
+    let curY = 1.2;
     let curX = 0;
-    const trunkSegments = 14;
-    const segH = 0.95 * pCfg.heightScale;
+    const trunkSegments = 16;
+    const segH = 0.88 * pCfg.heightScale;
 
     for (let s = 0; s < trunkSegments; s++) {
-      // Tapering: 0.42 at bottom to 0.25 near crown
-      const rBottom = 0.42 - (s / trunkSegments) * 0.16;
-      const rTop = 0.42 - ((s + 1) / trunkSegments) * 0.16;
+      // Tapering: 0.44 at base to 0.26 near crownshaft
+      const t = s / trunkSegments;
+      const tNext = (s + 1) / trunkSegments;
+      const rBottom = 0.44 - t * 0.18;
+      const rTop = 0.44 - tNext * 0.18;
 
-      const seg = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, segH, 10), trunkMat);
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, segH, 14), trunkMat);
       seg.position.set(curX, curY + segH / 2, 0);
-      seg.rotation.z = -pCfg.leanAngle * (s / trunkSegments);
+      seg.rotation.z = -pCfg.leanAngle * t;
       seg.castShadow = true;
       rootGroup.add(seg);
 
-      // Distinct Palm Ring Scars (รอยปล้องมะพร้าว)
+      // Deep dark ring scars at segment boundaries (รอยปล้องมะพร้าวร่องลึก)
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(rTop + 0.02, 0.025, 4, 12),
-        new THREE.MeshStandardMaterial({ color: 0x26170d, roughness: 0.9 })
+        new THREE.TorusGeometry(rTop + 0.015, 0.02, 4, 14),
+        new THREE.MeshStandardMaterial({ color: 0x18120d, roughness: 0.92 })
       );
       ring.position.set(curX, curY + segH, 0);
       ring.rotateX(Math.PI / 2);
       rootGroup.add(ring);
 
-      curX += Math.sin(pCfg.leanAngle) * (segH * 0.45);
-      curY += Math.cos(pCfg.leanAngle) * (segH * 0.96);
+      curX += Math.sin(pCfg.leanAngle) * (segH * 0.4);
+      curY += Math.cos(pCfg.leanAngle) * (segH * 0.98);
     }
 
-    // 3. Green Crownshaft & Brown Coir Sheath (คอมะพร้าวสีเขียวอ่อนและรกกาบมะพร้าวสีน้ำตาล)
+    // 3. Green Crownshaft & Brown Coir Sheath (คอมะพร้าวสีเขียวและกาบมะพร้าวสีน้ำตาลตามรูป 2 และ 3)
     const crownShaft = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.24, 0.26, 1.6, 8),
-      new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.6 })
+      new THREE.CylinderGeometry(0.24, 0.27, 1.5, 12),
+      new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.55 })
     );
-    crownShaft.position.set(curX, curY + 0.8, 0);
+    crownShaft.position.set(curX, curY + 0.75, 0);
     crownShaft.rotation.z = -pCfg.leanAngle;
     rootGroup.add(crownShaft);
 
-    // Brown fibrous coir collar (รกมะพร้าว)
+    // Brown fibrous coir collar beneath crownshaft (รกกาบมะพร้าวสีน้ำตาลเข้ม)
     const coir = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.32, 0.26, 0.8, 8),
-      new THREE.MeshStandardMaterial({ color: 0x543212, roughness: 0.95 })
+      new THREE.CylinderGeometry(0.31, 0.27, 0.65, 10),
+      new THREE.MeshStandardMaterial({ color: 0x4a2a11, roughness: 0.95 })
     );
-    coir.position.set(curX, curY + 1.2, 0);
+    coir.position.set(curX, curY + 1.15, 0);
     coir.rotation.z = -pCfg.leanAngle;
     rootGroup.add(coir);
 
-    // 4. Crown of Fronds (พุ่มทางมะพร้าวโค้งแอ่นทิ้งตัวเสมือนจริง 20 ทาง)
+    // 4. Crown of Fronds (พุ่มทางมะพร้าวเสมือนจริง 90%+ 4 ชั้น 32 ทาง + ทางแห้ง 4 ทาง)
     const crownGroup = new THREE.Group();
-    crownGroup.position.set(curX, curY + 1.6, 0);
+    crownGroup.position.set(curX, curY + 1.55, 0);
 
-    // Coconut Fruit Clusters (ทะลายลูกมะพร้าว 8-10 ผล)
+    // Coconut Fruit Clusters (ทะลายลูกมะพร้าว 9 ผล ทรงรี)
     const nutMatGreen = new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.5 });
     const nutMatBrown = new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.6 });
     for (let n = 0; n < 9; n++) {
       const nAng = (n / 9) * Math.PI * 2;
       const nut = new THREE.Mesh(
-        new THREE.SphereGeometry(0.32, 8, 8),
+        new THREE.SphereGeometry(0.3, 8, 8),
         n % 3 === 0 ? nutMatBrown : nutMatGreen
       );
-      nut.scale.set(1.0, 1.35, 1.0); // Ovoid coconut shape
-      nut.position.set(Math.cos(nAng) * 0.6, -0.35 + (n % 2) * 0.2, Math.sin(nAng) * 0.6);
+      nut.scale.set(1.0, 1.35, 1.0);
+      nut.position.set(Math.cos(nAng) * 0.58, -0.32 + (n % 2) * 0.2, Math.sin(nAng) * 0.58);
       crownGroup.add(nut);
     }
 
-    // Frond material with alpha transparency for realistic feathered leaflets
+    // Frond materials: vibrant healthy green with alpha cutout
     const frondMat = new THREE.MeshStandardMaterial({
       map: this.palmFrondTexture,
       transparent: true,
-      alphaTest: 0.25,
+      alphaTest: 0.22,
       side: THREE.DoubleSide,
       roughness: 0.45,
     });
 
-    const frondConfigs = [
-      // Tier 1: Young fronds (พุ่งขึ้นบนและโค้งออก - 6 ทาง)
-      { count: 6, pitch: 0.55, length: 5.2, width: 1.4, droop: 0.6, yOffset: 0.3 },
-      // Tier 2: Prime arching fronds (แอ่นโค้งทิ้งตัวรอบทิศ - 8 ทาง)
-      { count: 8, pitch: 1.05, length: 6.4, width: 1.6, droop: 1.4, yOffset: 0.0 },
-      // Tier 3: Mature low-drooping fronds (ทิ้งตัวลงต่ำล้อมรอบต้น - 6 ทาง)
-      { count: 6, pitch: 1.45, length: 6.8, width: 1.7, droop: 2.2, yOffset: -0.35 },
+    // Young spear frond material (ยอดพุ่งสีเขียวสดใสกว่าเล็กน้อย)
+    const youngFrondMat = new THREE.MeshStandardMaterial({
+      map: this.palmFrondTexture,
+      color: 0x4ade80,
+      transparent: true,
+      alphaTest: 0.22,
+      side: THREE.DoubleSide,
+      roughness: 0.4,
+    });
+
+    // 4-Tier Frond Canopy Architecture (ตรงตามรูป 2 และ 3: ยอดพุ่งชี้ฟ้าเป็นกรวยแหลม + ทางโค้งแอ่น + ทางแผ่กว้าง + ทางห้อย)
+    const frondTiers = [
+      // Tier 1: Center Pointed Spear Fronds (ยอดพุ่งชี้ตรงชันขึ้นฟ้า 8 ทาง ทำให้ได้ทรงยอดแหลมตามรูปเป๊ะ)
+      { count: 8, pitch: 1.18, length: 5.6, width: 1.3, droop: 0.42, yOffset: 0.5, mat: youngFrondMat, yawOffset: 0.0 },
+      // Tier 2: Upper Arching Fronds (ทางชั้นบนโค้งแอ่นออก 8 ทาง)
+      { count: 8, pitch: 0.76, length: 6.8, width: 1.55, droop: 1.2, yOffset: 0.22, mat: frondMat, yawOffset: Math.PI / 8 },
+      // Tier 3: Horizontal Spreading Prime Fronds (ทางชั้นกลางแผ่กว้างทิ้งตัว 8 ทาง)
+      { count: 8, pitch: 0.38, length: 7.5, width: 1.7, droop: 2.1, yOffset: -0.08, mat: frondMat, yawOffset: Math.PI / 16 },
+      // Tier 4: Mature Lower Drooping Skirt Fronds (ทางชั้นล่างห้อยลงล้อมรอบคอยอด 8 ทาง)
+      { count: 8, pitch: 0.06, length: 7.2, width: 1.6, droop: 3.5, yOffset: -0.38, mat: frondMat, yawOffset: Math.PI / 12 },
     ];
 
-    frondConfigs.forEach((tier) => {
+    frondTiers.forEach((tier) => {
       for (let i = 0; i < tier.count; i++) {
-        const yaw = (i / tier.count) * Math.PI * 2 + Math.random() * 0.2;
-        const frondMesh = this.buildCurvedFrondMesh(tier, frondMat);
+        const yaw = (i / tier.count) * Math.PI * 2 + tier.yawOffset + (Math.random() - 0.5) * 0.12;
+        const frondMesh = this.buildCurvedFrondMesh(tier, tier.mat);
 
         frondMesh.position.y = tier.yOffset;
         frondMesh.rotation.y = yaw;
-        // Natural tilt
-        frondMesh.rotation.x = 0;
+        frondMesh.rotation.z = tier.pitch; // ยกมุมขึ้นตามแต่ละชั้น สร้างทรงพุ่ม 3 มิติสมจริง
         crownGroup.add(frondMesh);
       }
     });
 
-    // 2-3 dried brown fronds hanging limp downwards along trunk (ทางมะพร้าวแห้งสีน้ำตาล)
+    // 4 Dried Brown Fronds Hanging Downwards Along Trunk (ทางมะพร้าวแก่แห้งสีน้ำตาล 4 ทาง)
     const dryFrondMat = new THREE.MeshStandardMaterial({
       map: this.palmFrondTexture,
       color: 0x854d0e,
       transparent: true,
-      alphaTest: 0.25,
+      alphaTest: 0.22,
       side: THREE.DoubleSide,
-      roughness: 0.8,
+      roughness: 0.85,
     });
-    for (let d = 0; d < 3; d++) {
-      const dYaw = d * 2.1 + 0.5;
-      const dryMesh = this.buildCurvedFrondMesh({ length: 4.8, width: 1.3, droop: 2.8, pitch: 1.8 }, dryFrondMat);
-      dryMesh.position.y = -0.5;
+
+    for (let d = 0; d < 4; d++) {
+      const dYaw = (d / 4) * Math.PI * 2 + 0.35;
+      const dryMesh = this.buildCurvedFrondMesh(
+        { length: 5.2, width: 1.35, droop: 3.2 },
+        dryFrondMat
+      );
+      dryMesh.position.y = -0.58;
       dryMesh.rotation.y = dYaw;
+      dryMesh.rotation.z = -0.22; // ชี้ลงแนบลำต้น
       crownGroup.add(dryMesh);
     }
 
@@ -1572,47 +1655,87 @@ export class LoyKrathongScene {
   }
 
   // สร้างทางมะพร้าวที่มีความโค้งแอ่นตามธรรมชาติ (Gracefully Arched Frond Spine)
+  // พร้อมโครงสร้างใบย่อย 3D รูปทรงจั่ว (Inverted-V Tectiform Profile) สมจริงทุกองศา ไม่แบนเป็นกระดาษ
   buildCurvedFrondMesh(cfg, material) {
     const frondGroup = new THREE.Group();
-
-    // Central arching rib (กระดูกทางมะพร้าวโค้งแอ่น)
-    const segs = 6;
+    const segs = 10;
     const len = cfg.length;
-    const ribMat = new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.6 });
+    const ribMat = new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.55 });
+
+    const positions = [];
+    const uvs = [];
+    const indices = [];
 
     let lastX = 0;
     let lastY = 0;
-    for (let s = 1; s <= segs; s++) {
+
+    for (let s = 0; s <= segs; s++) {
       const t = s / segs;
-      // Parabolic arch formula: rises initially, then gracefully droops down
+      // Parabolic arch formula: พุ่งขึ้นก่อนแล้วโค้งแอ่นทิ้งตัวลงอย่างสง่างาม
       const curX = t * len;
       const curY = Math.sin(t * Math.PI * 0.7) * 1.5 - Math.pow(t, 2.2) * cfg.droop;
+      // ความกว้างของใบย่อย ป่องตรงกลางแล้วเรียวแหลมสู่ปลายใบ
+      const w = cfg.width * Math.pow(Math.sin(t * Math.PI * 0.95), 0.75);
 
-      const dx = curX - lastX;
-      const dy = curY - lastY;
-      const segLen = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx);
+      // Spine center vertex
+      positions.push(curX, curY, 0);
+      uvs.push(0.5, 1.0 - t);
 
-      const rib = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.03 * (1 - t * 0.7), 0.05 * (1 - (t - 1 / segs) * 0.7), segLen, 5),
-        ribMat
-      );
-      rib.position.set((lastX + curX) / 2, (lastY + curY) / 2, 0);
-      rib.rotation.z = angle - Math.PI / 2;
-      frondGroup.add(rib);
+      // Left leaflet vertex (เอียงลาดลงซ้ายเหมือนหลังคาจั่วทรง ^)
+      positions.push(curX, curY - w * 0.26, -w * 0.5);
+      uvs.push(0.0, 1.0 - t);
 
-      // Feathered Leaflet Quad along this segment - angled like an inverted roof V (^)
-      const leafGeo = new THREE.PlaneGeometry(cfg.width * Math.sin(t * Math.PI), segLen * 1.05);
-      const leafMesh = new THREE.Mesh(leafGeo, material);
-      leafMesh.position.set((lastX + curX) / 2, (lastY + curY) / 2, 0);
-      leafMesh.rotation.z = angle - Math.PI / 2;
-      leafMesh.rotation.y = Math.PI / 2; // Face outward
-      leafMesh.rotation.x = -0.35; // Droop downward angle
-      frondGroup.add(leafMesh);
+      // Right leaflet vertex (เอียงลาดลงขวาเหมือนหลังคาจั่วทรง ^)
+      positions.push(curX, curY - w * 0.26, w * 0.5);
+      uvs.push(1.0, 1.0 - t);
+
+      // Central woody rachis cylinder (กระดูกทางมะพร้าวสีเขียวตองอ่อน)
+      if (s > 0) {
+        const dx = curX - lastX;
+        const dy = curY - lastY;
+        const segLen = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        const rTop = 0.035 * (1 - t * 0.72);
+        const rBot = 0.05 * (1 - (t - 1 / segs) * 0.72);
+        const rib = new THREE.Mesh(
+          new THREE.CylinderGeometry(rTop, rBot, segLen, 6),
+          ribMat
+        );
+        rib.position.set((lastX + curX) / 2, (lastY + curY) / 2, 0);
+        rib.rotation.z = angle - Math.PI / 2;
+        frondGroup.add(rib);
+      }
 
       lastX = curX;
       lastY = curY;
     }
+
+    for (let s = 0; s < segs; s++) {
+      const c0 = s * 3;
+      const l0 = s * 3 + 1;
+      const r0 = s * 3 + 2;
+      const c1 = (s + 1) * 3;
+      const l1 = (s + 1) * 3 + 1;
+      const r1 = (s + 1) * 3 + 2;
+
+      // Left wing quad: (l0, c0, l1) and (c0, c1, l1)
+      indices.push(l0, c0, l1);
+      indices.push(c0, c1, l1);
+
+      // Right wing quad: (c0, r0, c1) and (r0, r1, c1)
+      indices.push(c0, r0, c1);
+      indices.push(r0, r1, c1);
+    }
+
+    const leafGeo = new THREE.BufferGeometry();
+    leafGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    leafGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    leafGeo.setIndex(indices);
+    leafGeo.computeVertexNormals();
+
+    const leafMesh = new THREE.Mesh(leafGeo, material);
+    frondGroup.add(leafMesh);
 
     return frondGroup;
   }
@@ -2081,6 +2204,31 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
+     EXACT WATER SURFACE CALCULATION
+     คำนวณระดับความสูงและระนาบผิวน้ำที่แท้จริง ณ จุด (x, z) และเวลา time
+     เพื่อให้วัตถุลอยน้ำทั้งหมด (กระทง, กระทงสาย, กอบัว) ลอยอยู่บนผิวน้ำเสมอ ไม่จมน้ำเด็ดขาด
+  ========================================================== */
+  getWaterHeightAt(x, z, time) {
+    return (
+      Math.sin(x * 0.12 + time * 2.0) * 0.22 +
+      Math.cos(z * 0.15 + time * 1.6) * 0.18 +
+      Math.sin((x + z) * 0.08 + time * 2.4) * 0.12
+    );
+  }
+
+  getWaterNormalAt(x, z, time) {
+    const delta = 0.5;
+    const hL = this.getWaterHeightAt(x - delta, z, time);
+    const hR = this.getWaterHeightAt(x + delta, z, time);
+    const hD = this.getWaterHeightAt(x, z - delta, time);
+    const hU = this.getWaterHeightAt(x, z + delta, time);
+    return {
+      slopeX: (hR - hL) / (2 * delta),
+      slopeZ: (hU - hD) / (2 * delta),
+    };
+  }
+
+  /* ==========================================================
      ANIMATION LOOP ("วัตถุทุกอย่างมีความเคลื่อนไหว & ระบบป้องกันการชน/ทับซ้อน")
   ========================================================== */
   animate() {
@@ -2096,15 +2244,12 @@ export class LoyKrathongScene {
       for (let i = 0; i < pos.length; i += 3) {
         const x = this.baseRiverCoords[i];
         const z = this.baseRiverCoords[i + 2];
-        pos[i + 1] =
-          Math.sin(x * 0.12 + time * 2.0) * 0.22 +
-          Math.cos(z * 0.15 + time * 1.6) * 0.18 +
-          Math.sin((x + z) * 0.08 + time * 2.4) * 0.12;
+        pos[i + 1] = this.getWaterHeightAt(x, z, time);
       }
       this.riverPositions.needsUpdate = true;
     }
 
-    // 3. Krathongs Downstream Movement with Collision Avoidance & Physics
+    // 3. Krathongs Downstream Movement with Dynamic Buoyancy (ลอยบนผิวน้ำจริง ไม่จม)
     const krathongs = Array.from(this.krathongMeshes.values());
 
     krathongs.forEach((mesh, idx) => {
@@ -2122,10 +2267,14 @@ export class LoyKrathongScene {
         mesh.position.z = 36 + Math.random() * 16;
       }
 
-      // การโคลงเคลงตามระลอกคลื่นน้ำ
-      mesh.position.y = Math.sin(time * 2.8 + bob) * 0.1 + 0.06;
-      mesh.rotation.z = Math.sin(time * 2.0 + bob) * 0.035;
-      mesh.rotation.x = Math.cos(time * 1.7 + bob) * 0.03;
+      // Dynamic Water Buoyancy: ฐานกระทงลอยเหนือน้ำตลอดเวลา ไม่จมน้ำเมื่อคลื่นซัด
+      const waterY = this.getWaterHeightAt(mesh.position.x, mesh.position.z, time);
+      mesh.position.y = waterY + 0.08;
+
+      // โคลงเคลงตามความชันของลูกคลื่นจริง (Wave Surface Tilt)
+      const { slopeX, slopeZ } = this.getWaterNormalAt(mesh.position.x, mesh.position.z, time);
+      mesh.rotation.z = -slopeX * 0.75;
+      mesh.rotation.x = slopeZ * 0.75;
       mesh.rotation.y += mesh.userData.rotSpeed || 0.002;
 
       // เปลวไฟเทียนสะบัดไหว
@@ -2210,7 +2359,7 @@ export class LoyKrathongScene {
       });
     }
 
-    // 5. Krathong Sai / River Candles (กระทงสายลอยสว่าง พร้อมหลบกระทงใหญ่)
+    // 5. Krathong Sai / River Candles (กระทงสายลอยสว่างบนผิวน้ำจริง ไม่จม)
     if (this.riverCandles) {
       this.riverCandles.forEach((item) => {
         item.group.position.z -= item.speed * 4.0;
@@ -2219,8 +2368,11 @@ export class LoyKrathongScene {
           item.group.position.x = -4 + Math.random() * 21;
           item.originX = item.group.position.x;
         }
-        item.group.position.y = 0.08 + Math.sin(time * item.swaySpeed + item.bobPhase) * 0.08;
         item.group.position.x = item.originX + Math.sin(time * 1.2 + item.bobPhase) * 0.5;
+
+        // Dynamic Buoyancy: เทียนกระทงสายลอยอยู่บนผิวน้ำตลอดเวลา ไม่จมน้ำ
+        const cWaterY = this.getWaterHeightAt(item.group.position.x, item.group.position.z, time);
+        item.group.position.y = cWaterY + 0.05;
 
         // หลบกระทงใหญ่ ไม่ให้ลอยทะลุกัน
         krathongs.forEach((kMesh) => {
@@ -2264,10 +2416,14 @@ export class LoyKrathongScene {
       });
     }
 
-    // 8. Lotus Blossoms Bobbing on Water (ใบบัวลอยกระเพื่อม)
+    // 8. Lotus Blossoms Bobbing on Water (ใบบัวลอยบนผิวน้ำจริง ไม่จม)
     if (this.lotusBlossoms) {
       this.lotusBlossoms.forEach((item) => {
-        item.group.position.y = item.baseY + Math.sin(time * 2.2 + item.phase) * 0.04;
+        const padWaterY = this.getWaterHeightAt(item.group.position.x, item.group.position.z, time);
+        item.group.position.y = padWaterY + 0.04;
+        const { slopeX, slopeZ } = this.getWaterNormalAt(item.group.position.x, item.group.position.z, time);
+        item.group.rotation.z = -slopeX * 0.6;
+        item.group.rotation.x = slopeZ * 0.6;
       });
     }
 
