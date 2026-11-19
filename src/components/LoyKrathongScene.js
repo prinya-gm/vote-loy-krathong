@@ -2881,6 +2881,10 @@ export class LoyKrathongScene {
 
     group.add(photoGroup);
 
+    // ป้ายแสดงคะแนนโหวต 3D แบบ Billboard ลอยอยู่เหนือกกระทง (หันหน้าหากล้องเสมอ)
+    const voteBadge = this.createVoteBadgeSprite(data.votes || 0);
+    group.add(voteBadge);
+
     const ringGeo = new THREE.RingGeometry(1.9, 2.3, 32);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -2903,6 +2907,70 @@ export class LoyKrathongScene {
     group.userData.rotSpeed = (Math.random() - 0.5) * 0.002;
 
     return group;
+  }
+
+  // สร้างพื้นผิว Texture ป้ายคะแนนโหวต (ทรงแคปซูลมน ขอบทอง พร้อมไอคอนหัวใจและตัวเลขคมชัด)
+  createVoteBadgeTexture(votes) {
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 80;
+    const ctx = c.getContext("2d");
+
+    ctx.clearRect(0, 0, c.width, c.height);
+
+    const x = 6, y = 6, w = 244, h = 68, r = 34;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, "rgba(15, 23, 42, 0.92)");
+    grad.addColorStop(1, "rgba(30, 41, 59, 0.95)");
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.font = "bold 34px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const vStr = String(votes || 0);
+    ctx.fillStyle = "#ec4899";
+    ctx.fillText("❤️", 64, y + h / 2 + 2);
+
+    ctx.fillStyle = "#fbbf24";
+    ctx.fillText(vStr, 142, y + h / 2 + 2);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  // สร้างวัตถุ 3D Billboard Sprite สำหรับป้ายคะแนนโหวต
+  createVoteBadgeSprite(votes) {
+    const tex = this.createVoteBadgeTexture(votes);
+    const spriteMat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(1.4, 0.44, 1.0);
+    sprite.position.set(0, 2.55, -0.4);
+    sprite.name = "voteBadgeSprite";
+    return sprite;
   }
 
   // กำหนดตำแหน่งเริ่มต้นของกระทงให้กระจายตัวเต็มความกว้างท้องน้ำทั้ง 2 ฝั่ง (ซ้าย-ขวา)
@@ -2938,7 +3006,17 @@ export class LoyKrathongScene {
         this.scene.add(mesh);
         this.krathongMeshes.set(entry.id, mesh);
       } else {
+        const oldVotes = mesh.userData.entry?.votes || 0;
         mesh.userData.entry = entry;
+        // อัปเดตตัวเลขผลโหวตบนป้ายเหนือกระทงทันทีเมื่อมีคะแนนเปลี่ยนแปลง
+        if (entry.votes !== oldVotes) {
+          const sprite = mesh.getObjectByName("voteBadgeSprite");
+          if (sprite) {
+            if (sprite.material.map) sprite.material.map.dispose();
+            sprite.material.map = this.createVoteBadgeTexture(entry.votes || 0);
+            sprite.material.needsUpdate = true;
+          }
+        }
       }
     });
   }
@@ -2972,7 +3050,7 @@ export class LoyKrathongScene {
     const interactables = [];
     for (const mesh of this.krathongMeshes.values()) {
       mesh.traverse((child) => {
-        if (child.isMesh) {
+        if (child.isMesh || child.isSprite) {
           interactables.push(child);
         }
       });
@@ -3092,6 +3170,12 @@ export class LoyKrathongScene {
       if (flame) {
         const flicker = Math.sin(time * 16.0 + bob) * 0.15 + 1.0;
         flame.scale.set(flicker, flicker * 1.1, flicker);
+      }
+
+      // ป้ายผลโหวตลอยพลิ้วเบาๆ เหนือกกระทง
+      const vBadge = mesh.getObjectByName("voteBadgeSprite");
+      if (vBadge) {
+        vBadge.position.y = 2.55 + Math.sin(time * 2.0 + bob) * 0.04;
       }
     });
 
