@@ -81,6 +81,11 @@ export default function KrathongDetailModal({
               src={krathong.photoUrl}
               alt={krathong.name}
               className="max-h-76 w-auto object-contain rounded-lg"
+              onError={(e) => {
+                if (krathong.photoUrl && !e.target.src.includes("images.weserv.nl")) {
+                  e.target.src = `https://images.weserv.nl/?url=${encodeURIComponent(krathong.photoUrl)}`;
+                }
+              }}
             />
             {/* Color pill */}
             <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full flex items-center gap-2 border border-white/10 text-xs">

@@ -2783,75 +2783,100 @@ export class LoyKrathongScene {
 
     // โหลดรูปภาพโดยคงอัตราส่วนเดิม (Aspect Ratio) 100% ไม่บิดเบี้ยว ไม่ตัดรูปทิ้ง
     if (data.photoUrl) {
+      const isDataOrBlob = data.photoUrl.startsWith("data:") || data.photoUrl.startsWith("blob:");
+      
+      // ฟังก์ชันช่วยแปลง URL สำหรับ WebGL ให้มี CORS header (เช่น images จาก Firebase Storage หรือ Unsplash)
+      const getCorsUrl = (url) => {
+        if (!url || url.startsWith("data:") || url.startsWith("blob:")) return url;
+        if (url.includes("images.weserv.nl")) return url;
+        return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+      };
+
       const img = new Image();
-      // ไม่ใส่ crossOrigin กับ Base64 Data URL เพื่อไม่ให้ Chrome บล็อก WebGL
-      if (!data.photoUrl.startsWith("data:") && !data.photoUrl.startsWith("blob:")) {
+      if (!isDataOrBlob) {
         img.crossOrigin = "anonymous";
       }
 
-      img.onload = () => {
-        const imgW = img.width || 512;
-        const imgH = img.height || 512;
-        const aspect = imgW / imgH;
+      const applyTexture = () => {
+        try {
+          const imgW = img.width || 512;
+          const imgH = img.height || 512;
+          const aspect = imgW / imgH;
 
-        // ปรับสัดส่วนแผ่นป้ายและกรอบรูป 3D ตามอัตราส่วนแนวตั้งหรือแนวนอนของรูปจริง
-        let targetW = 1.36;
-        let targetH = 1.36;
-        if (aspect >= 1.0) {
-          // แนวนอน (Landscape): กว้างปรับขยาย ความสูงคำนวณตามสัดส่วนเดิม
-          targetW = Math.min(1.68, 1.36 * Math.sqrt(aspect));
-          targetH = Math.max(0.75, targetW / aspect);
-        } else {
-          // แนวตั้ง (Portrait): สูงปรับขยาย ความกว้างคำนวณตามสัดส่วนเดิม
-          targetH = Math.min(1.68, 1.36 / Math.sqrt(aspect));
-          targetW = Math.max(0.75, targetH * aspect);
+          // ปรับสัดส่วนแผ่นป้ายและกรอบรูป 3D ตามอัตราส่วนแนวตั้งหรือแนวนอนของรูปจริง
+          let targetW = 1.36;
+          let targetH = 1.36;
+          if (aspect >= 1.0) {
+            // แนวนอน (Landscape): กว้างปรับขยาย ความสูงคำนวณตามสัดส่วนเดิม
+            targetW = Math.min(1.68, 1.36 * Math.sqrt(aspect));
+            targetH = Math.max(0.75, targetW / aspect);
+          } else {
+            // แนวตั้ง (Portrait): สูงปรับขยาย ความกว้างคำนวณตามสัดส่วนเดิม
+            targetH = Math.min(1.68, 1.36 / Math.sqrt(aspect));
+            targetW = Math.max(0.75, targetH * aspect);
+          }
+
+          const scaleX = targetW / 1.36;
+          const scaleY = targetH / 1.36;
+
+          frame.scale.set(scaleX, scaleY, 1.0);
+          photoPlane.scale.set(scaleX, scaleY, 1.0);
+          backPlane.scale.set(scaleX, scaleY, 1.0);
+          photoGroup.position.y = 0.55 + targetH / 2;
+
+          // วาดรูปต้นฉบับลงบนผืนผ้าใบตามสัดส่วนแท้จริง
+          const c = document.createElement("canvas");
+          c.width = 512;
+          c.height = Math.round(512 / aspect);
+          if (c.height < 256) c.height = 256;
+          if (c.height > 1024) c.height = 1024;
+
+          const ctx = c.getContext("2d");
+          // วาดภาพเต็มรูปคงอัตราส่วนเดิม 100%
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+
+          // กรอบทองลายไทยรอบรูป
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = Math.max(8, Math.round(c.width * 0.025));
+          ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, c.width - ctx.lineWidth, c.height - ctx.lineWidth);
+
+          // แถบชื่อเจ้าของกระทงที่ด้านล่าง
+          const bannerH = Math.max(48, Math.round(c.height * 0.16));
+          ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
+          ctx.fillRect(0, c.height - bannerH, c.width, bannerH);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = `bold ${Math.round(bannerH * 0.42)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(data.name || "ผู้ร่วมลอยกระทง", c.width / 2, c.height - bannerH / 2);
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.needsUpdate = true;
+          photoMat.map = tex;
+          photoMat.needsUpdate = true;
+        } catch (err) {
+          console.warn("Failed to generate texture from image:", err);
         }
-
-        const scaleX = targetW / 1.36;
-        const scaleY = targetH / 1.36;
-
-        frame.scale.set(scaleX, scaleY, 1.0);
-        photoPlane.scale.set(scaleX, scaleY, 1.0);
-        backPlane.scale.set(scaleX, scaleY, 1.0);
-        photoGroup.position.y = 0.55 + targetH / 2;
-
-        // วาดรูปต้นฉบับลงบนผืนผ้าใบตามสัดส่วนแท้จริง
-        const c = document.createElement("canvas");
-        c.width = 512;
-        c.height = Math.round(512 / aspect);
-        if (c.height < 256) c.height = 256;
-        if (c.height > 1024) c.height = 1024;
-
-        const ctx = c.getContext("2d");
-        // วาดภาพเต็มรูปคงอัตราส่วนเดิม 100%
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-
-        // กรอบทองลายไทยรอบรูป
-        ctx.strokeStyle = "#f59e0b";
-        ctx.lineWidth = Math.max(8, Math.round(c.width * 0.025));
-        ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, c.width - ctx.lineWidth, c.height - ctx.lineWidth);
-
-        // แถบชื่อเจ้าของกระทงที่ด้านล่าง
-        const bannerH = Math.max(48, Math.round(c.height * 0.16));
-        ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
-        ctx.fillRect(0, c.height - bannerH, c.width, bannerH);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${Math.round(bannerH * 0.42)}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(data.name || "ผู้ร่วมลอยกระทง", c.width / 2, c.height - bannerH / 2);
-
-        const tex = new THREE.CanvasTexture(c);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        photoMat.map = tex;
-        photoMat.needsUpdate = true;
       };
 
-      img.onerror = (e) => {
-        console.warn("Could not load image texture directly:", data.photoUrl, e);
+      img.onload = applyTexture;
+
+      img.onerror = () => {
+        // หากโหลดตรงไม่ได้ (เช่นติด CORS ของ Firebase Storage) ให้ลองผ่าน CORS proxy
+        if (!isDataOrBlob && !img.src.includes("images.weserv.nl")) {
+          img.src = getCorsUrl(data.photoUrl);
+        } else {
+          console.warn("Could not load image texture directly:", data.photoUrl);
+        }
       };
 
-      img.src = data.photoUrl;
+      // สำหรับ URL ภายนอก (Firebase Storage / Unsplash) ใช้ CORS bridge โดยตรงเพื่อความรวดเร็วและแน่นอน
+      if (!isDataOrBlob && (data.photoUrl.includes("firebasestorage.googleapis.com") || data.photoUrl.includes("unsplash.com"))) {
+        img.src = getCorsUrl(data.photoUrl);
+      } else {
+        img.src = data.photoUrl;
+      }
     }
 
     group.add(photoGroup);

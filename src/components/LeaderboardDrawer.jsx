@@ -84,6 +84,11 @@ export default function LeaderboardDrawer({
                 src={item.photoUrl}
                 alt={item.name}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  if (item.photoUrl && !e.target.src.includes("images.weserv.nl")) {
+                    e.target.src = `https://images.weserv.nl/?url=${encodeURIComponent(item.photoUrl)}`;
+                  }
+                }}
               />
             </div>
 
