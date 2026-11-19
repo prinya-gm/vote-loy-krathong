@@ -2011,12 +2011,12 @@ export class LoyKrathongScene {
       },
 
       // --- ข. กลุ่มคนเดินเล่นไปมาบนทางเดินและท่าน้ำ (Walking Promenade & Pier Strollers) ---
-      // กำหนดพิกัดให้อยู่ในโซนปลอดภัย (X <= -22.0) ไม่เข้าใกล้หรือทะลุขอบตลิ่งหินเด็ดขาด
+      // กำหนดพิกัดให้อยู่ในโซนปลอดภัย ไม่เข้าใกล้หรือทะลุขอบตลิ่งหินเด็ดขาด
       // 5. คู่รัก: หญิงสาวสไบชมพูกลีบบัว เดินทอดน่องบนทางเดินเลียบแม่น้ำ
       {
         gender: "female",
         role: "walking",
-        x: -22.5, y: 1.5, z: -8.0,
+        x: -23.5, y: 1.5, z: -8.0,
         primary: 0xec4899, // สไบชมพูกลีบบัว
         secondary: 0xbe185d, // ผ้าซิ่นชมพูเข้ม
         gold: 0xfbbf24,
@@ -2027,34 +2027,34 @@ export class LoyKrathongScene {
       {
         gender: "male",
         role: "walking",
-        x: -23.8, y: 1.5, z: -6.5,
+        x: -24.4, y: 1.5, z: -6.5,
         primary: 0xf59e0b, // เสื้อไหมสีทอง
         secondary: 0x881337, // โจงกระเบนสีแดงเลือดหมู
         sash: 0xd97706,
         minPos: -30.0, maxPos: 26.0,
         axis: "z", dir: 1, speed: 1.25, walkPhase: 0.2,
       },
-      // 7. คู่รัก 2: หญิงสาวสไบสีฟ้าคราม เดินรับลมบนลานหญ้าท่าน้ำสีเขียว
+      // 7. คู่รัก 2: หญิงสาวสไบสีฟ้าคราม เดินรับลมบนลานหญ้าท่าน้ำสีเขียว (เดินขนานแม่น้ำแกน Z)
       {
         gender: "female",
         role: "walking",
-        x: -17.5, y: 0.89, z: 1.5,
+        x: -16.2, y: 0.89, z: 2.5,
         primary: 0x06b6d4, // สไบสีฟ้าคราม
         secondary: 0x1e40af, // ผ้าซิ่นสีน้ำเงิน
         gold: 0xfacc15,
-        minPos: -18.8, maxPos: -15.8,
-        axis: "x", dir: 1, speed: 1.05, walkPhase: 1.2,
+        minPos: 0.5, maxPos: 9.5,
+        axis: "z", dir: 1, speed: 1.05, walkPhase: 1.2,
       },
-      // 8. คู่รัก 2: ชายหนุ่มเสื้อผ้าไหมสีส้มทอง เดินบนลานหญ้าท่าน้ำสีเขียว
+      // 8. คู่รัก 2: ชายหนุ่มเสื้อผ้าไหมสีส้มทอง เดินบนลานหญ้าท่าน้ำสีเขียว (เดินขนานแม่น้ำแกน Z)
       {
         gender: "male",
         role: "walking",
-        x: -17.5, y: 0.89, z: 0.4,
+        x: -17.0, y: 0.89, z: 1.2,
         primary: 0xea580c, // เสื้อไหมสีส้มทอง
         secondary: 0x292524, // โจงกระเบนสีศิลา
         sash: 0xfbbf24,
-        minPos: -18.8, maxPos: -15.8,
-        axis: "x", dir: 1, speed: 1.05, walkPhase: 1.4,
+        minPos: 0.5, maxPos: 9.5,
+        axis: "z", dir: 1, speed: 1.05, walkPhase: 1.4,
       },
       // 9. หญิงสาวสไบสีม่วงกล้วยไม้ เดินชมความงดงามฝั่งเรือนไทย
       {
@@ -2071,7 +2071,7 @@ export class LoyKrathongScene {
       {
         gender: "male",
         role: "walking",
-        x: -22.8, y: 1.5, z: -18.0,
+        x: -24.0, y: 1.5, z: -18.0,
         primary: 0x10b981, // เสื้อสีเขียวมรกต
         secondary: 0x064e3b, // โจงกระเบนสีเขียวพสุธา
         sash: 0xf59e0b,
@@ -2082,7 +2082,7 @@ export class LoyKrathongScene {
       {
         gender: "female",
         role: "walking",
-        x: -22.2, y: 1.5, z: 12.0,
+        x: -23.2, y: 1.5, z: 12.0,
         primary: 0xf59e0b, // สไบสีทองบุษราคัม
         secondary: 0x92400e, // ผ้าซิ่นสีทองอำพัน
         gold: 0xfef08a,
@@ -3057,26 +3057,34 @@ export class LoyKrathongScene {
 
           // --- 2. ระบบป้องกันไม่ให้คนเดินทะลุขอบตลิ่งเด็ดขาด (Strict Riverbank Boundary Protection) ---
           if (char.group.position.y > 1.2) {
-            // บนทางเดินเลียบแม่น้ำ (Promenade Y = 1.5) ขอบหินกั้นแม่น้ำอยู่ที่ X = -20.0
-            // จำกัดให้อยู่ในโซนปลอดภัย X: -26.0 ถึง -21.4 ไม่สามารถเดินล้ำหรือทะลุขอบตลิ่งหินออกไปได้
-            if (char.group.position.x > -21.4) {
-              char.group.position.x = -21.4;
+            // บนทางเดินเลียบแม่น้ำ (Promenade Y = 1.5)
+            // ขอบหินกั้นแม่น้ำอยู่ที่ X = -20.0 (ขอบหินกว้างครอบคลุม X: -22.0 ถึง -18.0)
+            // บังคับให้อยู่บนทางเดินคนเดิน X: -26.0 ถึง -22.8 ไม่เดินเบียดหรือทะลุขอบหินเด็ดขาด
+            if (char.group.position.x > -22.8) {
+              char.group.position.x = -22.8;
             }
             if (char.group.position.x < -26.0) {
               char.group.position.x = -26.0;
             }
           } else {
             // บนลานท่าน้ำสีเขียว (Green Pier Y = 0.89)
-            // จำกัดให้อยู่บนสนามหญ้า X: -19.0 ถึง -15.5 ไม่เดินตกน้ำหรือทะลุขอบท่าน้ำ
-            if (char.group.position.x > -15.5) {
-              char.group.position.x = -15.5;
-              char.dir = -1;
-              char.group.rotation.y = -Math.PI / 2;
+            // ขอบหินตลิ่งอยู่ฝั่งซ้าย (X <= -18.0) และขอบน้ำ/บันไดอยู่ฝั่งขวา (X >= -13.5)
+            // เดินรับลมกลางสนามหญ้าอย่างปลอดภัย X: -17.2 ถึง -15.8 (ไม่เข้าใกล้ขอบหินตลิ่งเด็ดขาด)
+            if (char.group.position.x < -17.2) {
+              char.group.position.x = -17.2;
             }
-            if (char.group.position.x < -19.0) {
-              char.group.position.x = -19.0;
+            if (char.group.position.x > -15.8) {
+              char.group.position.x = -15.8;
+            }
+            // และขอบเขตด้าน Z ของลานหญ้าท่าน้ำ (Z: 0.2 ถึง 9.8)
+            if (char.group.position.z > 9.8) {
+              char.group.position.z = 9.8;
+              char.dir = -1;
+              char.group.rotation.y = Math.PI;
+            } else if (char.group.position.z < 0.2) {
+              char.group.position.z = 0.2;
               char.dir = 1;
-              char.group.rotation.y = Math.PI / 2;
+              char.group.rotation.y = 0;
             }
           }
         } else if (char.role === "floating") {
