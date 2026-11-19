@@ -2011,11 +2011,12 @@ export class LoyKrathongScene {
       },
 
       // --- ข. กลุ่มคนเดินเล่นไปมาบนทางเดินและท่าน้ำ (Walking Promenade & Pier Strollers) ---
-      // 5. คู่รัก: หญิงสาวสไบชมพูกลีบบัว เดินทอดน่องริมทางเดินเลียบแม่น้ำ
+      // กำหนดพิกัดให้อยู่ในโซนปลอดภัย (X <= -22.0) ไม่เข้าใกล้หรือทะลุขอบตลิ่งหินเด็ดขาด
+      // 5. คู่รัก: หญิงสาวสไบชมพูกลีบบัว เดินทอดน่องบนทางเดินเลียบแม่น้ำ
       {
         gender: "female",
         role: "walking",
-        x: -19.4, y: 1.5, z: -8.0,
+        x: -22.5, y: 1.5, z: -8.0,
         primary: 0xec4899, // สไบชมพูกลีบบัว
         secondary: 0xbe185d, // ผ้าซิ่นชมพูเข้ม
         gold: 0xfbbf24,
@@ -2026,51 +2027,51 @@ export class LoyKrathongScene {
       {
         gender: "male",
         role: "walking",
-        x: -19.9, y: 1.5, z: -6.5,
+        x: -23.8, y: 1.5, z: -6.5,
         primary: 0xf59e0b, // เสื้อไหมสีทอง
         secondary: 0x881337, // โจงกระเบนสีแดงเลือดหมู
         sash: 0xd97706,
         minPos: -30.0, maxPos: 26.0,
         axis: "z", dir: 1, speed: 1.25, walkPhase: 0.2,
       },
-      // 7. คู่รัก 2: หญิงสาวสไบสีฟ้าคราม เดินรับลมบนลานหญ้าท่าน้ำสีเขียวมุ่งสู่แม่น้ำ
+      // 7. คู่รัก 2: หญิงสาวสไบสีฟ้าคราม เดินรับลมบนลานหญ้าท่าน้ำสีเขียว
       {
         gender: "female",
         role: "walking",
-        x: -18.2, y: 0.89, z: 1.5,
+        x: -17.5, y: 0.89, z: 1.5,
         primary: 0x06b6d4, // สไบสีฟ้าคราม
         secondary: 0x1e40af, // ผ้าซิ่นสีน้ำเงิน
         gold: 0xfacc15,
-        minPos: -19.2, maxPos: -14.2,
+        minPos: -18.8, maxPos: -15.8,
         axis: "x", dir: 1, speed: 1.05, walkPhase: 1.2,
       },
       // 8. คู่รัก 2: ชายหนุ่มเสื้อผ้าไหมสีส้มทอง เดินบนลานหญ้าท่าน้ำสีเขียว
       {
         gender: "male",
         role: "walking",
-        x: -18.2, y: 0.89, z: 0.4,
+        x: -17.5, y: 0.89, z: 0.4,
         primary: 0xea580c, // เสื้อไหมสีส้มทอง
         secondary: 0x292524, // โจงกระเบนสีศิลา
         sash: 0xfbbf24,
-        minPos: -19.2, maxPos: -14.2,
+        minPos: -18.8, maxPos: -15.8,
         axis: "x", dir: 1, speed: 1.05, walkPhase: 1.4,
       },
       // 9. หญิงสาวสไบสีม่วงกล้วยไม้ เดินชมความงดงามฝั่งเรือนไทย
       {
         gender: "female",
         role: "walking",
-        x: -21.6, y: 1.5, z: 18.0,
+        x: -23.5, y: 1.5, z: 18.0,
         primary: 0xa855f7, // สไบสีม่วงกล้วยไม้
         secondary: 0x6b21a8, // ผ้าซิ่นสีม่วงเม็ดมะปราง
         gold: 0xfef08a,
-        minPos: -22.0, maxPos: 32.0,
+        minPos: -20.0, maxPos: 32.0,
         axis: "z", dir: -1, speed: 1.15, walkPhase: 2.8,
       },
-      // 10. ชายหนุ่มเสื้อผ้าไหมสีเขียวมรกต เดินเล่นเลียบตลิ่งแม่น้ำ
+      // 10. ชายหนุ่มเสื้อผ้าไหมสีเขียวมรกต เดินเล่นบนทางเดินหินเลียบตลิ่ง
       {
         gender: "male",
         role: "walking",
-        x: -21.2, y: 1.5, z: -18.0,
+        x: -22.8, y: 1.5, z: -18.0,
         primary: 0x10b981, // เสื้อสีเขียวมรกต
         secondary: 0x064e3b, // โจงกระเบนสีเขียวพสุธา
         sash: 0xf59e0b,
@@ -2081,7 +2082,7 @@ export class LoyKrathongScene {
       {
         gender: "female",
         role: "walking",
-        x: -18.8, y: 1.5, z: 12.0,
+        x: -22.2, y: 1.5, z: 12.0,
         primary: 0xf59e0b, // สไบสีทองบุษราคัม
         secondary: 0x92400e, // ผ้าซิ่นสีทองอำพัน
         gold: 0xfef08a,
@@ -2268,6 +2269,7 @@ export class LoyKrathongScene {
 
     let miniFlame = null;
     let candleLight = null;
+    let miniKGroup = null;
 
     // ท่าทางเฉพาะกรณีคนลอยกระทงริมท่าน้ำ
     if (cfg.role === "floating") {
@@ -2290,6 +2292,7 @@ export class LoyKrathongScene {
         const miniK = this.buildMiniKrathongProp(true);
         miniK.group.position.set(0, 0.42, 0.52);
         body.add(miniK.group);
+        miniKGroup = miniK.group;
         miniFlame = miniK.flame;
         candleLight = miniK.light;
       }
@@ -2298,6 +2301,8 @@ export class LoyKrathongScene {
     return {
       group: root,
       body,
+      head,
+      torso,
       lArm,
       rArm,
       lLeg,
@@ -2305,6 +2310,8 @@ export class LoyKrathongScene {
       sabaiTail,
       miniFlame,
       candleLight,
+      miniKGroup,
+      pose: cfg.pose,
       baseY: cfg.y,
       bodyBaseY: body.position.y,
       speed: cfg.speed || 1.0,
@@ -2412,6 +2419,7 @@ export class LoyKrathongScene {
 
     let miniFlame = null;
     let candleLight = null;
+    let miniKGroup = null;
 
     // ท่าทางเฉพาะกรณีคนลอยกระทงริมท่าน้ำ
     if (cfg.role === "floating") {
@@ -2439,6 +2447,7 @@ export class LoyKrathongScene {
         const miniK = this.buildMiniKrathongProp(true);
         miniK.group.position.set(0, 0.92, 0.34);
         body.add(miniK.group);
+        miniKGroup = miniK.group;
         miniFlame = miniK.flame;
         candleLight = miniK.light;
       }
@@ -2447,12 +2456,16 @@ export class LoyKrathongScene {
     return {
       group: root,
       body,
+      head,
+      torso,
       lArm,
       rArm,
       lLeg,
       rLeg,
       miniFlame,
       candleLight,
+      miniKGroup,
+      pose: cfg.pose,
       baseY: cfg.y,
       bodyBaseY: body.position.y,
       speed: cfg.speed || 1.0,
@@ -2850,6 +2863,31 @@ export class LoyKrathongScene {
         mesh.position.x += (-6.8 - mesh.position.x) * 0.2;
       }
 
+      // --- 1. ระบบป้องกันกระทงลอยชนทะลุฐานเจดีย์และลานวัด (Chedi & Temple Base Collision) ---
+      // ฐานวัดและเจดีย์ตั้งอยู่ที่ X: -4.0 ถึง +36.0, Z: -58.0 ถึง -26.0 (บันไดหน้าวัดยื่นถึง Z = -21.0, X: 9.0 ถึง 23.0)
+      // เมื่อกระทงลอยมาถึงบริเวณหน้าวัด กระแสน้ำจะเบี่ยงพัดกระทงออกสู่ร่องน้ำเปิดฝั่งตะวันตก (X <= -5.8)
+      if (mesh.position.z < -16.0 && mesh.position.x > -5.5) {
+        mesh.position.x -= 0.045; // เบี่ยงกระแสน้ำออกสู่ร่องน้ำหลักล่วงหน้า
+      }
+
+      // ป้องกันการชนบันไดหินอ่อนหน้าลานวัด (Front Stairs: X >= 8.5, Z <= -20.5)
+      if (mesh.position.x > 8.5 && mesh.position.z < -20.5 && mesh.position.z > -27.0) {
+        mesh.position.z = Math.max(mesh.position.z, -20.2);
+        mesh.position.x -= 0.22;
+      }
+
+      // ป้องกันการชนผนังฐานลานวัดด้านหน้า (South Platform Wall: X >= -4.2, Z <= -25.5)
+      if (mesh.position.x > -4.2 && mesh.position.z < -25.5 && mesh.position.z > -28.0) {
+        mesh.position.z = Math.max(mesh.position.z, -25.2);
+        mesh.position.x -= 0.25;
+      }
+
+      // ป้องกันการชนผนังฐานเจดีย์ฝั่งตะวันตกที่ติดแม่น้ำ (West Platform Wall: Z <= -25.5)
+      // ห้ามทะลุเข้าสู่ฐานเจดีย์เด็ดขาด ดันให้ลอยขนานเลียบกำแพงหินฝั่งร่องน้ำหลัก (X <= -5.8)
+      if (mesh.position.z <= -25.5 && mesh.position.x > -5.8) {
+        mesh.position.x = -5.8;
+      }
+
       // จำกัดขอบเขตช่องน้ำลอยกระทงที่ปลอดภัย (Fairway Boundary: X ระหว่าง -6.5 ถึง +16.5)
       if (mesh.position.x < -6.5) mesh.position.x = -6.5;
       if (mesh.position.x > 16.5) mesh.position.x = 16.5;
@@ -2877,7 +2915,7 @@ export class LoyKrathongScene {
       });
     }
 
-    // 5. Krathong Sai / River Candles (กระทงสายลอยสว่างบนผิวน้ำจริง ไม่จม)
+    // 5. Krathong Sai / River Candles (กระทงสายลอยสว่างบนผิวน้ำจริง ไม่จม และไม่ทะลุฐานเจดีย์)
     if (this.riverCandles) {
       this.riverCandles.forEach((item) => {
         item.group.position.z -= item.speed * 4.0;
@@ -2891,6 +2929,22 @@ export class LoyKrathongScene {
         // Dynamic Buoyancy: เทียนกระทงสายลอยอยู่บนผิวน้ำตลอดเวลา ไม่จมน้ำ
         const cWaterY = this.getWaterHeightAt(item.group.position.x, item.group.position.z, time);
         item.group.position.y = cWaterY + 0.05;
+
+        // ป้องกันกระทงสายชนทะลุฐานเจดีย์และลานวัด
+        if (item.group.position.z < -16.0 && item.group.position.x > -4.5) {
+          item.group.position.x -= 0.04;
+        }
+        if (item.group.position.x > 8.0 && item.group.position.z < -20.5 && item.group.position.z > -27.0) {
+          item.group.position.z = Math.max(item.group.position.z, -20.2);
+          item.group.position.x -= 0.18;
+        }
+        if (item.group.position.x > -4.2 && item.group.position.z < -25.5 && item.group.position.z > -28.0) {
+          item.group.position.z = Math.max(item.group.position.z, -25.2);
+          item.group.position.x -= 0.22;
+        }
+        if (item.group.position.z <= -25.5 && item.group.position.x > -4.8) {
+          item.group.position.x = -4.8;
+        }
 
         // หลบกระทงใหญ่ ไม่ให้ลอยทะลุกัน
         krathongs.forEach((kMesh) => {
@@ -2955,7 +3009,7 @@ export class LoyKrathongScene {
       this.starField.rotation.y = time * 0.002;
     }
 
-    // 11. Animated Thai People (คนสวมชุดไทยหลากสี เดินเล่น และลอยกระทงริมท่าน้ำ)
+    // 11. Animated Thai People (คนสวมชุดไทยหลากสี เดินเล่นไม่ทะลุขอบตลิ่ง และลอยกระทงขยับเคลื่อนไหวจริงริมท่าน้ำ)
     if (this.thaiPeople) {
       this.thaiPeople.forEach((char) => {
         if (char.role === "walking") {
@@ -3000,27 +3054,106 @@ export class LoyKrathongScene {
               char.group.rotation.y = 0;
             }
           }
-        } else if (char.role === "floating") {
-          // แอนิเมชันการหายใจและการประคองกระทงแผ่วเบา
-          const breath = Math.sin(time * 2.2 + char.phase) * 0.018;
-          char.body.position.y = (char.bodyBaseY || 0) + breath;
 
-          // แขนขยับประคองกระทงไหวเล็กน้อยตามระลอกคลื่น
-          if (char.lArm && char.rArm && !char.miniFlame && !char.candleLight) {
-            // ท่านั่งพนมมือไหว้อธิษฐาน (Wai)
-            char.lArm.rotation.x = -0.88 + Math.sin(time * 1.5 + char.phase) * 0.02;
-            char.rArm.rotation.x = -0.88 + Math.sin(time * 1.5 + char.phase) * 0.02;
+          // --- 2. ระบบป้องกันไม่ให้คนเดินทะลุขอบตลิ่งเด็ดขาด (Strict Riverbank Boundary Protection) ---
+          if (char.group.position.y > 1.2) {
+            // บนทางเดินเลียบแม่น้ำ (Promenade Y = 1.5) ขอบหินกั้นแม่น้ำอยู่ที่ X = -20.0
+            // จำกัดให้อยู่ในโซนปลอดภัย X: -26.0 ถึง -21.4 ไม่สามารถเดินล้ำหรือทะลุขอบตลิ่งหินออกไปได้
+            if (char.group.position.x > -21.4) {
+              char.group.position.x = -21.4;
+            }
+            if (char.group.position.x < -26.0) {
+              char.group.position.x = -26.0;
+            }
+          } else {
+            // บนลานท่าน้ำสีเขียว (Green Pier Y = 0.89)
+            // จำกัดให้อยู่บนสนามหญ้า X: -19.0 ถึง -15.5 ไม่เดินตกน้ำหรือทะลุขอบท่าน้ำ
+            if (char.group.position.x > -15.5) {
+              char.group.position.x = -15.5;
+              char.dir = -1;
+              char.group.rotation.y = -Math.PI / 2;
+            }
+            if (char.group.position.x < -19.0) {
+              char.group.position.x = -19.0;
+              char.dir = 1;
+              char.group.rotation.y = Math.PI / 2;
+            }
           }
+        } else if (char.role === "floating") {
+          // --- 3. แอนิเมชันของคนที่กำลังลอยกระทงริมท่าน้ำ ให้มีการเคลื่อนไหวจริงอย่างต่อเนื่อง ไม่ใช่อยู่นิ่งๆ ---
+          const tCycle = time * 0.75 + char.phase;
+          const reachForward = Math.cos(tCycle);
+
+          if (char.pose === "releasing_krathong") {
+            // หญิงสาวที่คุกเข่าลอยกระทง:
+            // 1. ลำตัวโน้มตัวลงสู่ผิวน้ำ สลับกับยกตัวขึ้นอธิษฐานอย่างนอบน้อม
+            if (char.torso) {
+              char.torso.rotation.x = 0.28 + reachForward * 0.20;
+              char.torso.rotation.z = Math.sin(time * 1.5 + char.phase) * 0.04;
+            }
+
+            // 2. แขนทั้งสองข้างยื่นประคองกระทงลงสู่ผิวน้ำ สลับกับยกขึ้นระดับอก
+            const armExt = -0.72 + reachForward * 0.24;
+            char.lArm.rotation.x = armExt;
+            char.rArm.rotation.x = armExt;
+
+            // 3. ศีรษะก้มมองกระทงขณะยื่นลงน้ำ และเงยหน้าขึ้นมองสายน้ำเมื่อยกตัว
+            if (char.head) {
+              char.head.rotation.x = 0.22 - reachForward * 0.16;
+              char.head.rotation.y = Math.sin(time * 0.8 + char.phase) * 0.14;
+            }
+
+            // 4. กระทงในมือขยับแตะผิวน้ำและยื่นไปข้างหน้าตามจังหวะโน้มตัว
+            if (char.miniKGroup) {
+              char.miniKGroup.position.y = 0.42 - reachForward * 0.18;
+              char.miniKGroup.position.z = 0.52 + reachForward * 0.16;
+              char.miniKGroup.rotation.z = Math.sin(time * 2.2) * 0.05;
+            }
+          } else if (char.pose === "praying_wai") {
+            // ชายหนุ่มที่คุกเข่าพนมมือไหว้อธิษฐาน:
+            // 1. ท่าก้มกราบไหว้อย่างนอบน้อมต่อเนื่อง (Reverent Wai & Bowing)
+            const bowAngle = Math.sin(time * 1.3 + char.phase) * 0.18;
+            if (char.torso) char.torso.rotation.x = 0.20 + Math.max(0, bowAngle);
+            if (char.head) {
+              char.head.rotation.x = 0.22 + Math.max(0, bowAngle * 1.3);
+              // หันมองคนข้างๆ สลับกับมองไปที่แม่น้ำ
+              char.head.rotation.y = Math.sin(time * 0.5 + char.phase) * 0.32;
+            }
+
+            // 2. มือพนมไหว้ยกขึ้น-ลงระหว่างหน้าอกและหน้าผาก
+            const handLift = Math.sin(time * 1.3 + char.phase) * 0.12;
+            char.lArm.rotation.x = -0.88 - handLift;
+            char.rArm.rotation.x = -0.88 - handLift;
+          } else if (char.pose === "standing_holding") {
+            // ชายหนุ่มที่ยืนถือกระทงบนชานท่าน้ำ:
+            // 1. ถ่ายเทน้ำหนักตัว โยกตัวซ้าย-ขวาอย่างผ่อนคลาย
+            char.body.position.x = Math.sin(time * 0.9 + char.phase) * 0.05;
+            if (char.torso) char.torso.rotation.z = Math.sin(time * 0.9 + char.phase) * 0.04;
+
+            // 2. แขนขวายกขึ้นชี้ชวนมองโคมลอยบนท้องฟ้าและเจดีย์
+            char.rArm.rotation.x = -0.75 + Math.sin(time * 0.6 + char.phase) * 0.45;
+            char.rArm.rotation.z = -0.35 + Math.cos(time * 0.6 + char.phase) * 0.25;
+
+            // 3. หันมองรอบทิศทาง ชื่นชมบรรยากาศงานลอยกระทง
+            if (char.head) {
+              char.head.rotation.y = Math.sin(time * 0.7 + char.phase) * 0.45;
+              char.head.rotation.x = 0.12 + Math.cos(time * 0.7 + char.phase) * 0.15;
+            }
+          }
+
+          // การหายใจขยับลำตัว
+          const breath = Math.sin(time * 2.2 + char.phase) * 0.02;
+          char.body.position.y = (char.bodyBaseY || 0) + breath;
 
           // เปลวไฟเทียนในกระทงระยิบระยับ
           if (char.miniFlame) {
-            const fDance = 0.9 + Math.sin(time * 9.0 + char.phase) * 0.22;
-            char.miniFlame.scale.set(fDance, fDance * 1.25, fDance);
+            const fDance = 0.9 + Math.sin(time * 9.0 + char.phase) * 0.24;
+            char.miniFlame.scale.set(fDance, fDance * 1.3, fDance);
           }
 
           // แสงไฟกะพริบสะท้อนประกายน้ำ
           if (char.candleLight) {
-            char.candleLight.intensity = 2.0 + Math.sin(time * 11.0 + char.phase) * 0.6;
+            char.candleLight.intensity = 2.0 + Math.sin(time * 11.0 + char.phase) * 0.7;
           }
         }
       });
