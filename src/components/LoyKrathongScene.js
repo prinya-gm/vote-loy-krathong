@@ -2894,22 +2894,25 @@ export class LoyKrathongScene {
     ring.name = "highlightRing";
     group.add(ring);
 
-    group.position.set(data.x || 0, 0, data.z || 10);
-    group.userData.speed = data.speed || 0.009;
+    group.position.set(data.x !== undefined ? data.x : 0, 0, data.z !== undefined ? data.z : 10);
+    group.userData.speedZ = (data.speed || 0.009) * (0.85 + Math.random() * 0.3);
+    group.userData.driftSpeedX = (Math.random() - 0.5) * 0.004;
+    group.userData.curlFreq = 0.35 + Math.random() * 0.35;
+    group.userData.curlAmp = 0.008 + Math.random() * 0.010;
     group.userData.bobOffset = Math.random() * Math.PI * 2;
-    group.userData.rotSpeed = (Math.random() - 0.5) * 0.006;
+    group.userData.rotSpeed = (Math.random() - 0.5) * 0.002;
 
     return group;
   }
 
-  // กำหนดเลนลอยของกระทงในร่องน้ำเปิด เพื่อไม่ให้เกิดการทับซ้อนตั้งแต่เริ่ม
+  // กำหนดตำแหน่งเริ่มต้นของกระทงให้กระจายตัวเต็มความกว้างท้องน้ำทั้ง 2 ฝั่ง (ซ้าย-ขวา)
   assignKrathongInitialPosition(index) {
-    // 5 เลนลอยที่ปลอดภัยในร่องน้ำหลัก (ห่างจากกอบัว X <= -13 และสะพาน X <= -11)
-    const lanes = [-5.0, -1.0, 3.5, 8.0, 13.0];
-    const laneIndex = index % lanes.length;
-    const x = lanes[laneIndex] + (Math.random() - 0.5) * 1.2;
-    // ระยะห่างในแนวสายน้ำ (Z) อย่างน้อย 9-12 เมตรต่อลำ
-    const z = 12 + index * 10;
+    // กระจายกระทงเต็มความกว้างท้องน้ำ (ฝั่งซ้าย กลางน้ำ และเวิ้งน้ำกว้างฝั่งขวา)
+    const broadLanes = [-8.0, -3.5, 4.0, 12.0, 24.0, 34.0, 44.0];
+    const laneIndex = index % broadLanes.length;
+    const x = broadLanes[laneIndex] + (Math.random() - 0.5) * 2.5;
+    // กระจายระยะต้นน้ำ Z สลับกันเป็นธรรมชาติ
+    const z = 8.0 + (index % 5) * 8.0 + Math.random() * 6.0;
     return { x, z };
   }
 
@@ -2926,7 +2929,7 @@ export class LoyKrathongScene {
     entries.forEach((entry, index) => {
       let mesh = this.krathongMeshes.get(entry.id);
       if (!mesh) {
-        if (entry.x === undefined || entry.x < -6.5 || entry.x > 16.5) {
+        if (entry.x === undefined || entry.x < -9.5 || entry.x > 48.0) {
           const initPos = this.assignKrathongInitialPosition(index);
           entry.x = initPos.x;
           entry.z = initPos.z;
@@ -3050,18 +3053,28 @@ export class LoyKrathongScene {
     const krathongs = Array.from(this.krathongMeshes.values());
 
     krathongs.forEach((mesh, idx) => {
-      const speed = mesh.userData.speed || 0.009;
+      const speedZ = mesh.userData.speedZ || mesh.userData.speed || 0.009;
       const bob = mesh.userData.bobOffset || 0;
+      const driftX = mesh.userData.driftSpeedX || 0;
+      const curlFreq = mesh.userData.curlFreq || 0.45;
+      const curlAmp = mesh.userData.curlAmp || 0.010;
 
-      // ไหลตามกระแสน้ำ Z อย่างเอื่อยๆ นุ่มนวล สง่างาม
-      mesh.position.z -= speed * 1.1;
+      // 1. ไหลตามกระแสน้ำ Z อย่างเอื่อยๆ นุ่มนวล
+      mesh.position.z -= speedZ * 1.1;
 
-      // วนกลับขึ้นต้นน้ำเมื่อลอยพ้นสายตา
-      if (mesh.position.z < -46) {
-        // กำหนดเลนลอยใหม่ให้กระจายตัวในร่องน้ำเปิด X: -5 ถึง +14
-        const lanes = [-5.0, -1.0, 3.5, 8.0, 13.0];
-        mesh.position.x = lanes[idx % lanes.length] + (Math.random() - 0.5) * 1.2;
-        mesh.position.z = 36 + Math.random() * 16;
+      // 2. วิถีการลอยอิสระซ้าย-ขวาอย่างเป็นธรรมชาติ (Multi-directional organic drift)
+      mesh.position.x +=
+        driftX +
+        Math.sin(time * curlFreq + bob) * curlAmp +
+        Math.cos(time * 0.35 + mesh.position.z * 0.05) * 0.006;
+
+      // 3. วนกลับขึ้นต้นน้ำเมื่อลอยพ้นสายตา (-52.0) สุ่มกระจายตัวทั่วท้องน้ำ
+      if (mesh.position.z < -52.0) {
+        mesh.position.z = 38.0 + Math.random() * 26.0;
+        // กระจายสุ่มเต็มความกว้างท้องน้ำทั้ง 2 ฝั่ง (X: -8.0 ถึง +44.0)
+        const broadLanes = [-8.0, -3.5, 4.0, 12.0, 24.0, 34.0, 44.0];
+        mesh.position.x = broadLanes[idx % broadLanes.length] + (Math.random() - 0.5) * 3.0;
+        mesh.userData.driftSpeedX = (Math.random() - 0.5) * 0.004;
       }
 
       // Dynamic Water Buoyancy: ฐานกระทงลอยเหนือน้ำตลอดเวลา ไม่จมน้ำเมื่อคลื่นซัด
@@ -3072,7 +3085,7 @@ export class LoyKrathongScene {
       const { slopeX, slopeZ } = this.getWaterNormalAt(mesh.position.x, mesh.position.z, time);
       mesh.rotation.z = -slopeX * 0.75;
       mesh.rotation.x = slopeZ * 0.75;
-      mesh.rotation.y += (mesh.userData.rotSpeed || 0.002) * 0.35;
+      mesh.rotation.y += (mesh.userData.rotSpeed || 0.001) * 0.35;
 
       // เปลวไฟเทียนสะบัดไหว
       const flame = mesh.getObjectByName("candleFlame");
@@ -3107,56 +3120,77 @@ export class LoyKrathongScene {
       }
     }
 
-    // --- ระบบป้องกันกระทงลอยไปทับกอบัวริมน้ำ (Lotus Avoidance) ---
+    // --- ระบบป้องกันกระทงลอยชนสิ่งกีดขวาง และแยกสายน้ำรอบฐานเจดีย์ 2 ฝั่ง ---
     krathongs.forEach((mesh) => {
+      // 1. ป้องกันกระทงลอยไปทับกอบัวริมน้ำฝั่งซ้าย (Lotus Avoidance)
       if (this.lotusObstacles) {
         this.lotusObstacles.forEach((cl) => {
           const dx = mesh.position.x - cl.x;
           const dz = mesh.position.z - cl.z;
           const dist = Math.sqrt(dx * dx + dz * dz);
-          const safeDist = cl.r + 2.5; // รัศมีปลอดภัยจากใจกลางกอบัว
+          const safeDist = cl.r + 2.5;
 
           if (dist < safeDist && dist > 0.001) {
-            // ดันกระทงออกจากกอบัว เข้าสู่ร่องน้ำหลัก (+X) ทันที
             const push = (safeDist - dist) * 0.25;
             mesh.position.x += Math.max(0.08, (dx / dist) * push);
           }
         });
       }
 
-      // ป้องกันไม่ให้กระทงชนเสาและบันไดท่าน้ำ (Pier: X <= -11.5, Z ระหว่าง -2 ถึง 14)
-      if (mesh.position.x < -6.8 && mesh.position.z > -2 && mesh.position.z < 15) {
-        mesh.position.x += (-6.8 - mesh.position.x) * 0.2;
+      // 2. ป้องกันไม่ให้กระทงชนเสาและบันไดท่าน้ำฝั่งซ้าย (Pier X <= -11.5, Z ระหว่าง -2 ถึง 14)
+      if (mesh.position.x < -8.5 && mesh.position.z > -2 && mesh.position.z < 14) {
+        mesh.position.x += (-8.5 - mesh.position.x) * 0.2;
       }
 
-      // --- 1. ระบบป้องกันกระทงลอยชนทะลุฐานเจดีย์และลานวัด (Chedi & Temple Base Collision) ---
+      // 3. ระบบแยกสายน้ำอ้อมฐานเจดีย์และลานวัด 2 ฝั่ง (Bifurcated Dual-Channel Navigation)
       // ฐานวัดและเจดีย์ตั้งอยู่ที่ X: -4.0 ถึง +36.0, Z: -58.0 ถึง -26.0 (บันไดหน้าวัดยื่นถึง Z = -21.0, X: 9.0 ถึง 23.0)
-      // เมื่อกระทงลอยมาถึงบริเวณหน้าวัด กระแสน้ำจะเบี่ยงพัดกระทงออกสู่ร่องน้ำเปิดฝั่งตะวันตก (X <= -5.8)
-      if (mesh.position.z < -16.0 && mesh.position.x > -5.5) {
-        mesh.position.x -= 0.045; // เบี่ยงกระแสน้ำออกสู่ร่องน้ำหลักล่วงหน้า
+
+      // ชั้นที่ 1: กระแสน้ำแยกสายล่วงหน้า (Early Divergence Current: Z ระหว่าง -5.0 ถึง -22.0)
+      // กระทงซีกซ้าย (X < 16.0) จะเบี่ยงออกสู่ร่องน้ำฝั่งตะวันตก (X <= -5.8)
+      // กระทงซีกขวา (X >= 16.0) จะเบี่ยงออกสู่เวิ้งน้ำกว้างฝั่งตะวันออก (X >= 38.5)
+      if (mesh.position.z < -5.0 && mesh.position.z > -22.0) {
+        if (mesh.position.x > -5.0 && mesh.position.x < 16.0) {
+          mesh.position.x -= 0.045;
+        } else if (mesh.position.x >= 16.0 && mesh.position.x < 38.0) {
+          mesh.position.x += 0.045;
+        }
       }
 
-      // ป้องกันการชนบันไดหินอ่อนหน้าลานวัด (Front Stairs: X >= 8.5, Z <= -20.5)
-      if (mesh.position.x > 8.5 && mesh.position.z < -20.5 && mesh.position.z > -27.0) {
+      // ชั้นที่ 2: ป้องกันการชนบันไดหินอ่อนหน้าลานวัด (Front Stairs: X: 8.5 ถึง 23.5, Z: -20.5 ถึง -26.0)
+      if (mesh.position.x > 8.5 && mesh.position.x < 23.5 && mesh.position.z < -20.5 && mesh.position.z > -26.0) {
+        if (mesh.position.x < 16.0) {
+          mesh.position.x -= 0.20;
+        } else {
+          mesh.position.x += 0.20;
+        }
         mesh.position.z = Math.max(mesh.position.z, -20.2);
-        mesh.position.x -= 0.22;
       }
 
-      // ป้องกันการชนผนังฐานลานวัดด้านหน้า (South Platform Wall: X >= -4.2, Z <= -25.5)
-      if (mesh.position.x > -4.2 && mesh.position.z < -25.5 && mesh.position.z > -28.0) {
-        mesh.position.z = Math.max(mesh.position.z, -25.2);
-        mesh.position.x -= 0.25;
+      // ป้องกันการชนผนังฐานลานวัดด้านหน้า (South Platform Wall: X: -5.0 ถึง 37.0, Z: -25.0 ถึง -27.2)
+      if (mesh.position.x > -5.2 && mesh.position.x < 37.2 && mesh.position.z <= -25.0 && mesh.position.z > -27.2) {
+        if (mesh.position.x < 16.0) {
+          mesh.position.x -= 0.25;
+        } else {
+          mesh.position.x += 0.25;
+        }
+        mesh.position.z = Math.max(mesh.position.z, -24.8);
       }
 
-      // ป้องกันการชนผนังฐานเจดีย์ฝั่งตะวันตกที่ติดแม่น้ำ (West Platform Wall: Z <= -25.5)
-      // ห้ามทะลุเข้าสู่ฐานเจดีย์เด็ดขาด ดันให้ลอยขนานเลียบกำแพงหินฝั่งร่องน้ำหลัก (X <= -5.8)
-      if (mesh.position.z <= -25.5 && mesh.position.x > -5.8) {
-        mesh.position.x = -5.8;
+      // ชั้นที่ 3: กำแพงล็อกพิกัดเด็ดขาดรอบฐานเจดีย์และลานวัด (Impenetrable Hard Clamp: Z <= -25.0 ถึง -58.0)
+      // กระทงจะไม่สามารถหลุดเข้าไปในเขตฐานเจดีย์หรือลานวัดได้ 100%
+      if (mesh.position.z <= -25.0 && mesh.position.z >= -58.0) {
+        if (mesh.position.x < 16.0) {
+          // ฝั่งตะวันตก (เลียบฐานเจดีย์ฝั่งซ้าย): ลอยในร่องน้ำหลัก ห้ามทะลุเกิน X = -5.8
+          if (mesh.position.x > -5.8) mesh.position.x = -5.8;
+        } else {
+          // ฝั่งตะวันออก (เลียบฐานเจดีย์ฝั่งขวา): ลอยในเวิ้งน้ำกว้าง ห้ามต่ำกว่า X = 38.5
+          if (mesh.position.x < 38.5) mesh.position.x = 38.5;
+        }
       }
 
-      // จำกัดขอบเขตช่องน้ำลอยกระทงที่ปลอดภัย (Fairway Boundary: X ระหว่าง -6.5 ถึง +16.5)
-      if (mesh.position.x < -6.5) mesh.position.x = -6.5;
-      if (mesh.position.x > 16.5) mesh.position.x = 16.5;
+      // จำกัดขอบเขตท้องน้ำทั้งหมดอย่างปลอดภัย (Full River Boundary: X ระหว่าง -9.5 ถึง +48.0)
+      if (mesh.position.x < -9.5) mesh.position.x = -9.5;
+      if (mesh.position.x > 48.0) mesh.position.x = 48.0;
     });
 
     // 4. Sky Lanterns Rising & Swaying (โคมลอยลอยขึ้นฟ้าอย่างแช่มช้า สง่างาม)
