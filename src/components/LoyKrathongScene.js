@@ -704,9 +704,9 @@ export class LoyKrathongScene {
   ========================================================== */
   createRealisticThaiHouse() {
     const compound = new THREE.Group();
-    // Position on riverbank lawn, angled gracefully toward river and camera
-    compound.position.set(-27, 0.4, -3);
-    compound.rotation.y = 0.16;
+    // Position on riverbank lawn - STRICTLY PARALLEL to the river edge (rotation.y = 0)
+    compound.position.set(-32, 0.4, -2);
+    compound.rotation.y = 0;
 
     const mats = {
       concrete: new THREE.MeshStandardMaterial({ color: 0xd6dbe0, roughness: 0.82 }),
@@ -757,11 +757,11 @@ export class LoyKrathongScene {
 
     // 9. Warm Illumination
     const houseWarmLight = new THREE.PointLight(0xffaa33, 4.8, 38, 1.3);
-    houseWarmLight.position.set(-24, 8, -3);
+    houseWarmLight.position.set(-28, 8, -2);
     this.scene.add(houseWarmLight);
 
     const houseWarmLight2 = new THREE.PointLight(0xff7711, 3.8, 28, 1.4);
-    houseWarmLight2.position.set(-19, 5, 3);
+    houseWarmLight2.position.set(-22, 5, 4);
     this.scene.add(houseWarmLight2);
 
     this.scene.add(compound);
@@ -770,14 +770,14 @@ export class LoyKrathongScene {
     this.createRiverbankPromenade();
   }
 
-  // 1. Raised Ground Plot & Concrete Retaining Curb (ฐานสนามหญ้าและคันกั้นดิน)
+  // 1. Raised Ground Plot & Concrete Retaining Curb (ฐานสนามหญ้าและคันกั้นดิน ขนานกับแนวแม่น้ำ 100%)
   buildCompoundGroundPlot(compound, mats) {
-    const retainingWall = new THREE.Mesh(new THREE.BoxGeometry(26.6, 0.7, 32.6), mats.concrete);
+    const retainingWall = new THREE.Mesh(new THREE.BoxGeometry(24.0, 0.7, 30.0), mats.concrete);
     retainingWall.position.set(0, 0.35, 0);
     retainingWall.receiveShadow = true;
     compound.add(retainingWall);
 
-    const lawn = new THREE.Mesh(new THREE.BoxGeometry(26.2, 0.25, 32.2), mats.grass);
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(23.6, 0.25, 29.6), mats.grass);
     lawn.position.set(0, 0.72, 0);
     lawn.receiveShadow = true;
     compound.add(lawn);
@@ -1283,25 +1283,72 @@ export class LoyKrathongScene {
     stoneEdge.receiveShadow = true;
     this.scene.add(stoneEdge);
 
-    // Wooden Pier - located at X = -16, Z = 6
-    const pierMat = new THREE.MeshStandardMaterial({ color: 0x422d19, roughness: 0.7 });
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, 14), pierMat);
-    deck.position.set(-16, 0.8, 6);
-    deck.receiveShadow = true;
-    this.scene.add(deck);
+    // --- ท่าน้ำ สีเขียว สี่เหลี่ยมผืนผ้า (Rectangular Green Waterfront Pier) ---
+    // ขนานกับแนวแม่น้ำ 100% เป็นพื้นที่สี่เหลี่ยมผืนผ้าสวยงามตามคำขอของผู้ใช้
+    const greenPierGroup = new THREE.Group();
+    greenPierGroup.position.set(-16.5, 0, 5.0);
 
-    const pileGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 8);
-    [[-13, 0, 0], [-13, 0, 12], [-18, 0, 0], [-18, 0, 12]].forEach(([x, y, z]) => {
-      const pile = new THREE.Mesh(pileGeo, pierMat);
-      pile.position.set(x, y, z);
-      this.scene.add(pile);
+    const pierWidthX = 7.0;   // X: -20 ถึง -13 (ยื่นลงสู่แม่น้ำ 7 หน่วย)
+    const pierLengthZ = 15.0; // Z: -2.5 ถึง 12.5 (ยาวขนานแม่น้ำ 15 หน่วย เป็นสี่เหลี่ยมผืนผ้าแท้)
+
+    // ฐานคอนกรีตคันกั้นดินรอบท่าน้ำสีเขียว
+    const pierConcreteMat = new THREE.MeshStandardMaterial({ color: 0xd6dbe0, roughness: 0.82 });
+    const pierBase = new THREE.Mesh(new THREE.BoxGeometry(pierWidthX, 0.65, pierLengthZ), pierConcreteMat);
+    pierBase.position.set(0, 0.45, 0);
+    pierBase.receiveShadow = true;
+    greenPierGroup.add(pierBase);
+
+    // ลานหญ้าสีเขียวสี่เหลี่ยมผืนผ้าบนท่าน้ำ (ท่าน้ำ สีเขียว)
+    const pierGrassMat = new THREE.MeshStandardMaterial({ color: 0x3d6624, roughness: 0.9 });
+    const pierLawn = new THREE.Mesh(new THREE.BoxGeometry(pierWidthX - 0.35, 0.22, pierLengthZ - 0.35), pierGrassMat);
+    pierLawn.position.set(0, 0.78, 0);
+    pierLawn.receiveShadow = true;
+    greenPierGroup.add(pierLawn);
+
+    // เสาตอม่อค้ำใต้ถุนท่าน้ำในน้ำ (Under-pier Stilts)
+    const pierWoodMat = new THREE.MeshStandardMaterial({ color: 0x481e0a, roughness: 0.72 });
+    const pileGeo = new THREE.CylinderGeometry(0.25, 0.25, 5.5, 8);
+    [
+      [pierWidthX / 2 - 0.4, pierLengthZ / 2 - 0.6],
+      [pierWidthX / 2 - 0.4, -pierLengthZ / 2 + 0.6],
+      [pierWidthX / 2 - 0.4, 0],
+      [0, pierLengthZ / 2 - 0.6],
+      [0, -pierLengthZ / 2 + 0.6]
+    ].forEach(([px, pz]) => {
+      const pile = new THREE.Mesh(pileGeo, pierWoodMat);
+      pile.position.set(px, -0.8, pz);
+      greenPierGroup.add(pile);
     });
 
-    for (let i = 0; i < 3; i++) {
-      const step = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 2.5), pierMat);
-      step.position.set(-11.5 + i * 0.8, 0.6 - i * 0.25, 6);
-      this.scene.add(step);
+    // บันไดท่าน้ำไม้สักทอดลงสู่แม่น้ำสำหรับลอยกระทง (Landing Steps into River)
+    for (let i = 0; i < 4; i++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 5.4), pierWoodMat);
+      step.position.set(pierWidthX / 2 + 0.35 + i * 0.6, 0.55 - i * 0.22, 0);
+      step.receiveShadow = true;
+      greenPierGroup.add(step);
     }
+
+    // เสาหลักผูกเรือพร้อมโคมไฟประดับที่มุมท่าน้ำสีเขียว
+    const pierLanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
+    [
+      [pierWidthX / 2 - 0.4, pierLengthZ / 2 - 0.6],
+      [pierWidthX / 2 - 0.4, -pierLengthZ / 2 + 0.6]
+    ].forEach(([px, pz]) => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.2, 8), pierWoodMat);
+      post.position.set(px, 1.35, pz);
+      greenPierGroup.add(post);
+
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.4, 8), pierLanternMat);
+      lamp.position.set(px, 2.05, pz);
+      greenPierGroup.add(lamp);
+
+      const lampLight = new THREE.PointLight(0xffaa33, 2.8, 14, 1.4);
+      lampLight.position.set(px, 2.2, pz);
+      greenPierGroup.add(lampLight);
+      this.flickerLights.push({ light: lampLight, baseIntensity: 2.8, speed: 4.0 });
+    });
+
+    this.scene.add(greenPierGroup);
   }
 
   /* ==========================================================
