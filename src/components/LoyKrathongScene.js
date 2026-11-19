@@ -428,7 +428,7 @@ export class LoyKrathongScene {
     const ambientLight = new THREE.AmbientLight(0x406295, 2.1);
     this.scene.add(ambientLight);
 
-    const moonLight = new THREE.DirectionalLight(0xfffaea, 2.5);
+    const moonLight = new THREE.DirectionalLight(0xffe88a, 2.6);
     moonLight.position.set(22, 58, -42);
     moonLight.castShadow = true;
     moonLight.shadow.mapSize.width = 2048;
@@ -491,38 +491,80 @@ export class LoyKrathongScene {
   }
 
   createMoon() {
-    const moonGeo = new THREE.SphereGeometry(7.5, 32, 32);
-    const moonMat = new THREE.MeshBasicMaterial({ color: 0xfffae6 });
+    // 1. สร้างพื้นผิวพระจันทร์เต็มดวงสีเหลืองทองสุกสว่าง (Vivid Golden Moon Texture)
+    const moonCanvas = document.createElement("canvas");
+    moonCanvas.width = 512;
+    moonCanvas.height = 512;
+    const mCtx = moonCanvas.getContext("2d");
+
+    // สีเหลืองทองสุกสว่าง ไล่ระดับจากไฮไลต์สีทองสว่างไปจนถึงขอบสีอำพัน
+    const mGrad = mCtx.createRadialGradient(220, 220, 25, 256, 256, 256);
+    mGrad.addColorStop(0, "#fffbeb");    // ใจกลางสว่างสีทองนวล
+    mGrad.addColorStop(0.25, "#fef08a");  // สีเหลืองทองสว่างสดใส
+    mGrad.addColorStop(0.55, "#facc15");  // สีทองสุกอร่าม
+    mGrad.addColorStop(0.82, "#eab308");  // สีทองอิ่มตัว
+    mGrad.addColorStop(1.0, "#ca8a04");   // ขอบทองประกายส้ม
+    mCtx.fillStyle = mGrad;
+    mCtx.fillRect(0, 0, 512, 512);
+
+    // ลวดลายกระต่ายบนดวงจันทร์แบบไทยจางๆ อย่างเป็นธรรมชาติ
+    mCtx.fillStyle = "rgba(180, 110, 10, 0.12)";
+    const maria = [
+      { x: 170, y: 190, r: 70 },
+      { x: 310, y: 170, r: 85 },
+      { x: 250, y: 310, r: 95 },
+      { x: 360, y: 290, r: 60 },
+      { x: 160, y: 320, r: 55 },
+    ];
+    maria.forEach((m) => {
+      mCtx.beginPath();
+      mCtx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+      mCtx.fill();
+    });
+
+    const moonTexture = new THREE.CanvasTexture(moonCanvas);
+    moonTexture.colorSpace = THREE.SRGBColorSpace;
+
+    // ดวงจันทร์: ปิดผลกระทบหมอก (fog: false) เพื่อไม่ให้หมอกกลางคืนกลืนเป็นสีเทา
+    const moonGeo = new THREE.SphereGeometry(8.2, 32, 32);
+    const moonMat = new THREE.MeshBasicMaterial({
+      map: moonTexture,
+      fog: false,
+    });
     this.moon = new THREE.Mesh(moonGeo, moonMat);
     this.moon.position.set(32, 54, -75);
+    this.moon.rotation.y = -Math.PI / 4;
     this.scene.add(this.moon);
 
-    const haloGeo = new THREE.PlaneGeometry(36, 36);
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext("2d");
-    const grad = ctx.createRadialGradient(128, 128, 25, 128, 128, 126);
-    grad.addColorStop(0, "rgba(255, 252, 235, 0.95)");
-    grad.addColorStop(0.25, "rgba(255, 235, 160, 0.55)");
-    grad.addColorStop(0.55, "rgba(255, 180, 90, 0.25)");
-    grad.addColorStop(0.85, "rgba(90, 140, 255, 0.1)");
-    grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 256);
+    // 2. รัศมีออร่าแสงสีทองเรืองรอง (Luminous Golden Halo Billboard Sprite)
+    const haloCanvas = document.createElement("canvas");
+    haloCanvas.width = 512;
+    haloCanvas.height = 512;
+    const hCtx = haloCanvas.getContext("2d");
 
-    const haloTexture = new THREE.CanvasTexture(canvas);
-    const haloMat = new THREE.MeshBasicMaterial({
+    const hGrad = hCtx.createRadialGradient(256, 256, 35, 256, 256, 256);
+    hGrad.addColorStop(0, "rgba(254, 240, 138, 0.98)");
+    hGrad.addColorStop(0.20, "rgba(250, 204, 21, 0.75)");
+    hGrad.addColorStop(0.45, "rgba(245, 158, 11, 0.40)");
+    hGrad.addColorStop(0.70, "rgba(217, 119, 6, 0.18)");
+    hGrad.addColorStop(0.90, "rgba(180, 83, 9, 0.05)");
+    hGrad.addColorStop(1.0, "rgba(0, 0, 0, 0)");
+    hCtx.fillStyle = hGrad;
+    hCtx.fillRect(0, 0, 512, 512);
+
+    const haloTexture = new THREE.CanvasTexture(haloCanvas);
+    haloTexture.colorSpace = THREE.SRGBColorSpace;
+
+    const haloMat = new THREE.SpriteMaterial({
       map: haloTexture,
       transparent: true,
       blending: THREE.AdditiveBlending,
+      fog: false,
       depthWrite: false,
-      side: THREE.DoubleSide,
     });
-    const halo = new THREE.Mesh(haloGeo, haloMat);
+    const halo = new THREE.Sprite(haloMat);
+    halo.scale.set(52, 52, 1.0);
     halo.position.copy(this.moon.position);
-    halo.position.z += 1.5;
-    halo.lookAt(0, 20, 35);
     this.scene.add(halo);
   }
 
