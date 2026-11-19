@@ -50,8 +50,8 @@ export default function KrathongDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-md bg-slate-900/95 border border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-md bg-slate-900/95 border border-amber-500/30 rounded-3xl shadow-2xl overflow-y-auto max-h-[92dvh] text-slate-100">
         {/* Glow backdrop behind photo */}
         <div 
           className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none"
