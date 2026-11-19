@@ -96,53 +96,27 @@ export default function App() {
   };
 
   const toggleSound = () => {
-    // Ambient water audio synthesizer using Web Audio API
+    // Play / pause Kang Khao Kin Kluay (instrumental Thai traditional music)
     if (!audioRef.current) {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-        
-        // Gentle brown noise generator for river water flow sound
-        const bufferSize = ctx.sampleRate * 2;
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          output[i] = (lastOut + 0.02 * white) / 1.02;
-          lastOut = output[i];
-          output[i] *= 2.5;
-        }
+      const audio = new Audio(`${import.meta.env.BASE_URL}audio/kangkaw-kin-kluay.mp3`);
+      audio.loop = true;
+      audio.volume = 0.65;
+      audioRef.current = audio;
+    }
 
-        const whiteNoise = ctx.createBufferSource();
-        whiteNoise.buffer = noiseBuffer;
-        whiteNoise.loop = true;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(450, ctx.currentTime);
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
-
-        whiteNoise.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        whiteNoise.start(0);
-        audioRef.current = { ctx, gainNode };
-        setSoundEnabled(true);
-      } catch (e) {
-        console.warn("Audio Context init blocked:", e);
-      }
+    const audio = audioRef.current;
+    if (soundEnabled) {
+      audio.pause();
+      setSoundEnabled(false);
     } else {
-      if (soundEnabled) {
-        audioRef.current.ctx.suspend();
-        setSoundEnabled(false);
-      } else {
-        audioRef.current.ctx.resume();
-        setSoundEnabled(true);
-      }
+      audio
+        .play()
+        .then(() => {
+          setSoundEnabled(true);
+        })
+        .catch((err) => {
+          console.warn("Audio play prevented:", err);
+        });
     }
   };
 
@@ -175,13 +149,21 @@ export default function App() {
 
         {/* Top Right Quick Actions */}
         <div className="pointer-events-auto flex items-center gap-2 shrink-0">
-          {/* Ambient Sound Button */}
+          {/* Kang Khao Kin Kluay Instrumental Music Button */}
           <button
             onClick={toggleSound}
-            className="p-2.5 sm:p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-700/60 backdrop-blur-md text-amber-300 shadow-xl transition cursor-pointer"
-            title={soundEnabled ? "ปิดเสียงสายน้ำ" : "เปิดเสียงสายน้ำ"}
+            className={`p-2.5 sm:p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/90 border backdrop-blur-md shadow-xl transition cursor-pointer flex items-center justify-center ${
+              soundEnabled
+                ? "border-amber-400 text-amber-300 ring-2 ring-amber-400/30 bg-amber-500/10"
+                : "border-slate-700/60 text-slate-400 hover:text-amber-200"
+            }`}
+            title={soundEnabled ? "ปิดเสียงเพลงค้างคาวกินกล้วย" : "เปิดเสียงเพลงค้างคาวกินกล้วย (ทำนอง)"}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />}
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 animate-pulse" />
+            ) : (
+              <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
           </button>
 
           {/* Leaderboard Button */}
