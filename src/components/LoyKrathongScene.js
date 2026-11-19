@@ -2738,9 +2738,9 @@ export class LoyKrathongScene {
     });
 
     const photoGroup = new THREE.Group();
-    photoGroup.position.set(0, 1.6, -0.4);
+    photoGroup.position.set(0, 1.35, -0.4);
 
-    const frameGeo = new THREE.BoxGeometry(1.6, 1.6, 0.1);
+    const frameGeo = new THREE.BoxGeometry(1.5, 1.5, 0.08);
     const frameMat = new THREE.MeshStandardMaterial({
       color: themeColor,
       metalness: 0.35,
@@ -2749,45 +2749,109 @@ export class LoyKrathongScene {
     const frame = new THREE.Mesh(frameGeo, frameMat);
     photoGroup.add(frame);
 
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.setCrossOrigin("anonymous");
-
+    // Initial placeholder canvas (กรอบทองพร้อมชื่อ สวยงาม ไม่เป็นแผ่นขาวว่างเปล่า)
     const photoCanvas = document.createElement("canvas");
-    photoCanvas.width = 128;
-    photoCanvas.height = 128;
+    photoCanvas.width = 512;
+    photoCanvas.height = 512;
     const pCtx = photoCanvas.getContext("2d");
-    pCtx.fillStyle = "#ffffff";
-    pCtx.fillRect(0, 0, 128, 128);
-    pCtx.fillStyle = "#1e293b";
-    pCtx.font = "bold 14px sans-serif";
+    pCtx.fillStyle = "#0f172a";
+    pCtx.fillRect(0, 0, 512, 512);
+    pCtx.strokeStyle = "#f59e0b";
+    pCtx.lineWidth = 14;
+    pCtx.strokeRect(7, 7, 498, 498);
+    pCtx.fillStyle = "#fbbf24";
+    pCtx.font = "bold 36px sans-serif";
     pCtx.textAlign = "center";
-    pCtx.fillText((data.name || "").slice(0, 8), 64, 70);
+    pCtx.textBaseline = "middle";
+    pCtx.fillText((data.name || "ผู้ร่วมลอยกระทง").slice(0, 14), 256, 256);
 
     const defaultTex = new THREE.CanvasTexture(photoCanvas);
+    defaultTex.colorSpace = THREE.SRGBColorSpace;
     const photoMat = new THREE.MeshBasicMaterial({
       map: defaultTex,
       side: THREE.DoubleSide,
     });
-    const photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), photoMat);
-    photoPlane.position.z = 0.06;
+
+    const photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.36), photoMat);
+    photoPlane.position.z = 0.045;
     photoGroup.add(photoPlane);
 
-    const backPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), photoMat);
-    backPlane.position.z = -0.06;
+    const backPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.36), photoMat);
+    backPlane.position.z = -0.045;
     backPlane.rotation.y = Math.PI;
     photoGroup.add(backPlane);
 
+    // โหลดรูปภาพโดยคงอัตราส่วนเดิม (Aspect Ratio) 100% ไม่บิดเบี้ยว ไม่ตัดรูปทิ้ง
     if (data.photoUrl) {
-      textureLoader.load(
-        data.photoUrl,
-        (tex) => {
-          tex.colorSpace = THREE.SRGBColorSpace;
-          photoMat.map = tex;
-          photoMat.needsUpdate = true;
-        },
-        undefined,
-        () => {}
-      );
+      const img = new Image();
+      // ไม่ใส่ crossOrigin กับ Base64 Data URL เพื่อไม่ให้ Chrome บล็อก WebGL
+      if (!data.photoUrl.startsWith("data:") && !data.photoUrl.startsWith("blob:")) {
+        img.crossOrigin = "anonymous";
+      }
+
+      img.onload = () => {
+        const imgW = img.width || 512;
+        const imgH = img.height || 512;
+        const aspect = imgW / imgH;
+
+        // ปรับสัดส่วนแผ่นป้ายและกรอบรูป 3D ตามอัตราส่วนแนวตั้งหรือแนวนอนของรูปจริง
+        let targetW = 1.36;
+        let targetH = 1.36;
+        if (aspect >= 1.0) {
+          // แนวนอน (Landscape): กว้างปรับขยาย ความสูงคำนวณตามสัดส่วนเดิม
+          targetW = Math.min(1.68, 1.36 * Math.sqrt(aspect));
+          targetH = Math.max(0.75, targetW / aspect);
+        } else {
+          // แนวตั้ง (Portrait): สูงปรับขยาย ความกว้างคำนวณตามสัดส่วนเดิม
+          targetH = Math.min(1.68, 1.36 / Math.sqrt(aspect));
+          targetW = Math.max(0.75, targetH * aspect);
+        }
+
+        const scaleX = targetW / 1.36;
+        const scaleY = targetH / 1.36;
+
+        frame.scale.set(scaleX, scaleY, 1.0);
+        photoPlane.scale.set(scaleX, scaleY, 1.0);
+        backPlane.scale.set(scaleX, scaleY, 1.0);
+        photoGroup.position.y = 0.55 + targetH / 2;
+
+        // วาดรูปต้นฉบับลงบนผืนผ้าใบตามสัดส่วนแท้จริง
+        const c = document.createElement("canvas");
+        c.width = 512;
+        c.height = Math.round(512 / aspect);
+        if (c.height < 256) c.height = 256;
+        if (c.height > 1024) c.height = 1024;
+
+        const ctx = c.getContext("2d");
+        // วาดภาพเต็มรูปคงอัตราส่วนเดิม 100%
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+
+        // กรอบทองลายไทยรอบรูป
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = Math.max(8, Math.round(c.width * 0.025));
+        ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, c.width - ctx.lineWidth, c.height - ctx.lineWidth);
+
+        // แถบชื่อเจ้าของกระทงที่ด้านล่าง
+        const bannerH = Math.max(48, Math.round(c.height * 0.16));
+        ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
+        ctx.fillRect(0, c.height - bannerH, c.width, bannerH);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `bold ${Math.round(bannerH * 0.42)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(data.name || "ผู้ร่วมลอยกระทง", c.width / 2, c.height - bannerH / 2);
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        photoMat.map = tex;
+        photoMat.needsUpdate = true;
+      };
+
+      img.onerror = (e) => {
+        console.warn("Could not load image texture directly:", data.photoUrl, e);
+      };
+
+      img.src = data.photoUrl;
     }
 
     group.add(photoGroup);

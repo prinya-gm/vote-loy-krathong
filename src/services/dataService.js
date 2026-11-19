@@ -143,19 +143,23 @@ function fallbackLocal(callback) {
 export const addKrathongEntry = async ({ name, description, file, color }) => {
   let photoUrl = "";
   
-  // If user provided a file
+  // If user provided a file or photo
   if (file) {
+    const compressedDataUrl = await compressAndPreserveAspectRatio(file, 640, 0.85);
+
     if (isFirebaseConfigured && storage) {
       try {
-        const fileRef = ref(storage, `photos/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(fileRef, file);
+        const fileRef = ref(storage, `photos/${Date.now()}_photo.jpg`);
+        const res = await fetch(compressedDataUrl);
+        const blob = await res.blob();
+        const snapshot = await uploadBytes(fileRef, blob);
         photoUrl = await getDownloadURL(snapshot.ref);
       } catch (uploadErr) {
-        console.warn("Storage upload failed, creating base64 data URL instead", uploadErr);
-        photoUrl = await readFileAsBase64(file);
+        console.warn("Storage upload failed, using compressed base64 data URL instead", uploadErr);
+        photoUrl = compressedDataUrl;
       }
     } else {
-      photoUrl = await readFileAsBase64(file);
+      photoUrl = compressedDataUrl;
     }
   }
 
@@ -224,10 +228,74 @@ export const voteForEntry = async (id) => {
   return true;
 };
 
-function readFileAsBase64(file) {
+// ย่อรูปโดยคงอัตราส่วนเดิม (Aspect Ratio) 100% ไม่บิดเบี้ยว ไม่ตัดส่วนของรูปทิ้ง
+export function compressAndPreserveAspectRatio(file, maxDim = 640, quality = 0.85) {
   return new Promise((resolve) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+    // กรณีเป็น data URL หรือ string อยู่แล้ว
+    if (typeof file === "string" && (file.startsWith("data:") || file.startsWith("http"))) {
+      const img = new Image();
+      if (!file.startsWith("data:")) img.crossOrigin = "anonymous";
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(file);
+      img.src = file;
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        // คำนวณขนาดใหม่ตามสัดส่วนเดิมอย่างแม่นยำ
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            // แนวนอน (Landscape) หรือ จัตุรัส (Square)
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            // แนวตั้ง (Portrait)
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve("");
     reader.readAsDataURL(file);
   });
 }

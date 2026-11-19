@@ -76,11 +76,11 @@ export default function KrathongDetailModal({
 
         {/* Big Photo */}
         <div className="relative px-6">
-          <div className="relative w-full aspect-square max-h-72 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-xl bg-slate-950">
+          <div className="relative w-full max-h-80 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-xl bg-slate-950 flex items-center justify-center p-2">
             <img
               src={krathong.photoUrl}
               alt={krathong.name}
-              className="w-full h-full object-cover"
+              className="max-h-76 w-auto object-contain rounded-lg"
             />
             {/* Color pill */}
             <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full flex items-center gap-2 border border-white/10 text-xs">

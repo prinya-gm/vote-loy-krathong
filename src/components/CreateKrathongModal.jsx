@@ -53,11 +53,13 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
 
   const capturePhoto = () => {
     if (!videoRef.current) return;
+    const vw = videoRef.current.videoWidth || 640;
+    const vh = videoRef.current.videoHeight || 480;
     const canvas = document.createElement("canvas");
-    canvas.width = 400;
-    canvas.height = 400;
+    canvas.width = vw;
+    canvas.height = vh;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(videoRef.current, 0, 0, 400, 400);
+    ctx.drawImage(videoRef.current, 0, 0, vw, vh);
 
     canvas.toBlob((blob) => {
       if (blob) {
@@ -160,8 +162,8 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                 </div>
               </div>
             ) : previewImage ? (
-              <div className="relative rounded-xl overflow-hidden border-2 border-amber-500/40 aspect-square max-h-56 mx-auto group">
-                <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+              <div className="relative rounded-xl overflow-hidden border-2 border-amber-500/40 max-h-64 flex items-center justify-center bg-black/40 p-2 mx-auto group">
+                <img src={previewImage} alt="Preview" className="max-h-60 w-auto object-contain rounded-lg shadow" />
                 <button
                   type="button"
                   onClick={() => {
