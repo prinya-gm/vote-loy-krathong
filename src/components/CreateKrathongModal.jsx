@@ -10,10 +10,32 @@ const KRATHONG_COLORS = [
   { name: "แดงเพลิง", hex: "#ef4444" },
 ];
 
+const FEMALE_STYLES = [
+  { id: "chakraphat", name: "ชุดไทยจักรพรรดิ", desc: "สไบสองชั้น ปักดิ้นทองหรูหรา" },
+  { id: "chakri", name: "ชุดไทยจักรี / ศิวาลัย", desc: "สไบเฉียงผ้าไหมเรียบหรู สง่างาม" },
+];
+
+const MALE_STYLES = [
+  { id: "rajpatan", name: "ชุดราชปะแตนคลาสสิก", desc: "เสื้อคอตั้ง โจงกระเบนไหม คาดเอวทอง" },
+  { id: "pra-ratchatan", name: "ชุดไทยพระราชทาน", desc: "เสื้อไหมสังวาลย์ทอง ภูมิฐาน" },
+];
+
+const COSTUME_COLORS = [
+  { name: "ทองเรืองรอง", hex: "#f59e0b" },
+  { name: "แดงทับทิม", hex: "#e11d48" },
+  { name: "มรกตธรรมชาติ", hex: "#10b981" },
+  { name: "ชมพูกลีบบัว", hex: "#ec4899" },
+  { name: "ฟ้าราตรี", hex: "#06b6d4" },
+  { name: "ม่วงดอกรัก", hex: "#8b5cf6" },
+];
+
 export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedColor, setSelectedColor] = useState(KRATHONG_COLORS[0].hex);
+  const [gender, setGender] = useState("female");
+  const [costumeStyle, setCostumeStyle] = useState("chakraphat");
+  const [costumeColor, setCostumeColor] = useState(COSTUME_COLORS[0].hex);
   const [previewImage, setPreviewImage] = useState(null);
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,6 +120,9 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
         description,
         file,
         color: selectedColor,
+        gender,
+        costumeStyle,
+        costumeColor,
       });
       onClose();
     } catch (err) {
@@ -229,6 +254,103 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm"
                 maxLength={40}
               />
+            </div>
+
+            {/* โมเดลคนสวมชุดไทยบนท่าน้ำ (Gender, Style & Silk Color Selection) */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-bold text-amber-300">
+                  ✨ ปรับแต่งโมเดลชุดไทยของคุณบนท่าน้ำ
+                </label>
+                <span className="text-[11px] text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
+                  โมเดล 3D เสมือนจริง
+                </span>
+              </div>
+
+              {/* 1. เลือกเพศโมเดล */}
+              <div>
+                <span className="block text-xs font-medium text-slate-300 mb-1.5">1. เพศโมเดลสวมชุดไทย:</span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGender("female");
+                      setCostumeStyle("chakraphat");
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-95 ${
+                      gender === "female"
+                        ? "border-amber-400 bg-amber-500/25 text-amber-200 ring-2 ring-amber-400/30 shadow-md"
+                        : "border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    <span className="text-base sm:text-lg">👩</span>
+                    <span>ผู้หญิง (ชุดไทยสไบ)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGender("male");
+                      setCostumeStyle("rajpatan");
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-95 ${
+                      gender === "male"
+                        ? "border-amber-400 bg-amber-500/25 text-amber-200 ring-2 ring-amber-400/30 shadow-md"
+                        : "border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    <span className="text-base sm:text-lg">👨</span>
+                    <span>ผู้ชาย (ราชปะแตน)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. เลือกรูปแบบชุดไทย */}
+              <div>
+                <span className="block text-xs font-medium text-slate-300 mb-1.5">2. รูปแบบชุดไทย:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(gender === "female" ? FEMALE_STYLES : MALE_STYLES).map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setCostumeStyle(st.id)}
+                      className={`text-left p-2.5 rounded-xl border transition cursor-pointer active:scale-95 ${
+                        costumeStyle === st.id
+                          ? "border-amber-400 bg-amber-500/20 text-amber-100 ring-1 ring-amber-400/40"
+                          : "border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-800"
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-amber-200">{st.name}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{st.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. เลือกสีผ้าไหมชุดไทยมงคล */}
+              <div>
+                <span className="block text-xs font-medium text-slate-300 mb-1.5">3. สีผ้าไหมชุดไทย:</span>
+                <div className="flex flex-wrap gap-2">
+                  {COSTUME_COLORS.map((c) => (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onClick={() => setCostumeColor(c.hex)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${
+                        costumeColor === c.hex
+                          ? "border-amber-300 ring-2 ring-amber-400/40 bg-slate-800 scale-105"
+                          : "border-slate-700 bg-slate-800/60 opacity-80 hover:opacity-100"
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-full inline-block shadow-sm shrink-0 border border-white/20"
+                        style={{ backgroundColor: c.hex }}
+                      />
+                      <span>{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Description / Wish */}

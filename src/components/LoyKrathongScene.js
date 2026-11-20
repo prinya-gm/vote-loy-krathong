@@ -19,7 +19,8 @@ export class LoyKrathongScene {
     this.flickerLights = [];
     this.lotusBlossoms = [];
     this.lotusObstacles = []; // Positions & radius for collision avoidance
-    this.thaiPeople = []; // โมเดลคนสวมชุดไทยหลากสี (เดินเล่น & ลอยกระทงริมท่าน้ำ)
+    this.thaiPeople = []; // โมเดลคนในฉากสวมเสื้อม่อฮ่อมสีน้ำเงิน โจงกระเบนสีน้ำตาล
+    this.candidateAvatars = new Map(); // โมเดลผู้สมัครสวมชุดไทยยืนเด่นบนท่าน้ำสีเขียว
     this.activeFireworks = []; // ระบบพลุดอกไม้ไฟ 3D สมจริง 100%
     this.fireworkTexture = null;
     this.soundCtx = null;
@@ -1383,13 +1384,13 @@ export class LoyKrathongScene {
     stoneEdge.receiveShadow = true;
     this.scene.add(stoneEdge);
 
-    // --- ท่าน้ำ สีเขียว สี่เหลี่ยมผืนผ้า (Rectangular Green Waterfront Pier) ---
-    // ขนานกับแนวแม่น้ำ 100% เป็นพื้นที่สี่เหลี่ยมผืนผ้าสวยงามตามคำขอของผู้ใช้
+    // --- ท่าน้ำ สีเขียว ขยายใหญ่พิเศษ (Grand Rectangular Green Waterfront Pier) ---
+    // ขยายพื้นที่ท่าน้ำสีเขียวให้กว้างขวางเป็นพิเศษ เพื่อรองรับผู้สมัครโหวตทุกคนอย่างสง่างาม
     const greenPierGroup = new THREE.Group();
-    greenPierGroup.position.set(-16.5, 0, 5.0);
+    greenPierGroup.position.set(-15.5, 0, 5.0);
 
-    const pierWidthX = 7.0;   // X: -20 ถึง -13 (ยื่นลงสู่แม่น้ำ 7 หน่วย)
-    const pierLengthZ = 15.0; // Z: -2.5 ถึง 12.5 (ยาวขนานแม่น้ำ 15 หน่วย เป็นสี่เหลี่ยมผืนผ้าแท้)
+    const pierWidthX = 9.0;   // X: -20 ถึง -11 (ยื่นลงสู่แม่น้ำ 9 หน่วย กว้างขวาง)
+    const pierLengthZ = 38.0; // Z: -14.0 ถึง 24.0 (ยาวขนานแม่น้ำ 38 หน่วย)
 
     // ฐานคอนกรีตคันกั้นดินรอบท่าน้ำสีเขียว
     const pierConcreteMat = new THREE.MeshStandardMaterial({ color: 0xd6dbe0, roughness: 0.82 });
@@ -1398,9 +1399,9 @@ export class LoyKrathongScene {
     pierBase.receiveShadow = true;
     greenPierGroup.add(pierBase);
 
-    // ลานหญ้าสีเขียวสี่เหลี่ยมผืนผ้าบนท่าน้ำ (ท่าน้ำ สีเขียว)
+    // ลานหญ้าสีเขียวสี่เหลี่ยมผืนผ้าบนท่าน้ำ (ท่าน้ำ สีเขียว ลานหญ้ากว้างขวาง)
     const pierGrassMat = new THREE.MeshStandardMaterial({ color: 0x3d6624, roughness: 0.9 });
-    const pierLawn = new THREE.Mesh(new THREE.BoxGeometry(pierWidthX - 0.35, 0.22, pierLengthZ - 0.35), pierGrassMat);
+    const pierLawn = new THREE.Mesh(new THREE.BoxGeometry(pierWidthX - 0.4, 0.22, pierLengthZ - 0.4), pierGrassMat);
     pierLawn.position.set(0, 0.78, 0);
     pierLawn.receiveShadow = true;
     greenPierGroup.add(pierLawn);
@@ -1408,32 +1409,28 @@ export class LoyKrathongScene {
     // เสาตอม่อค้ำใต้ถุนท่าน้ำในน้ำ (Under-pier Stilts)
     const pierWoodMat = new THREE.MeshStandardMaterial({ color: 0x481e0a, roughness: 0.72 });
     const pileGeo = new THREE.CylinderGeometry(0.25, 0.25, 5.5, 8);
-    [
-      [pierWidthX / 2 - 0.4, pierLengthZ / 2 - 0.6],
-      [pierWidthX / 2 - 0.4, -pierLengthZ / 2 + 0.6],
-      [pierWidthX / 2 - 0.4, 0],
-      [0, pierLengthZ / 2 - 0.6],
-      [0, -pierLengthZ / 2 + 0.6]
-    ].forEach(([px, pz]) => {
-      const pile = new THREE.Mesh(pileGeo, pierWoodMat);
-      pile.position.set(px, -0.8, pz);
-      greenPierGroup.add(pile);
-    });
-
-    // บันไดท่าน้ำไม้สักทอดลงสู่แม่น้ำสำหรับลอยกระทง (Landing Steps into River)
-    for (let i = 0; i < 4; i++) {
-      const step = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 5.4), pierWoodMat);
-      step.position.set(pierWidthX / 2 + 0.35 + i * 0.6, 0.55 - i * 0.22, 0);
-      step.receiveShadow = true;
-      greenPierGroup.add(step);
+    for (let pz = -pierLengthZ / 2 + 2.0; pz <= pierLengthZ / 2 - 2.0; pz += 5.5) {
+      [-pierWidthX / 2 + 0.8, 0, pierWidthX / 2 - 0.5].forEach((px) => {
+        const pile = new THREE.Mesh(pileGeo, pierWoodMat);
+        pile.position.set(px, -0.8, pz);
+        greenPierGroup.add(pile);
+      });
     }
 
-    // เสาหลักผูกเรือพร้อมโคมไฟประดับที่มุมท่าน้ำสีเขียว
+    // บันไดท่าน้ำไม้สักทอดลงสู่แม่น้ำสำหรับลอยกระทง 3 ช่วง (Z = -10, Z = 0, Z = 10)
+    [-10, 0, 10].forEach((stepZ) => {
+      for (let i = 0; i < 4; i++) {
+        const step = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 5.4), pierWoodMat);
+        step.position.set(pierWidthX / 2 + 0.35 + i * 0.6, 0.55 - i * 0.22, stepZ);
+        step.receiveShadow = true;
+        greenPierGroup.add(step);
+      }
+    });
+
+    // เสาหลักผูกเรือพร้อมโคมไฟประดับตามแนวริมท่าน้ำสีเขียว
     const pierLanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
-    [
-      [pierWidthX / 2 - 0.4, pierLengthZ / 2 - 0.6],
-      [pierWidthX / 2 - 0.4, -pierLengthZ / 2 + 0.6]
-    ].forEach(([px, pz]) => {
+    [-16.0, -8.0, 0, 8.0, 16.0].forEach((pz) => {
+      const px = pierWidthX / 2 - 0.4;
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.2, 8), pierWoodMat);
       post.position.set(px, 1.35, pz);
       greenPierGroup.add(post);
@@ -1442,10 +1439,10 @@ export class LoyKrathongScene {
       lamp.position.set(px, 2.05, pz);
       greenPierGroup.add(lamp);
 
-      const lampLight = new THREE.PointLight(0xffaa33, 2.8, 14, 1.4);
+      const lampLight = new THREE.PointLight(0xffaa33, 2.4, 12, 1.4);
       lampLight.position.set(px, 2.2, pz);
       greenPierGroup.add(lampLight);
-      this.flickerLights.push({ light: lampLight, baseIntensity: 2.8, speed: 4.0 });
+      this.flickerLights.push({ light: lampLight, baseIntensity: 2.4, speed: 4.0 });
     });
 
     this.scene.add(greenPierGroup);
@@ -2257,10 +2254,21 @@ export class LoyKrathongScene {
       },
     ];
 
+    // เข็มขัดและเครื่องประดับแบบเรียบง่ายสำหรับชาวบ้านทั่วไป (ไม่ฉูดฉาด ไม่แย่งซีนผู้สมัคร)
+    const modestMat = new THREE.MeshStandardMaterial({ color: 0x5c2c16, roughness: 0.7 });
+
     characterConfigs.forEach((cfg) => {
+      // ผู้ร่วมงานทั่วไปในฉาก: สวมเสื้อม่อฮ่อมสีน้ำเงิน และสวมโจงกระเบนสีน้ำตาล ตามคำขอของผู้ใช้
+      // เพื่อไม่ให้การแต่งกายโดดเด่นกว่าผู้ที่โพสต์รูปร่วมโหวต
+      const npcCfg = {
+        ...cfg,
+        primary: 0x1e3a8a,   // เสื้อม่อฮ่อมสีน้ำเงินคราม
+        secondary: 0x78350f, // โจงกระเบนสีน้ำตาลเข้ม
+        sash: 0x5c2c16,      // ผ้าคาดเอวสีน้ำตาลเรียบง่าย
+      };
       const char = cfg.gender === "female"
-        ? this.buildFemaleThaiCharacter(cfg, skinMat, hairMat, goldMat)
-        : this.buildMaleThaiCharacter(cfg, skinMat, hairMat, goldMat);
+        ? this.buildFemaleThaiCharacter(npcCfg, skinMat, hairMat, modestMat)
+        : this.buildMaleThaiCharacter(npcCfg, skinMat, hairMat, modestMat);
 
       this.scene.add(char.group);
       this.thaiPeople.push(char);
@@ -3018,6 +3026,490 @@ export class LoyKrathongScene {
     return sprite;
   }
 
+  /* ==========================================================
+     CANDIDATE 3D AVATAR ON GREEN PIER
+     โมเดล 3D ผู้สมัครสวมชุดไทยยืนสง่างามบนท่าน้ำสีเขียว
+     - เลือกระหว่างผู้ชาย (เสื้อราชปะแตน โจงกระเบนไหม) หรือผู้หญิง (ชุดไทยสไบเฉียง ผ้านุ่งไหม)
+     - ดึงรูปถ่ายจริงของผู้สมัครมาแมปบนใบหน้า 3D (Face Texture Soft Radial Masking)
+     - ยืนเด่นริมท่าน้ำสีเขียว พร้อมยกมือขวาโบกทักทายผู้ชม
+     - ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ
+  ========================================================== */
+  buildCandidateAvatar(entry, index, total) {
+    const avatarGroup = new THREE.Group();
+
+    // คำนวณตำแหน่งยืนบนลานสนามหญ้าท่าน้ำสีเขียว (Grand Green Pier)
+    // ลานหญ้าครอบคลุม X: -20 ถึง -11 (จุดศูนย์กลาง X = -15.5) และ Z: -14 ถึง 24 (ยาว 38 เมตร)
+    const perRow = 10;
+    const row = Math.floor(index / perRow);
+    const col = index % perRow;
+    const posX = -13.0 - row * 2.2;
+    const posZ = -10.0 + col * 3.6;
+
+    avatarGroup.position.set(posX, 0.89, posZ);
+    // หันหน้าเฉียงเข้าหาแม่น้ำและกล้อง
+    avatarGroup.rotation.y = Math.PI / 2 + 0.12;
+
+    const isMale = entry.gender === "male";
+    const primaryColorHex = entry.costumeColor || entry.color || "#f59e0b";
+    const primaryColor = new THREE.Color(primaryColorHex);
+
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.65 });
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.82, roughness: 0.22 });
+    const silkMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.48, metalness: 0.18 });
+
+    // วงแหวนไฮไลต์สีทองบนพื้นหญ้าเมื่อเลือกกระทง/ตัวละคร
+    const ringGeo = new THREE.RingGeometry(0.45, 0.60, 24);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0 });
+    const highlightRing = new THREE.Mesh(ringGeo, ringMat);
+    highlightRing.position.y = 0.02;
+    highlightRing.name = "avatarHighlightRing";
+    avatarGroup.add(highlightRing);
+
+    const bodyGroup = new THREE.Group();
+    avatarGroup.add(bodyGroup);
+
+    let wavingArm = null;
+    let wavingHand = null;
+
+    if (isMale) {
+      // ===== โมเดลผู้ชายสวมชุดไทยราชปะแตน & โจงกระเบนไหม =====
+      // 1. ศีรษะและใบหน้า
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), skinMat);
+      head.position.y = 1.48;
+      bodyGroup.add(head);
+
+      // ทรงผมสุภาพบุรุษไทย
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.168, 12, 10), hairMat);
+      hair.position.set(0, 1.50, -0.02);
+      hair.scale.set(1.0, 0.95, 1.05);
+      bodyGroup.add(hair);
+
+      // เสื้อราชปะแตนคอตั้ง
+      const jacketMat = entry.costumeStyle === "pra-ratchatan" 
+        ? silkMat 
+        : new THREE.MeshStandardMaterial({ color: 0xfffdf5, roughness: 0.6 });
+      const jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.18, 0.50, 12), jacketMat);
+      jacket.position.y = 1.15;
+      bodyGroup.add(jacket);
+
+      // คอตั้ง (Mandarin Collar)
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.07, 10), jacketMat);
+      collar.position.y = 1.39;
+      bodyGroup.add(collar);
+
+      // กระดุมทอง 5 เม็ด
+      for (let b = 0; b < 5; b++) {
+        const btn = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 6), goldMat);
+        btn.position.set(0, 1.34 - b * 0.07, 0.19);
+        bodyGroup.add(btn);
+      }
+
+      // ผ้าคาดเอวไหม / เข็มขัดทอง
+      const beltMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.5 });
+      const belt = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.03, 6, 14), beltMat);
+      belt.position.y = 0.92;
+      belt.rotation.x = Math.PI / 2;
+      bodyGroup.add(belt);
+
+      const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.03), goldMat);
+      buckle.position.set(0, 0.92, 0.20);
+      bodyGroup.add(buckle);
+
+      // โจงกระเบนผ้าไหม (Billowing Jongkraben)
+      const pantsMat = silkMat;
+      const jongkraben = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), pantsMat);
+      jongkraben.position.set(0, 0.70, 0);
+      jongkraben.scale.set(1.08, 0.85, 1.15);
+      bodyGroup.add(jongkraben);
+
+      // ขาสวมถุงน่องขาว / รองเท้าคัทชู
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.5 });
+      [-0.10, 0.10].forEach((lx) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 0.45, 8), skinMat);
+        leg.position.set(lx, 0.35, 0);
+        bodyGroup.add(leg);
+
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.15), shoeMat);
+        shoe.position.set(lx, 0.04, 0.03);
+        bodyGroup.add(shoe);
+      });
+
+      // แขนซ้าย (แนบลำตัวอย่างสง่างาม)
+      const lArm = new THREE.Group();
+      lArm.position.set(-0.24, 1.28, 0);
+      const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.04, 0.44), jacketMat);
+      lArmMesh.position.y = -0.22;
+      lArm.add(lArmMesh);
+      const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), skinMat);
+      lHand.position.y = -0.44;
+      lArm.add(lHand);
+      bodyGroup.add(lArm);
+
+      // แขนขวา (ยกขึ้นในท่าโบกมือทักทาย)
+      const rShoulder = new THREE.Group();
+      rShoulder.position.set(0.24, 1.28, 0);
+      rShoulder.rotation.z = -0.85;
+      rShoulder.rotation.x = 0.22;
+
+      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.04, 0.26), jacketMat);
+      rUpperArm.position.y = -0.13;
+      rShoulder.add(rUpperArm);
+
+      const rForearmGroup = new THREE.Group();
+      rForearmGroup.position.set(0, -0.26, 0);
+      rForearmGroup.rotation.z = 1.35; // หักข้อศอกชี้ขึ้น
+
+      const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.22), skinMat);
+      rForearmMesh.position.y = -0.11;
+      rForearmGroup.add(rForearmMesh);
+
+      // ฝ่ามือโบกทักทาย
+      const rHandMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.10, 0.02), skinMat);
+      rHandMesh.position.set(0, -0.25, 0);
+      rForearmGroup.add(rHandMesh);
+
+      rShoulder.add(rForearmGroup);
+      bodyGroup.add(rShoulder);
+
+      wavingArm = rShoulder;
+      wavingHand = rForearmGroup;
+
+    } else {
+      // ===== โมเดลผู้หญิงสวมชุดไทยห่มสไบเฉียง & ผ้านุ่งไหมยกดิ้นทอง =====
+      // 1. ศีรษะและใบหน้า
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 12), skinMat);
+      head.scale.set(1.0, 1.12, 0.96);
+      head.position.y = 1.44;
+      bodyGroup.add(head);
+
+      // ทรงผมเกล้ามวยสูง
+      const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), hairMat);
+      chignon.position.set(0, 1.54, -0.11);
+      bodyGroup.add(chignon);
+
+      // ปิ่นปักผมดอกไม้ไหวสีทอง
+      const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, 0.08, 6), goldMat);
+      pin.position.set(0.07, 1.60, -0.09);
+      pin.rotation.z = -0.5;
+      bodyGroup.add(pin);
+
+      // ลำตัวและชุดไทย
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.42, 10), silkMat);
+      torso.position.y = 1.12;
+      bodyGroup.add(torso);
+
+      // สไบเฉียงพาดบ่าซ้ายด้านหน้า
+      const sabai = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.48, 0.03), silkMat);
+      sabai.position.set(0.02, 1.14, 0.08);
+      sabai.rotation.z = -0.34;
+      bodyGroup.add(sabai);
+
+      // ชายสไบพริ้วไหวด้านหลัง
+      const sabaiTail = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.68, 0.02), silkMat);
+      sabaiTail.position.set(-0.08, 0.92, -0.11);
+      bodyGroup.add(sabaiTail);
+
+      // เข็มขัดทองพร้อมหัวเข็มขัด
+      const belt = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.024, 6, 14), goldMat);
+      belt.position.y = 0.91;
+      belt.rotation.x = Math.PI / 2;
+      bodyGroup.add(belt);
+
+      const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.03), goldMat);
+      buckle.position.set(0, 0.91, 0.17);
+      bodyGroup.add(buckle);
+
+      // ผ้านุ่ง / ผ้าซิ่นไหมยาว
+      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.22, 0.68, 12), silkMat);
+      skirt.position.y = 0.57;
+      bodyGroup.add(skirt);
+
+      // เชิงผ้าซิ่นขลิบทอง
+      const hem = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.018, 6, 14), goldMat);
+      hem.position.y = 0.24;
+      hem.rotation.x = Math.PI / 2;
+      bodyGroup.add(hem);
+
+      // ขาสองข้าง
+      [-0.09, 0.09].forEach((lx) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 0.45), skinMat);
+        leg.position.set(lx, 0.24, 0);
+        bodyGroup.add(leg);
+      });
+
+      // แขนซ้าย (ประคองข้างเอวอย่างอ่อนช้อย)
+      const lArm = new THREE.Group();
+      lArm.position.set(-0.22, 1.26, 0);
+      const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.036, 0.44), skinMat);
+      lArmMesh.position.y = -0.22;
+      lArm.add(lArmMesh);
+      const bangle = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.012, 6, 10), goldMat);
+      bangle.position.y = -0.38;
+      bangle.rotation.x = Math.PI / 2;
+      lArm.add(bangle);
+      bodyGroup.add(lArm);
+
+      // แขนขวา (ยกขึ้นโบกมือทักทาย)
+      const rShoulder = new THREE.Group();
+      rShoulder.position.set(0.22, 1.26, 0);
+      rShoulder.rotation.z = -0.85;
+      rShoulder.rotation.x = 0.22;
+
+      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.036, 0.25), skinMat);
+      rUpperArm.position.y = -0.12;
+      rShoulder.add(rUpperArm);
+
+      const rForearmGroup = new THREE.Group();
+      rForearmGroup.position.set(0, -0.24, 0);
+      rForearmGroup.rotation.z = 1.35;
+
+      const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.032, 0.20), skinMat);
+      rForearmMesh.position.y = -0.10;
+      rForearmGroup.add(rForearmMesh);
+
+      const rHandMesh = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.02), skinMat);
+      rHandMesh.position.set(0, -0.22, 0);
+      rForearmGroup.add(rHandMesh);
+
+      const rBangle = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.012, 6, 10), goldMat);
+      rBangle.position.y = -0.18;
+      rBangle.rotation.x = Math.PI / 2;
+      rForearmGroup.add(rBangle);
+
+      rShoulder.add(rForearmGroup);
+      bodyGroup.add(rShoulder);
+
+      wavingArm = rShoulder;
+      wavingHand = rForearmGroup;
+    }
+
+    // ===== ระนาบใบหน้า (Face Texture Mapping จากรูปถ่ายผู้สมัครจริง) =====
+    const faceGeo = new THREE.PlaneGeometry(0.22, 0.26);
+    faceGeo.position.set(0, isMale ? 1.48 : 1.44, isMale ? 0.162 : 0.152);
+    const faceMat = new THREE.MeshStandardMaterial({
+      roughness: 0.65,
+      transparent: true,
+      side: THREE.FrontSide,
+    });
+    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+    bodyGroup.add(faceMesh);
+
+    this.applyCandidateFaceTexture(faceMat, entry.photoUrl, entry.name);
+
+    // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) =====
+    const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0);
+    badgeSprite.position.set(0, isMale ? 2.12 : 2.05, 0);
+    avatarGroup.add(badgeSprite);
+
+    avatarGroup.userData = {
+      id: entry.id,
+      entry: entry,
+      isCandidateAvatar: true,
+    };
+
+    return {
+      group: avatarGroup,
+      entry,
+      wavingArm,
+      wavingHand,
+      badgeSprite,
+      phase: Math.random() * Math.PI * 2,
+    };
+  }
+
+  // นำรูปภาพจริงของผู้สมัครมาตกแต่งและเบลนด์ขอบสีผิวลงบนใบหน้า 3D
+  applyCandidateFaceTexture(faceMat, photoUrl, name) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+
+    const drawDefaultFace = () => {
+      ctx.fillStyle = "#dfb088";
+      ctx.beginPath();
+      ctx.arc(128, 128, 120, 0, Math.PI * 2);
+      ctx.fill();
+
+      // คิ้ว
+      ctx.strokeStyle = "#27272a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(88, 100, 24, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(168, 100, 24, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+
+      // ตา
+      ctx.fillStyle = "#18181b";
+      ctx.beginPath();
+      ctx.ellipse(88, 118, 10, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(168, 118, 10, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // แก้มชมพูระเรื่อ
+      ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+      ctx.beginPath();
+      ctx.arc(72, 142, 16, 0, Math.PI * 2);
+      ctx.arc(184, 142, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      // รอยยิ้ม
+      ctx.strokeStyle = "#be123c";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(128, 148, 24, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      faceMat.map = tex;
+      faceMat.needsUpdate = true;
+    };
+
+    drawDefaultFace();
+
+    if (!photoUrl) return;
+
+    const isDataOrBlob = photoUrl.startsWith("data:") || photoUrl.startsWith("blob:");
+    const getCorsUrl = (url) => {
+      if (!url || url.startsWith("data:") || url.startsWith("blob:")) return url;
+      if (url.includes("images.weserv.nl")) return url;
+      return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+    };
+
+    const img = new Image();
+    if (!isDataOrBlob) img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      try {
+        ctx.clearRect(0, 0, 256, 256);
+
+        // ฐานสีผิว
+        ctx.fillStyle = "#dfb088";
+        ctx.fillRect(0, 0, 256, 256);
+
+        const iw = img.width || 256;
+        const ih = img.height || 256;
+        const cropW = Math.min(iw, ih * 0.85);
+        const cropH = cropW * 1.15;
+        const sx = (iw - cropW) / 2;
+        const sy = Math.max(0, ih * 0.05);
+
+        // ตัดขอบรูปภาพเป็นวงรีใบหน้า
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(128, 128, 105, 120, 0, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, sx, sy, cropW, Math.min(cropH, ih - sy), 18, 8, 220, 240);
+        ctx.restore();
+
+        // ใช้ Soft Radial Gradient กลืนขอบรูปเข้ากับสีผิวโมเดล 3D
+        const radialGrad = ctx.createRadialGradient(128, 128, 75, 128, 128, 126);
+        radialGrad.addColorStop(0, "rgba(223, 176, 136, 0)");
+        radialGrad.addColorStop(0.7, "rgba(223, 176, 136, 0.35)");
+        radialGrad.addColorStop(1, "rgba(223, 176, 136, 1.0)");
+        ctx.fillStyle = radialGrad;
+        ctx.fillRect(0, 0, 256, 256);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+        faceMat.map = tex;
+        faceMat.needsUpdate = true;
+      } catch (err) {
+        console.warn("Candidate face texture error:", err);
+      }
+    };
+
+    img.onerror = () => {
+      if (!isDataOrBlob && !img.src.includes("images.weserv.nl")) {
+        img.src = getCorsUrl(photoUrl);
+      }
+    };
+
+    if (!isDataOrBlob && (photoUrl.includes("firebasestorage.googleapis.com") || photoUrl.includes("unsplash.com"))) {
+      img.src = getCorsUrl(photoUrl);
+    } else {
+      img.src = photoUrl;
+    }
+  }
+
+  // สร้างป้ายชื่อและคะแนนโหวตลายไทยสีทองเหนือศีรษะโมเดล
+  createCandidateBadgeSprite(name, votes) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 384;
+    canvas.height = 112;
+    const ctx = canvas.getContext("2d");
+
+    const render = (n, v) => {
+      ctx.clearRect(0, 0, 384, 112);
+
+      const x = 8, y = 8, w = 368, h = 96, r = 24;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+
+      const grad = ctx.createLinearGradient(x, y, x, y + h);
+      grad.addColorStop(0, "rgba(15, 23, 42, 0.92)");
+      grad.addColorStop(1, "rgba(30, 41, 59, 0.96)");
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      ctx.fillStyle = "#fef08a";
+      ctx.font = "bold 30px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const displayName = (n || "ผู้ร่วมลอยกระทง").length > 14 
+        ? (n || "ผู้ร่วมลอยกระทง").slice(0, 13) + "…" 
+        : (n || "ผู้ร่วมลอยกระทง");
+      ctx.fillText(displayName, 192, 42);
+
+      ctx.fillStyle = "#f43f5e";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillText(`❤️ โหวต ${v || 0} คะแนน`, 192, 78);
+    };
+
+    render(name, votes);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.65, 0.50, 1.0);
+    sprite.userData = { canvas, ctx, renderTexture: render };
+    return sprite;
+  }
+
+  updateCandidateAvatarBadge(avatar, entry) {
+    if (!avatar.badgeSprite?.userData?.renderTexture) return;
+    const { renderTexture } = avatar.badgeSprite.userData;
+    renderTexture(entry.name, entry.votes || 0);
+    if (avatar.badgeSprite.material.map) {
+      avatar.badgeSprite.material.map.needsUpdate = true;
+    }
+  }
+
   // กำหนดตำแหน่งเริ่มต้นของกระทงให้กระจายตัวเต็มความกว้างท้องน้ำทั้ง 2 ฝั่ง (ซ้าย-ขวา)
   assignKrathongInitialPosition(index) {
     // กระจายกระทงเต็มความกว้างท้องน้ำ (ฝั่งซ้าย กลางน้ำ และเวิ้งน้ำกว้างฝั่งขวา)
@@ -3032,6 +3524,7 @@ export class LoyKrathongScene {
   updateKrathongs(entries) {
     const currentIds = new Set(entries.map((e) => e.id));
 
+    // 1. จัดการ Krathong Meshes ในแม่น้ำ
     for (const [id, mesh] of this.krathongMeshes.entries()) {
       if (!currentIds.has(id)) {
         this.scene.remove(mesh);
@@ -3039,7 +3532,16 @@ export class LoyKrathongScene {
       }
     }
 
+    // 2. จัดการ Candidate Avatars บนท่าน้ำสีเขียว
+    for (const [id, avatar] of this.candidateAvatars.entries()) {
+      if (!currentIds.has(id)) {
+        this.scene.remove(avatar.group);
+        this.candidateAvatars.delete(id);
+      }
+    }
+
     entries.forEach((entry, index) => {
+      // กระทงลอยในน้ำ
       let mesh = this.krathongMeshes.get(entry.id);
       if (!mesh) {
         if (entry.x === undefined || entry.x < -9.5 || entry.x > 48.0) {
@@ -3063,6 +3565,21 @@ export class LoyKrathongScene {
           }
         }
       }
+
+      // โมเดลผู้สมัครสวมชุดไทยยืนบนท่าน้ำสีเขียว
+      let avatar = this.candidateAvatars.get(entry.id);
+      if (!avatar) {
+        avatar = this.buildCandidateAvatar(entry, index, entries.length);
+        this.scene.add(avatar.group);
+        this.candidateAvatars.set(entry.id, avatar);
+      } else {
+        const oldVotes = avatar.entry?.votes || 0;
+        avatar.entry = entry;
+        avatar.group.userData.entry = entry;
+        if (entry.votes !== oldVotes) {
+          this.updateCandidateAvatarBadge(avatar, entry);
+        }
+      }
     });
   }
 
@@ -3071,6 +3588,12 @@ export class LoyKrathongScene {
       const ring = mesh.getObjectByName("highlightRing");
       if (ring) {
         ring.material.opacity = mId === id ? 0.95 : 0;
+      }
+    }
+    for (const [aId, avatar] of this.candidateAvatars.entries()) {
+      const ring = avatar.group.getObjectByName("avatarHighlightRing");
+      if (ring) {
+        ring.material.opacity = aId === id ? 0.95 : 0;
       }
     }
   }
@@ -3095,6 +3618,13 @@ export class LoyKrathongScene {
     const interactables = [];
     for (const mesh of this.krathongMeshes.values()) {
       mesh.traverse((child) => {
+        if (child.isMesh || child.isSprite) {
+          interactables.push(child);
+        }
+      });
+    }
+    for (const avatar of this.candidateAvatars.values()) {
+      avatar.group.traverse((child) => {
         if (child.isMesh || child.isSprite) {
           interactables.push(child);
         }
@@ -3268,9 +3798,9 @@ export class LoyKrathongScene {
         });
       }
 
-      // 2. ป้องกันไม่ให้กระทงชนเสาและบันไดท่าน้ำฝั่งซ้าย (Pier X <= -11.5, Z ระหว่าง -2 ถึง 14)
-      if (mesh.position.x < -8.5 && mesh.position.z > -2 && mesh.position.z < 14) {
-        mesh.position.x += (-8.5 - mesh.position.x) * 0.2;
+      // 2. ป้องกันไม่ให้กระทงชนเสาและบันไดท่าน้ำฝั่งซ้าย (Grand Pier X <= -11.0, Z ระหว่าง -15 ถึง 25)
+      if (mesh.position.x < -7.0 && mesh.position.z > -15.0 && mesh.position.z < 25.0) {
+        mesh.position.x += (-7.0 - mesh.position.x) * 0.2;
       }
 
       // 3. ระบบแยกสายน้ำอ้อมฐานเจดีย์และลานวัด 2 ฝั่ง (Bifurcated Dual-Channel Navigation)
@@ -3428,9 +3958,9 @@ export class LoyKrathongScene {
           }
         }
 
-        // หลบท่าน้ำไม้ฝั่งซ้าย (Pier X <= -12.5, Z ระหว่าง -2.5 ถึง 13.0)
-        if (item.group.position.x < -12.5 && item.group.position.z > -2.5 && item.group.position.z < 13.0) {
-          item.group.position.x = -12.5;
+        // หลบท่าน้ำไม้ฝั่งซ้าย (Grand Pier X <= -11.0, Z ระหว่าง -15.0 ถึง 25.0)
+        if (item.group.position.x < -8.5 && item.group.position.z > -15.0 && item.group.position.z < 25.0) {
+          item.group.position.x = -8.5;
         }
 
         // กระจายตัวหลบกระทงใหญ่ ไม่ให้ลอยซ้อนทับกัน
@@ -3659,6 +4189,25 @@ export class LoyKrathongScene {
           if (char.candleLight) {
             char.candleLight.intensity = 2.0 + Math.sin(time * 11.0 + char.phase) * 0.7;
           }
+        }
+      });
+    }
+
+    // 11.5 อัปเดตแอนิเมชันโมเดลผู้สมัครสวมชุดไทยบนท่าน้ำ (Waving Hand & Breathing)
+    if (this.candidateAvatars) {
+      this.candidateAvatars.forEach((avatar) => {
+        const aPhase = avatar.phase || 0;
+        // แขนขวาโบกมือทักทายอย่างนุ่มนวล
+        if (avatar.wavingArm) {
+          avatar.wavingArm.rotation.z = -0.85 + Math.sin(time * 3.2 + aPhase) * 0.18;
+          avatar.wavingArm.rotation.x = 0.22 + Math.cos(time * 2.0 + aPhase) * 0.08;
+        }
+        if (avatar.wavingHand) {
+          avatar.wavingHand.rotation.z = 1.35 + Math.sin(time * 3.5 + aPhase) * 0.24;
+        }
+        // ลำตัวหายใจเบาๆ
+        if (avatar.group) {
+          avatar.group.position.y = 0.89 + Math.sin(time * 1.5 + aPhase) * 0.012;
         }
       });
     }

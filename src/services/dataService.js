@@ -24,6 +24,9 @@ const defaultEntries = [
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
     votes: 48,
     color: "#ec4899", // pink
+    gender: "female",
+    costumeStyle: "chakraphat",
+    costumeColor: "#ec4899",
     x: 0,
     z: 8,
     speed: 0.008,
@@ -33,9 +36,12 @@ const defaultEntries = [
     id: "sample-2",
     name: "กลุ่มเพื่อนวิศวะ 67",
     description: "ลอยกระทงเพื่อสิ่งแวดล้อม กระทงน้ำแข็งสลายตัวได้ใน 10 นาที! 🌿",
-    photoUrl: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=500&auto=format&fit=crop&q=80",
+    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
     votes: 62,
     color: "#10b981", // emerald
+    gender: "male",
+    costumeStyle: "rajpatan",
+    costumeColor: "#10b981",
     x: -8,
     z: 14,
     speed: 0.006,
@@ -45,9 +51,12 @@ const defaultEntries = [
     id: "sample-3",
     name: "ครอบครัวสุขสันต์",
     description: "พาคุณยายมาขอขมาพระแม่คงคา อิ่มบุญอิ่มใจทุกคนค่ะ 🙏✨",
-    photoUrl: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&auto=format&fit=crop&q=80",
+    photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80",
     votes: 35,
     color: "#f59e0b", // amber
+    gender: "male",
+    costumeStyle: "pra-ratchatan",
+    costumeColor: "#f59e0b",
     x: 10,
     z: 4,
     speed: 0.01,
@@ -60,6 +69,9 @@ const defaultEntries = [
     photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
     votes: 89,
     color: "#8b5cf6", // purple
+    gender: "female",
+    costumeStyle: "chakri",
+    costumeColor: "#8b5cf6",
     x: -14,
     z: 2,
     speed: 0.007,
@@ -140,7 +152,15 @@ function fallbackLocal(callback) {
 }
 
 // Add new Krathong & Entry
-export const addKrathongEntry = async ({ name, description, file, color }) => {
+export const addKrathongEntry = async ({
+  name,
+  description,
+  file,
+  color,
+  gender = "female",
+  costumeStyle = "chakri",
+  costumeColor = "#f59e0b"
+}) => {
   let photoUrl = "";
   
   // If user provided a file or photo
@@ -169,6 +189,9 @@ export const addKrathongEntry = async ({ name, description, file, color }) => {
     description: description.trim() || "ขอขมาพระแม่คงคา มีความสุขสวัสดีตลอดปี",
     photoUrl: photoUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
     color: color || "#f59e0b",
+    gender: gender || "female",
+    costumeStyle: costumeStyle || "chakri",
+    costumeColor: costumeColor || color || "#f59e0b",
     votes: 0,
     x: (Math.random() - 0.5) * 30,
     z: 20 + Math.random() * 10, // start from upstream
