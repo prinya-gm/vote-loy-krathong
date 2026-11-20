@@ -2607,6 +2607,122 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
+     KRATHONG OWNER NAMEPLATE (แทนการเอารูปมาวางบนกระทง)
+     ป้ายชื่อลายไทยประจำกระทง สลักชื่อเจ้าของและคำอธิษฐานสวยงาม
+  ========================================================== */
+  createKrathongNameplate(data, themeColor) {
+    const nameplateGroup = new THREE.Group();
+    nameplateGroup.position.set(0, 1.15, -0.38);
+
+    const plaqueW = 1.62;
+    const plaqueH = 0.68;
+    const plaqueD = 0.06;
+
+    // กรอบแผ่นป้ายไม้สักลายทอง
+    const frameGeo = new THREE.BoxGeometry(plaqueW, plaqueH, plaqueD);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: themeColor,
+      metalness: 0.5,
+      roughness: 0.35,
+    });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    nameplateGroup.add(frame);
+
+    // ขอบบัวทองรอบแผ่นป้าย
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.85,
+      roughness: 0.22,
+    });
+    const trimGeo = new THREE.BoxGeometry(plaqueW + 0.06, plaqueH + 0.06, plaqueD * 0.7);
+    const trim = new THREE.Mesh(trimGeo, goldMat);
+    nameplateGroup.add(trim);
+
+    // Canvas สำหรับวาดชื่อและคำอธิษฐานลายไทยสวยงาม คมชัด
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 216;
+    const ctx = canvas.getContext("2d");
+
+    // พื้นหลังไล่สีราตรีหรูหรา
+    const bgGrad = ctx.createLinearGradient(0, 0, 512, 216);
+    bgGrad.addColorStop(0, "#081226");
+    bgGrad.addColorStop(0.5, "#0f172a");
+    bgGrad.addColorStop(1, "#1e293b");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 512, 216);
+
+    // ขอบทองนอก
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(6, 6, 500, 204);
+
+    // ขอบทองใน
+    ctx.strokeStyle = "rgba(251, 191, 36, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(14, 14, 484, 188);
+
+    // ลายมุมทอง 4 มุม
+    const drawCorner = (cx, cy, dx, dy) => {
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + dy * 18);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + dx * 18, cy);
+      ctx.stroke();
+    };
+    drawCorner(20, 20, 1, 1);
+    drawCorner(492, 20, -1, 1);
+    drawCorner(20, 196, 1, -1);
+    drawCorner(492, 196, -1, -1);
+
+    // หัวข้อเล็ก: 🪷 กระทงของ
+    ctx.fillStyle = "#fde68a";
+    ctx.font = "bold 22px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🪷 กระทงของ", 256, 42);
+
+    // ชื่อเจ้าของกระทง (เด่น ชัดเจน สง่างาม ลอยเหนือสายน้ำ)
+    ctx.shadowColor = "#f59e0b";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#ffffff";
+    const rawName = data.name || "ผู้ร่วมลอยกระทง";
+    const displayName = rawName.length > 18 ? rawName.slice(0, 17) + "…" : rawName;
+    ctx.font = `bold ${displayName.length > 12 ? 30 : 36}px sans-serif`;
+    ctx.fillText(displayName, 256, 96);
+    ctx.shadowBlur = 0;
+
+    // คำอธิษฐานใต้ชื่อ
+    const wishText = data.wish || data.description || "สุขสันต์วันลอยกระทง";
+    const displayWish = wishText.length > 24 ? wishText.slice(0, 23) + "…" : wishText;
+    ctx.fillStyle = "#fbbf24";
+    ctx.font = "italic 20px sans-serif";
+    ctx.fillText(`“${displayWish}”`, 256, 156);
+
+    const nameTex = new THREE.CanvasTexture(canvas);
+    nameTex.colorSpace = THREE.SRGBColorSpace;
+    const nameMat = new THREE.MeshBasicMaterial({
+      map: nameTex,
+      side: THREE.DoubleSide,
+    });
+
+    const planeW = plaqueW - 0.08;
+    const planeH = plaqueH - 0.08;
+    const frontPlane = new THREE.Mesh(new THREE.PlaneGeometry(planeW, planeH), nameMat);
+    frontPlane.position.z = plaqueD / 2 + 0.005;
+    nameplateGroup.add(frontPlane);
+
+    const backPlane = new THREE.Mesh(new THREE.PlaneGeometry(planeW, planeH), nameMat);
+    backPlane.position.z = -(plaqueD / 2 + 0.005);
+    backPlane.rotation.y = Math.PI;
+    nameplateGroup.add(backPlane);
+
+    return nameplateGroup;
+  }
+
+  /* ==========================================================
      USER KRATHONG MESH
   ========================================================== */
   buildKrathongMesh(data) {
@@ -2687,149 +2803,9 @@ export class LoyKrathongScene {
       group.add(tip);
     });
 
-    const photoGroup = new THREE.Group();
-    photoGroup.position.set(0, 1.35, -0.4);
-
-    const frameGeo = new THREE.BoxGeometry(1.5, 1.5, 0.08);
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: themeColor,
-      metalness: 0.35,
-      roughness: 0.4,
-    });
-    const frame = new THREE.Mesh(frameGeo, frameMat);
-    photoGroup.add(frame);
-
-    // Initial placeholder canvas (กรอบทองพร้อมชื่อ สวยงาม ไม่เป็นแผ่นขาวว่างเปล่า)
-    const photoCanvas = document.createElement("canvas");
-    photoCanvas.width = 512;
-    photoCanvas.height = 512;
-    const pCtx = photoCanvas.getContext("2d");
-    pCtx.fillStyle = "#0f172a";
-    pCtx.fillRect(0, 0, 512, 512);
-    pCtx.strokeStyle = "#f59e0b";
-    pCtx.lineWidth = 14;
-    pCtx.strokeRect(7, 7, 498, 498);
-    pCtx.fillStyle = "#fbbf24";
-    pCtx.font = "bold 36px sans-serif";
-    pCtx.textAlign = "center";
-    pCtx.textBaseline = "middle";
-    pCtx.fillText((data.name || "ผู้ร่วมลอยกระทง").slice(0, 14), 256, 256);
-
-    const defaultTex = new THREE.CanvasTexture(photoCanvas);
-    defaultTex.colorSpace = THREE.SRGBColorSpace;
-    const photoMat = new THREE.MeshBasicMaterial({
-      map: defaultTex,
-      side: THREE.DoubleSide,
-    });
-
-    const photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.36), photoMat);
-    photoPlane.position.z = 0.045;
-    photoGroup.add(photoPlane);
-
-    const backPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.36), photoMat);
-    backPlane.position.z = -0.045;
-    backPlane.rotation.y = Math.PI;
-    photoGroup.add(backPlane);
-
-    // โหลดรูปภาพโดยคงอัตราส่วนเดิม (Aspect Ratio) 100% ไม่บิดเบี้ยว ไม่ตัดรูปทิ้ง
-    if (data.photoUrl) {
-      const isDataOrBlob = data.photoUrl.startsWith("data:") || data.photoUrl.startsWith("blob:");
-      
-      // ฟังก์ชันช่วยแปลง URL สำหรับ WebGL ให้มี CORS header (เช่น images จาก Firebase Storage หรือ Unsplash)
-      const getCorsUrl = (url) => {
-        if (!url || url.startsWith("data:") || url.startsWith("blob:")) return url;
-        if (url.includes("images.weserv.nl")) return url;
-        return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
-      };
-
-      const img = new Image();
-      if (!isDataOrBlob) {
-        img.crossOrigin = "anonymous";
-      }
-
-      const applyTexture = () => {
-        try {
-          const imgW = img.width || 512;
-          const imgH = img.height || 512;
-          const aspect = imgW / imgH;
-
-          // ปรับสัดส่วนแผ่นป้ายและกรอบรูป 3D ตามอัตราส่วนแนวตั้งหรือแนวนอนของรูปจริง
-          let targetW = 1.36;
-          let targetH = 1.36;
-          if (aspect >= 1.0) {
-            // แนวนอน (Landscape): กว้างปรับขยาย ความสูงคำนวณตามสัดส่วนเดิม
-            targetW = Math.min(1.68, 1.36 * Math.sqrt(aspect));
-            targetH = Math.max(0.75, targetW / aspect);
-          } else {
-            // แนวตั้ง (Portrait): สูงปรับขยาย ความกว้างคำนวณตามสัดส่วนเดิม
-            targetH = Math.min(1.68, 1.36 / Math.sqrt(aspect));
-            targetW = Math.max(0.75, targetH * aspect);
-          }
-
-          const scaleX = targetW / 1.36;
-          const scaleY = targetH / 1.36;
-
-          frame.scale.set(scaleX, scaleY, 1.0);
-          photoPlane.scale.set(scaleX, scaleY, 1.0);
-          backPlane.scale.set(scaleX, scaleY, 1.0);
-          photoGroup.position.y = 0.55 + targetH / 2;
-
-          // วาดรูปต้นฉบับลงบนผืนผ้าใบตามสัดส่วนแท้จริง
-          const c = document.createElement("canvas");
-          c.width = 512;
-          c.height = Math.round(512 / aspect);
-          if (c.height < 256) c.height = 256;
-          if (c.height > 1024) c.height = 1024;
-
-          const ctx = c.getContext("2d");
-          // วาดภาพเต็มรูปคงอัตราส่วนเดิม 100%
-          ctx.drawImage(img, 0, 0, c.width, c.height);
-
-          // กรอบทองลายไทยรอบรูป
-          ctx.strokeStyle = "#f59e0b";
-          ctx.lineWidth = Math.max(8, Math.round(c.width * 0.025));
-          ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, c.width - ctx.lineWidth, c.height - ctx.lineWidth);
-
-          // แถบชื่อเจ้าของกระทงที่ด้านล่าง
-          const bannerH = Math.max(48, Math.round(c.height * 0.16));
-          ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
-          ctx.fillRect(0, c.height - bannerH, c.width, bannerH);
-          ctx.fillStyle = "#ffffff";
-          ctx.font = `bold ${Math.round(bannerH * 0.42)}px sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(data.name || "ผู้ร่วมลอยกระทง", c.width / 2, c.height - bannerH / 2);
-
-          const tex = new THREE.CanvasTexture(c);
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.needsUpdate = true;
-          photoMat.map = tex;
-          photoMat.needsUpdate = true;
-        } catch (err) {
-          console.warn("Failed to generate texture from image:", err);
-        }
-      };
-
-      img.onload = applyTexture;
-
-      img.onerror = () => {
-        // หากโหลดตรงไม่ได้ (เช่นติด CORS ของ Firebase Storage) ให้ลองผ่าน CORS proxy
-        if (!isDataOrBlob && !img.src.includes("images.weserv.nl")) {
-          img.src = getCorsUrl(data.photoUrl);
-        } else {
-          console.warn("Could not load image texture directly:", data.photoUrl);
-        }
-      };
-
-      // สำหรับ URL ภายนอก (Firebase Storage / Unsplash) ใช้ CORS bridge โดยตรงเพื่อความรวดเร็วและแน่นอน
-      if (!isDataOrBlob && (data.photoUrl.includes("firebasestorage.googleapis.com") || data.photoUrl.includes("unsplash.com"))) {
-        img.src = getCorsUrl(data.photoUrl);
-      } else {
-        img.src = data.photoUrl;
-      }
-    }
-
-    group.add(photoGroup);
+    // ป้ายชื่อเจ้าของกระทงลายไทย (Krathong Owner Nameplate แทนรูปถ่าย)
+    const nameplate = this.createKrathongNameplate(data, themeColor);
+    group.add(nameplate);
 
     // ป้ายแสดงคะแนนโหวต 3D แบบ Billboard ลอยอยู่เหนือกกระทง (หันหน้าหากล้องเสมอ)
     const voteBadge = this.createVoteBadgeSprite(data.votes || 0);
@@ -2947,8 +2923,8 @@ export class LoyKrathongScene {
     avatarGroup.position.set(posX, 0.89, posZ);
     // ขยายขนาดสเกล 1.3 เท่า ให้สูงเด่นเป็นสง่าเหนือคนเดินเล่นทั่วไป
     avatarGroup.scale.set(1.3, 1.3, 1.3);
-    // หันหน้าเฉียงเข้าหาแม่น้ำและกล้องตรงๆ
-    avatarGroup.rotation.y = Math.PI / 2 + 0.15;
+    // หันหน้าเฉียงรับกล้องและแม่น้ำ 45 องศา สวยงามสง่า
+    avatarGroup.rotation.y = 0.75;
 
     const isMale = entry.gender === "male";
     const primaryColorHex = entry.costumeColor || entry.color || "#f59e0b";
@@ -2991,6 +2967,7 @@ export class LoyKrathongScene {
     avatarGroup.add(highlightRing);
 
     const bodyGroup = new THREE.Group();
+    bodyGroup.position.y = 0.12; // ยืนบนแท่นพรมทองพอดี
     avatarGroup.add(bodyGroup);
 
     let wavingArm = null;
@@ -3210,20 +3187,20 @@ export class LoyKrathongScene {
 
     // ===== ระนาบใบหน้า (Face Texture Mapping จากรูปถ่ายผู้สมัครจริง) =====
     const faceGeo = new THREE.PlaneGeometry(0.22, 0.26);
-    faceGeo.position.set(0, isMale ? 1.48 : 1.44, isMale ? 0.162 : 0.152);
     const faceMat = new THREE.MeshStandardMaterial({
       roughness: 0.65,
       transparent: true,
       side: THREE.FrontSide,
     });
     const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+    faceMesh.position.set(0, isMale ? 1.48 : 1.44, isMale ? 0.162 : 0.152);
     bodyGroup.add(faceMesh);
 
     this.applyCandidateFaceTexture(faceMat, entry.photoUrl, entry.name);
 
     // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) =====
     const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0);
-    badgeSprite.position.set(0, isMale ? 2.12 : 2.05, 0);
+    badgeSprite.position.set(0, isMale ? 2.28 : 2.20, 0);
     avatarGroup.add(badgeSprite);
 
     avatarGroup.userData = {
@@ -3497,9 +3474,15 @@ export class LoyKrathongScene {
       // โมเดลผู้สมัครสวมชุดไทยยืนบนท่าน้ำสีเขียว
       let avatar = this.candidateAvatars.get(entry.id);
       if (!avatar) {
-        avatar = this.buildCandidateAvatar(entry, index, entries.length);
-        this.scene.add(avatar.group);
-        this.candidateAvatars.set(entry.id, avatar);
+        try {
+          avatar = this.buildCandidateAvatar(entry, index, entries.length);
+          if (avatar && avatar.group) {
+            this.scene.add(avatar.group);
+            this.candidateAvatars.set(entry.id, avatar);
+          }
+        } catch (err) {
+          console.error("Error creating candidate avatar:", err, entry);
+        }
       } else {
         const oldVotes = avatar.entry?.votes || 0;
         avatar.entry = entry;
