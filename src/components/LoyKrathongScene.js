@@ -97,9 +97,13 @@ export class LoyKrathongScene {
 
     // Event Listeners
     this.handleResize = this.onWindowResize.bind(this);
-    this.handleClick = this.onPointerDown.bind(this);
+    this.handlePointerDown = (e) => {
+      this.pointerDownPos = { x: e.clientX, y: e.clientY };
+    };
+    this.handlePointerUp = this.onPointerUp.bind(this);
     window.addEventListener("resize", this.handleResize);
-    this.renderer.domElement.addEventListener("pointerdown", this.handleClick);
+    this.renderer.domElement.addEventListener("pointerdown", this.handlePointerDown);
+    this.renderer.domElement.addEventListener("pointerup", this.handlePointerUp);
 
     // Start Animation Loop
     this.animate();
@@ -3593,21 +3597,23 @@ export class LoyKrathongScene {
     this.camera.position.set(targetPos.x + 5.2, targetPos.y + 1.2, targetPos.z + 4.2);
   }
 
-  onPointerDown(event) {
+  onPointerUp(event) {
+    if (this.pointerDownPos) {
+      const dx = event.clientX - this.pointerDownPos.x;
+      const dy = event.clientY - this.pointerDownPos.y;
+      this.pointerDownPos = null;
+      if (Math.hypot(dx, dy) > 8) return; // หากเป็นการลากเลื่อนหมุนมุมกล้อง จะไม่ถือเป็นการคลิก
+    }
+
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
+    // ตรวจสอบการคลิกเฉพาะโมเดลคนบนท่าน้ำสีเขียวเท่านั้น
+    // (ยกเลิกการคลิกแล้วเด้ง popup ที่กระทงในน้ำ เพื่อให้ผู้ใช้ลากหมุนมุมกล้องในน้ำได้อย่างอิสระ ไม่เด้ง popup มากวนใจ)
     const interactables = [];
-    for (const mesh of this.krathongMeshes.values()) {
-      mesh.traverse((child) => {
-        if (child.isMesh || child.isSprite) {
-          interactables.push(child);
-        }
-      });
-    }
     for (const avatar of this.candidateAvatars.values()) {
       avatar.group.traverse((child) => {
         if (child.isMesh || child.isSprite) {
@@ -4614,7 +4620,12 @@ export class LoyKrathongScene {
       } catch (e) {}
     }
     if (this.renderer?.domElement) {
-      this.renderer.domElement.removeEventListener("pointerdown", this.handleClick);
+      if (this.handlePointerDown) {
+        this.renderer.domElement.removeEventListener("pointerdown", this.handlePointerDown);
+      }
+      if (this.handlePointerUp) {
+        this.renderer.domElement.removeEventListener("pointerup", this.handlePointerUp);
+      }
       if (this.container && this.container.contains(this.renderer.domElement)) {
         this.container.removeChild(this.renderer.domElement);
       }
