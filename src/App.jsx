@@ -130,6 +130,12 @@ export default function App() {
     }
   };
 
+  const handleFocusAvatar = (id) => {
+    if (sceneInstanceRef.current) {
+      sceneInstanceRef.current.focusOnCandidateAvatar(id);
+    }
+  };
+
   const resetCamera = () => {
     if (sceneInstanceRef.current) {
       sceneInstanceRef.current.camera.position.set(0, 18, 38);
@@ -305,6 +311,7 @@ export default function App() {
         onVote={handleVote}
         hasVoted={hasVotedCurrent}
         onFocusKrathong={handleFocusKrathong}
+        onFocusAvatar={handleFocusAvatar}
       />
 
       <LeaderboardDrawer

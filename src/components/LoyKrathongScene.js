@@ -2011,110 +2011,7 @@ export class LoyKrathongScene {
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.75, roughness: 0.25 });
 
     const characterConfigs = [
-      // --- ก. กลุ่มคนลอยกระทงริมท่าน้ำ (Waterfront Floating & Praying Group) ---
-      // 1. หญิงสาวสไบสีแดงทับทิม คุกเข่าที่บันได ยื่นกระทงลงน้ำ
-      {
-        gender: "female",
-        role: "floating",
-        x: -12.05, y: 0.44, z: 4.2,
-        rotY: Math.PI / 2 - 0.08,
-        primary: 0xf43f5e, secondary: 0x9f1239, gold: 0xfacc15,
-        pose: "releasing_krathong",
-      },
-      // 2. ชายหนุ่มชุดราชปะแตนสีงาช้าง โจงกระเบนสีกรมท่า คุกเข่าพนมมือไหว้อธิษฐานเคียงข้าง
-      {
-        gender: "male",
-        role: "floating",
-        x: -12.05, y: 0.44, z: 5.3,
-        rotY: Math.PI / 2,
-        primary: 0xfefce8, secondary: 0x1e3a8a, sash: 0xf59e0b,
-        pose: "praying_wai",
-      },
-      // 3. หญิงสาวสไบสีเขียวมรกต คุกเข่าที่บันไดขั้นต่ำ ประคองกระทงแตะผิวน้ำ
-      {
-        gender: "female",
-        role: "floating",
-        x: -11.45, y: 0.22, z: 6.2,
-        rotY: Math.PI / 2 + 0.12,
-        primary: 0x10b981, secondary: 0x065f46, gold: 0xfbbf24,
-        pose: "releasing_krathong",
-      },
-      // 4. ชายหนุ่มชุดไทยสีม่วงหลวง ยืนถือกระทงดอกบัวบนชานท่าน้ำ ชมวิวแม่น้ำ
-      {
-        gender: "male",
-        role: "floating",
-        x: -13.4, y: 0.89, z: 3.4,
-        rotY: Math.PI / 2 - 0.22,
-        primary: 0x7c3aed, secondary: 0x4c1d95, sash: 0xfbbf24,
-        pose: "standing_holding",
-      },
-      // 5. หญิงสาวสไบสีทองบุษราคัม ยืนถือกระทงเคียงข้าง
-      {
-        gender: "female",
-        role: "floating",
-        x: -13.4, y: 0.89, z: 2.3,
-        rotY: Math.PI / 2 - 0.15,
-        primary: 0xf59e0b, secondary: 0x92400e, gold: 0xfef08a,
-        pose: "standing_holding",
-      },
-      // 6. ชายหนุ่มเสื้อผ้าไหมสีส้มทอง คุกเข่าลอยกระทงที่บันไดด้านเหนือ
-      {
-        gender: "male",
-        role: "floating",
-        x: -11.45, y: 0.22, z: 2.8,
-        rotY: Math.PI / 2 - 0.10,
-        primary: 0xea580c, secondary: 0x292524, sash: 0xfbbf24,
-        pose: "releasing_krathong",
-      },
-      // 7. หญิงสาวสไบสีน้ำเงินไพลิน คุกเข่าพนมมืออธิษฐาน
-      {
-        gender: "female",
-        role: "floating",
-        x: -12.05, y: 0.44, z: 1.8,
-        rotY: Math.PI / 2,
-        primary: 0x2563eb, secondary: 0x1e3a8a, gold: 0xfacc15,
-        pose: "praying_wai",
-      },
-
-      // --- ข. กลุ่มคนเดินเล่นบนสนามหญ้าท่าน้ำสีเขียว (Green Pier Walkers - แกน Z) ---
-      // 8. หญิงสาวสไบสีฟ้าคราม เดินรับลมบนลานหญ้า
-      {
-        gender: "female",
-        role: "walking",
-        x: -16.2, y: 0.89, z: 2.5,
-        primary: 0x06b6d4, secondary: 0x1e40af, gold: 0xfacc15,
-        minPos: 0.5, maxPos: 9.5,
-        axis: "z", dir: 1, speed: 1.05, walkPhase: 1.2,
-      },
-      // 9. ชายหนุ่มเสื้อไหมสีส้มทอง เดินบนลานหญ้า
-      {
-        gender: "male",
-        role: "walking",
-        x: -17.0, y: 0.89, z: 1.2,
-        primary: 0xea580c, secondary: 0x292524, sash: 0xfbbf24,
-        minPos: 0.5, maxPos: 9.5,
-        axis: "z", dir: 1, speed: 1.05, walkPhase: 1.4,
-      },
-      // 10. หญิงสาวสไบชมพูอ่อน เดินคู่กับชายหนุ่ม
-      {
-        gender: "female",
-        role: "walking",
-        x: -16.5, y: 0.89, z: 8.0,
-        primary: 0xf472b6, secondary: 0x831843, gold: 0xfef08a,
-        minPos: 1.0, maxPos: 9.0,
-        axis: "z", dir: -1, speed: 0.95, walkPhase: 3.1,
-      },
-      // 11. ชายหนุ่มเสื้อผ้าไหมสีครีม โจงกระเบนเขียวไพร
-      {
-        gender: "male",
-        role: "walking",
-        x: -15.8, y: 0.89, z: 7.2,
-        primary: 0xfef3c7, secondary: 0x14532d, sash: 0xd97706,
-        minPos: 1.0, maxPos: 9.0,
-        axis: "z", dir: -1, speed: 0.95, walkPhase: 3.3,
-      },
-
-      // --- ค. กลุ่มคนเดินเล่นบนทางเดินริมตลิ่งหลัก (Promenade Walkers - X <= -23.2, Y = 1.5) ---
+      // --- กลุ่มชาวบ้านเดินเล่นบนทางเดินริมตลิ่งหลัก (Promenade Walkers - X <= -23.2, Y = 1.5 สวมเสื้อม่อฮ่อม & โจงกระเบนน้ำตาล) ---
       // 12. หญิงสาวสไบชมพูกลีบบัว เดินทอดน่อง
       {
         gender: "female",
@@ -3037,17 +2934,21 @@ export class LoyKrathongScene {
   buildCandidateAvatar(entry, index, total) {
     const avatarGroup = new THREE.Group();
 
-    // คำนวณตำแหน่งยืนบนลานสนามหญ้าท่าน้ำสีเขียว (Grand Green Pier)
-    // ลานหญ้าครอบคลุม X: -20 ถึง -11 (จุดศูนย์กลาง X = -15.5) และ Z: -14 ถึง 24 (ยาว 38 เมตร)
-    const perRow = 10;
-    const row = Math.floor(index / perRow);
-    const col = index % perRow;
-    const posX = -13.0 - row * 2.2;
-    const posZ = -10.0 + col * 3.6;
+    // คำนวณตำแหน่งยืนบนลานสนามหญ้าท่าน้ำสีเขียว โดยเริ่มจากจุดกึ่งกลางหน้ากล้อง (Z = 5.0) เด่นที่สุด
+    // และสลับขยายออกซ้าย-ขวาตามลำดับ: index 0 -> Z=5.0 (หน้ากล้องตรงๆ), index 1 -> Z=7.8, index 2 -> Z=2.2, etc.
+    const sign = index % 2 === 1 ? 1 : -1;
+    const step = Math.ceil(index / 2);
+    const posZ = 5.0 + sign * step * 2.8;
+
+    // แถวหน้าติดริมน้ำ X = -12.4
+    const row = Math.abs(posZ - 5.0) > 13.0 ? 1 : 0;
+    const posX = -12.4 - row * 2.2;
 
     avatarGroup.position.set(posX, 0.89, posZ);
-    // หันหน้าเฉียงเข้าหาแม่น้ำและกล้อง
-    avatarGroup.rotation.y = Math.PI / 2 + 0.12;
+    // ขยายขนาดสเกล 1.3 เท่า ให้สูงเด่นเป็นสง่าเหนือคนเดินเล่นทั่วไป
+    avatarGroup.scale.set(1.3, 1.3, 1.3);
+    // หันหน้าเฉียงเข้าหาแม่น้ำและกล้องตรงๆ
+    avatarGroup.rotation.y = Math.PI / 2 + 0.15;
 
     const isMale = entry.gender === "male";
     const primaryColorHex = entry.costumeColor || entry.color || "#f59e0b";
@@ -3055,11 +2956,33 @@ export class LoyKrathongScene {
 
     const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.65 });
     const hairMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.82, roughness: 0.22 });
-    const silkMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.48, metalness: 0.18 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.20 });
+    const silkMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.45, metalness: 0.20 });
+
+    // แท่นพรมทองลายไทยยกพื้นขลิบทอง (Ceremonial Golden Dais)
+    const dais = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.58, 0.65, 0.12, 18),
+      new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.45, metalness: 0.25 })
+    );
+    dais.position.y = 0.06;
+    avatarGroup.add(dais);
+
+    const daisBorder = new THREE.Mesh(
+      new THREE.TorusGeometry(0.60, 0.035, 6, 20),
+      goldMat
+    );
+    daisBorder.position.y = 0.12;
+    daisBorder.rotation.x = Math.PI / 2;
+    avatarGroup.add(daisBorder);
+
+    // ดวงไฟสปอตไลต์ประจำตัว (Golden Aura Spotlight) ให้ตัวโมเดลสว่างไสว เปล่งประกายในความมืด
+    const spot = new THREE.PointLight(0xffe082, 3.2, 7.5, 1.2);
+    spot.position.set(0, 2.7, 0.8);
+    avatarGroup.add(spot);
+    this.flickerLights.push({ light: spot, baseIntensity: 3.2, speed: 2.0 });
 
     // วงแหวนไฮไลต์สีทองบนพื้นหญ้าเมื่อเลือกกระทง/ตัวละคร
-    const ringGeo = new THREE.RingGeometry(0.45, 0.60, 24);
+    const ringGeo = new THREE.RingGeometry(0.65, 0.80, 24);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0 });
     const highlightRing = new THREE.Mesh(ringGeo, ringMat);
@@ -3441,14 +3364,14 @@ export class LoyKrathongScene {
   // สร้างป้ายชื่อและคะแนนโหวตลายไทยสีทองเหนือศีรษะโมเดล
   createCandidateBadgeSprite(name, votes) {
     const canvas = document.createElement("canvas");
-    canvas.width = 384;
-    canvas.height = 112;
+    canvas.width = 512;
+    canvas.height = 140;
     const ctx = canvas.getContext("2d");
 
     const render = (n, v) => {
-      ctx.clearRect(0, 0, 384, 112);
+      ctx.clearRect(0, 0, 512, 140);
 
-      const x = 8, y = 8, w = 368, h = 96, r = 24;
+      const x = 10, y = 10, w = 492, h = 120, r = 32;
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + w - r, y);
@@ -3462,27 +3385,32 @@ export class LoyKrathongScene {
       ctx.closePath();
 
       const grad = ctx.createLinearGradient(x, y, x, y + h);
-      grad.addColorStop(0, "rgba(15, 23, 42, 0.92)");
-      grad.addColorStop(1, "rgba(30, 41, 59, 0.96)");
+      grad.addColorStop(0, "rgba(15, 23, 42, 0.94)");
+      grad.addColorStop(1, "rgba(30, 41, 59, 0.98)");
       ctx.fillStyle = grad;
       ctx.fill();
 
       ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 6;
       ctx.stroke();
 
+      // เส้นขอบในสีทอง
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 8, y + 8, w - 16, h - 16);
+
       ctx.fillStyle = "#fef08a";
-      ctx.font = "bold 30px sans-serif";
+      ctx.font = "bold 38px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const displayName = (n || "ผู้ร่วมลอยกระทง").length > 14 
-        ? (n || "ผู้ร่วมลอยกระทง").slice(0, 13) + "…" 
+      const displayName = (n || "ผู้ร่วมลอยกระทง").length > 15 
+        ? (n || "ผู้ร่วมลอยกระทง").slice(0, 14) + "…" 
         : (n || "ผู้ร่วมลอยกระทง");
-      ctx.fillText(displayName, 192, 42);
+      ctx.fillText(displayName, 256, 52);
 
-      ctx.fillStyle = "#f43f5e";
-      ctx.font = "bold 24px sans-serif";
-      ctx.fillText(`❤️ โหวต ${v || 0} คะแนน`, 192, 78);
+      ctx.fillStyle = "#fb7185";
+      ctx.font = "bold 30px sans-serif";
+      ctx.fillText(`❤️ โหวต ${v || 0} คะแนน`, 256, 98);
     };
 
     render(name, votes);
@@ -3496,7 +3424,7 @@ export class LoyKrathongScene {
       depthWrite: false,
     });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(1.65, 0.50, 1.0);
+    sprite.scale.set(2.4, 0.65, 1.0);
     sprite.userData = { canvas, ctx, renderTexture: render };
     return sprite;
   }
@@ -3606,6 +3534,17 @@ export class LoyKrathongScene {
     const targetPos = mesh.position.clone();
     targetPos.y += 1.6;
     this.controls.target.copy(targetPos);
+  }
+
+  focusOnCandidateAvatar(id) {
+    const avatar = this.candidateAvatars.get(id);
+    if (!avatar) return;
+
+    this.highlightKrathong(id);
+    const targetPos = avatar.group.position.clone();
+    targetPos.y += 1.6;
+    this.controls.target.copy(targetPos);
+    this.camera.position.set(targetPos.x + 5.2, targetPos.y + 1.2, targetPos.z + 4.2);
   }
 
   onPointerDown(event) {

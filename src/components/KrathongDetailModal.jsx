@@ -7,7 +7,8 @@ export default function KrathongDetailModal({
   onClose, 
   onVote, 
   hasVoted, 
-  onFocusKrathong 
+  onFocusKrathong,
+  onFocusAvatar
 }) {
   const [voting, setVoting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -59,16 +60,26 @@ export default function KrathongDetailModal({
         />
 
         {/* Top bar */}
-        <div className="relative flex items-center justify-between p-4 z-10">
-          <button
-            onClick={() => onFocusKrathong && onFocusKrathong(krathong.id)}
-            className="flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 rounded-full text-xs text-amber-300 transition"
-          >
-            <Sparkles className="w-3.5 h-3.5" /> ซูมดูกระทงในน้ำ
-          </button>
+        <div className="relative flex items-center justify-between p-3.5 sm:p-4 z-10 gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => onFocusKrathong && onFocusKrathong(krathong.id)}
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 rounded-full text-[11px] sm:text-xs text-amber-300 transition cursor-pointer"
+              title="ซูมดูกระทงในน้ำ"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> ซูมดูกระทง
+            </button>
+            <button
+              onClick={() => onFocusAvatar && onFocusAvatar(krathong.id)}
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-full text-[11px] sm:text-xs text-amber-200 font-bold transition cursor-pointer active:scale-95 shadow-sm"
+              title="ส่องดูโมเดลคนบนท่าน้ำ"
+            >
+              <span>👤</span> ส่องดูคนบนท่าน้ำ
+            </button>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+            className="p-1.5 sm:p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
