@@ -2803,12 +2803,8 @@ export class LoyKrathongScene {
       group.add(tip);
     });
 
-    // ป้ายชื่อเจ้าของกระทงลายไทย (Krathong Owner Nameplate แทนรูปถ่าย)
-    const nameplate = this.createKrathongNameplate(data, themeColor);
-    group.add(nameplate);
-
-    // ป้ายแสดงคะแนนโหวต 3D แบบ Billboard ลอยอยู่เหนือกกระทง (หันหน้าหากล้องเสมอ)
-    const voteBadge = this.createVoteBadgeSprite(data.votes || 0);
+    // ป้ายชื่อเจ้าของกระทง 3D แบบ Billboard ลอยอยู่เหนือกกระทง (อยู่ข้างรูปหัวใจ ❤️ แทนที่ตัวเลขคะแนน)
+    const voteBadge = this.createVoteBadgeSprite(data.name || "ผู้ร่วมลอยกระทง");
     group.add(voteBadge);
 
     const ringGeo = new THREE.RingGeometry(1.9, 2.3, 32);
@@ -2835,16 +2831,16 @@ export class LoyKrathongScene {
     return group;
   }
 
-  // สร้างพื้นผิว Texture ป้ายคะแนนโหวต (ทรงแคปซูลมน ขอบทอง พร้อมไอคอนหัวใจและตัวเลขคมชัด)
-  createVoteBadgeTexture(votes) {
+  // สร้างพื้นผิว Texture ป้ายชื่อเจ้าของกระทง (ทรงแคปซูลมน ขอบทอง พร้อมไอคอนหัวใจ ❤️ และชื่อเจ้าของกระทงคมชัด)
+  createVoteBadgeTexture(name) {
     const c = document.createElement("canvas");
-    c.width = 256;
-    c.height = 80;
+    c.width = 440;
+    c.height = 96;
     const ctx = c.getContext("2d");
 
     ctx.clearRect(0, 0, c.width, c.height);
 
-    const x = 6, y = 6, w = 244, h = 68, r = 34;
+    const x = 6, y = 6, w = 428, h = 84, r = 38;
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);
@@ -2859,7 +2855,7 @@ export class LoyKrathongScene {
 
     const grad = ctx.createLinearGradient(x, y, x, y + h);
     grad.addColorStop(0, "rgba(15, 23, 42, 0.92)");
-    grad.addColorStop(1, "rgba(30, 41, 59, 0.95)");
+    grad.addColorStop(1, "rgba(30, 41, 59, 0.96)");
     ctx.fillStyle = grad;
     ctx.fill();
 
@@ -2867,25 +2863,33 @@ export class LoyKrathongScene {
     ctx.lineWidth = 4;
     ctx.stroke();
 
+    // เส้นขอบในสีทองบางๆ
+    ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 5, y + 5, w - 10, h - 10);
+
     ctx.font = "bold 34px sans-serif";
-    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    const vStr = String(votes || 0);
-    ctx.fillStyle = "#ec4899";
-    ctx.fillText("❤️", 64, y + h / 2 + 2);
+    // รูปหัวใจ ❤️ ทางซ้าย
+    ctx.fillText("❤️", 46, y + h / 2 + 1);
 
-    ctx.fillStyle = "#fbbf24";
-    ctx.fillText(vStr, 142, y + h / 2 + 2);
+    // ชื่อเจ้าของกระทง อยู่ข้างรูปหัวใจ แทนที่ตัวเลข
+    ctx.fillStyle = "#fef08a";
+    ctx.textAlign = "left";
+    const displayName = (name || "ผู้ร่วมลอยกระทง").length > 15
+      ? (name || "ผู้ร่วมลอยกระทง").slice(0, 14) + "…"
+      : (name || "ผู้ร่วมลอยกระทง");
+    ctx.fillText(displayName, 96, y + h / 2 + 1);
 
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }
 
-  // สร้างวัตถุ 3D Billboard Sprite สำหรับป้ายคะแนนโหวต
-  createVoteBadgeSprite(votes) {
-    const tex = this.createVoteBadgeTexture(votes);
+  // สร้างวัตถุ 3D Billboard Sprite สำหรับป้ายชื่อเจ้าของกระทงลอยเหนือกกระทง
+  createVoteBadgeSprite(name) {
+    const tex = this.createVoteBadgeTexture(name);
     const spriteMat = new THREE.SpriteMaterial({
       map: tex,
       transparent: true,
@@ -2893,8 +2897,8 @@ export class LoyKrathongScene {
       depthWrite: false,
     });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(1.4, 0.44, 1.0);
-    sprite.position.set(0, 2.55, -0.4);
+    sprite.scale.set(1.9, 0.42, 1.0);
+    sprite.position.set(0, 2.45, -0.2);
     sprite.name = "voteBadgeSprite";
     return sprite;
   }
@@ -2970,39 +2974,72 @@ export class LoyKrathongScene {
     bodyGroup.position.y = 0.12; // ยืนบนแท่นพรมทองพอดี
     avatarGroup.add(bodyGroup);
 
+    // วัสดุใบหน้า 3D (แมปลงบนเนื้อผิวศีรษะทรงกลม 3D โดยตรง ไม่ใช้แผ่นการ์ดสี่เหลี่ยมแปะ)
+    const faceMat = new THREE.MeshStandardMaterial({
+      roughness: 0.60,
+      metalness: 0.05,
+    });
+    this.applyCandidateFaceTexture(faceMat, entry.photoUrl, entry.name);
+
     let wavingArm = null;
     let wavingHand = null;
 
     if (isMale) {
       // ===== โมเดลผู้ชายสวมชุดไทยราชปะแตน & โจงกระเบนไหม =====
-      // 1. ศีรษะและใบหน้า
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), skinMat);
-      head.position.y = 1.48;
+      // 1. ลำคอสง่างาม
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.075, 0.12, 12), skinMat);
+      neck.position.y = 1.41;
+      bodyGroup.add(neck);
+
+      // 2. ศีรษะทรงกลม 3D แมปภาพใบหน้าโค้งตามรูปทรงกลมจริง 360 องศา (ไม่มีเหลี่ยมแผ่นกระดาษ)
+      const headRadius = 0.165;
+      const headGeo = new THREE.SphereGeometry(headRadius, 32, 24);
+      const posAttr = headGeo.attributes.position;
+      const uvAttr = headGeo.attributes.uv;
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const y = posAttr.getY(i);
+        const z = posAttr.getZ(i);
+        if (z > -0.01) {
+          // ด้านหน้าใบหน้า: แมปพิกัด UV แบบ Planar Projection โค้งตามรูปทรงกลม 3D
+          const u = 0.5 + x / (2.1 * headRadius);
+          const v = 0.5 + y / (2.3 * headRadius);
+          uvAttr.setXY(i, Math.max(0.01, Math.min(0.99, u)), Math.max(0.01, Math.min(0.99, v)));
+        } else {
+          // ด้านหลังศีรษะ: แมปไปที่สีผม
+          uvAttr.setXY(i, 0.05, 0.05);
+        }
+      }
+      uvAttr.needsUpdate = true;
+
+      const head = new THREE.Mesh(headGeo, faceMat);
+      head.position.y = 1.54;
       bodyGroup.add(head);
 
-      // ทรงผมสุภาพบุรุษไทย
-      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.168, 12, 10), hairMat);
-      hair.position.set(0, 1.50, -0.02);
-      hair.scale.set(1.0, 0.95, 1.05);
+      // ทรงผมสุภาพบุรุษไทย 3D (ครอบคลุมด้านบน ด้านข้าง และด้านหลังศีรษะ)
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.172, 16, 12), hairMat);
+      hair.position.set(0, 1.57, -0.03);
+      hair.scale.set(1.02, 0.95, 1.05);
       bodyGroup.add(hair);
 
-      // เสื้อราชปะแตนคอตั้ง
+      // เสื้อราชปะแตนคอตั้ง (ความสูงพอดี ไม่สูงจนกลืนคอ)
       const jacketMat = entry.costumeStyle === "pra-ratchatan" 
         ? silkMat 
         : new THREE.MeshStandardMaterial({ color: 0xfffdf5, roughness: 0.6 });
-      const jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.18, 0.50, 12), jacketMat);
-      jacket.position.y = 1.15;
+      const jacket = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.44, 12), jacketMat);
+      jacket.position.y = 1.16;
       bodyGroup.add(jacket);
 
-      // คอตั้ง (Mandarin Collar)
-      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.07, 10), jacketMat);
-      collar.position.y = 1.39;
+      // คอตั้ง (Mandarin Collar - วงแหวนผ้าไหมพอดีคอ)
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.022, 6, 14), jacketMat);
+      collar.position.y = 1.38;
+      collar.rotation.x = Math.PI / 2;
       bodyGroup.add(collar);
 
-      // กระดุมทอง 5 เม็ด
-      for (let b = 0; b < 5; b++) {
+      // กระดุมทอง 4 เม็ดเรียงสวยงาม
+      for (let b = 0; b < 4; b++) {
         const btn = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 6), goldMat);
-        btn.position.set(0, 1.34 - b * 0.07, 0.19);
+        btn.position.set(0, 1.32 - b * 0.08, 0.20);
         bodyGroup.add(btn);
       }
 
@@ -3020,40 +3057,40 @@ export class LoyKrathongScene {
       // โจงกระเบนผ้าไหม (Billowing Jongkraben)
       const pantsMat = silkMat;
       const jongkraben = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), pantsMat);
-      jongkraben.position.set(0, 0.70, 0);
-      jongkraben.scale.set(1.08, 0.85, 1.15);
+      jongkraben.position.set(0, 0.72, 0);
+      jongkraben.scale.set(1.12, 0.88, 1.15);
       bodyGroup.add(jongkraben);
 
       // ขาสวมถุงน่องขาว / รองเท้าคัทชู
       const shoeMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.5 });
       [-0.10, 0.10].forEach((lx) => {
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 0.45, 8), skinMat);
-        leg.position.set(lx, 0.35, 0);
+        leg.position.set(lx, 0.38, 0);
         bodyGroup.add(leg);
 
         const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.15), shoeMat);
-        shoe.position.set(lx, 0.04, 0.03);
+        shoe.position.set(lx, 0.05, 0.03);
         bodyGroup.add(shoe);
       });
 
       // แขนซ้าย (แนบลำตัวอย่างสง่างาม)
       const lArm = new THREE.Group();
-      lArm.position.set(-0.24, 1.28, 0);
-      const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.04, 0.44), jacketMat);
-      lArmMesh.position.y = -0.22;
+      lArm.position.set(-0.25, 1.34, 0);
+      const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.042, 0.42), jacketMat);
+      lArmMesh.position.y = -0.21;
       lArm.add(lArmMesh);
       const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), skinMat);
-      lHand.position.y = -0.44;
+      lHand.position.y = -0.42;
       lArm.add(lHand);
       bodyGroup.add(lArm);
 
       // แขนขวา (ยกขึ้นในท่าโบกมือทักทาย)
       const rShoulder = new THREE.Group();
-      rShoulder.position.set(0.24, 1.28, 0);
+      rShoulder.position.set(0.25, 1.34, 0);
       rShoulder.rotation.z = -0.85;
       rShoulder.rotation.x = 0.22;
 
-      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.04, 0.26), jacketMat);
+      const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.042, 0.26), jacketMat);
       rUpperArm.position.y = -0.13;
       rShoulder.add(rUpperArm);
 
@@ -3061,7 +3098,7 @@ export class LoyKrathongScene {
       rForearmGroup.position.set(0, -0.26, 0);
       rForearmGroup.rotation.z = 1.35; // หักข้อศอกชี้ขึ้น
 
-      const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.22), skinMat);
+      const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.036, 0.22), skinMat);
       rForearmMesh.position.y = -0.11;
       rForearmGroup.add(rForearmMesh);
 
@@ -3078,37 +3115,64 @@ export class LoyKrathongScene {
 
     } else {
       // ===== โมเดลผู้หญิงสวมชุดไทยห่มสไบเฉียง & ผ้านุ่งไหมยกดิ้นทอง =====
-      // 1. ศีรษะและใบหน้า
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 12), skinMat);
-      head.scale.set(1.0, 1.12, 0.96);
-      head.position.y = 1.44;
+      // 1. ลำคอระหง
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.068, 0.12, 12), skinMat);
+      neck.position.y = 1.40;
+      bodyGroup.add(neck);
+
+      // 2. ศีรษะทรงกลม 3D แมปภาพใบหน้าโค้งตามรูปทรงกลมจริง 360 องศา
+      const headRadius = 0.160;
+      const headGeo = new THREE.SphereGeometry(headRadius, 32, 24);
+      const posAttr = headGeo.attributes.position;
+      const uvAttr = headGeo.attributes.uv;
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const y = posAttr.getY(i);
+        const z = posAttr.getZ(i);
+        if (z > -0.01) {
+          const u = 0.5 + x / (2.1 * headRadius);
+          const v = 0.5 + y / (2.3 * headRadius);
+          uvAttr.setXY(i, Math.max(0.01, Math.min(0.99, u)), Math.max(0.01, Math.min(0.99, v)));
+        } else {
+          uvAttr.setXY(i, 0.05, 0.05);
+        }
+      }
+      uvAttr.needsUpdate = true;
+
+      const head = new THREE.Mesh(headGeo, faceMat);
+      head.position.y = 1.52;
       bodyGroup.add(head);
 
-      // ทรงผมเกล้ามวยสูง
-      const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), hairMat);
-      chignon.position.set(0, 1.54, -0.11);
+      // ทรงผมสตรีไทย 3D เกล้ามวยผมสูงด้านหลัง (High Chignon Bun) พร้อมเกี้ยวทอง
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.166, 16, 12), hairMat);
+      hair.position.set(0, 1.55, -0.03);
+      hair.scale.set(1.02, 0.95, 1.05);
+      bodyGroup.add(hair);
+
+      const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), hairMat);
+      chignon.position.set(0, 1.62, -0.12);
       bodyGroup.add(chignon);
 
-      // ปิ่นปักผมดอกไม้ไหวสีทอง
-      const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, 0.08, 6), goldMat);
-      pin.position.set(0.07, 1.60, -0.09);
-      pin.rotation.z = -0.5;
-      bodyGroup.add(pin);
+      // ปิ่นปักผม / เกี้ยวทองประดับมวยผม
+      const hairpin = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.10, 8), goldMat);
+      hairpin.position.set(0, 1.70, -0.10);
+      hairpin.rotation.x = -0.3;
+      bodyGroup.add(hairpin);
 
       // ลำตัวและชุดไทย
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.42, 10), silkMat);
-      torso.position.y = 1.12;
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.44, 12), silkMat);
+      torso.position.y = 1.15;
       bodyGroup.add(torso);
 
       // สไบเฉียงพาดบ่าซ้ายด้านหน้า
       const sabai = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.48, 0.03), silkMat);
-      sabai.position.set(0.02, 1.14, 0.08);
+      sabai.position.set(0.02, 1.16, 0.08);
       sabai.rotation.z = -0.34;
       bodyGroup.add(sabai);
 
       // ชายสไบพริ้วไหวด้านหลัง
       const sabaiTail = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.68, 0.02), silkMat);
-      sabaiTail.position.set(-0.08, 0.92, -0.11);
+      sabaiTail.position.set(-0.08, 0.94, -0.11);
       bodyGroup.add(sabaiTail);
 
       // เข็มขัดทองพร้อมหัวเข็มขัด
@@ -3135,13 +3199,13 @@ export class LoyKrathongScene {
       // ขาสองข้าง
       [-0.09, 0.09].forEach((lx) => {
         const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 0.45), skinMat);
-        leg.position.set(lx, 0.24, 0);
+        leg.position.set(lx, 0.26, 0);
         bodyGroup.add(leg);
       });
 
       // แขนซ้าย (ประคองข้างเอวอย่างอ่อนช้อย)
       const lArm = new THREE.Group();
-      lArm.position.set(-0.22, 1.26, 0);
+      lArm.position.set(-0.23, 1.30, 0);
       const lArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.036, 0.44), skinMat);
       lArmMesh.position.y = -0.22;
       lArm.add(lArmMesh);
@@ -3153,7 +3217,7 @@ export class LoyKrathongScene {
 
       // แขนขวา (ยกขึ้นโบกมือทักทาย)
       const rShoulder = new THREE.Group();
-      rShoulder.position.set(0.22, 1.26, 0);
+      rShoulder.position.set(0.23, 1.30, 0);
       rShoulder.rotation.z = -0.85;
       rShoulder.rotation.x = 0.22;
 
@@ -3185,22 +3249,9 @@ export class LoyKrathongScene {
       wavingHand = rForearmGroup;
     }
 
-    // ===== ระนาบใบหน้า (Face Texture Mapping จากรูปถ่ายผู้สมัครจริง) =====
-    const faceGeo = new THREE.PlaneGeometry(0.22, 0.26);
-    const faceMat = new THREE.MeshStandardMaterial({
-      roughness: 0.65,
-      transparent: true,
-      side: THREE.FrontSide,
-    });
-    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
-    faceMesh.position.set(0, isMale ? 1.48 : 1.44, isMale ? 0.162 : 0.152);
-    bodyGroup.add(faceMesh);
-
-    this.applyCandidateFaceTexture(faceMat, entry.photoUrl, entry.name);
-
     // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) =====
     const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0);
-    badgeSprite.position.set(0, isMale ? 2.28 : 2.20, 0);
+    badgeSprite.position.set(0, isMale ? 2.30 : 2.24, 0);
     avatarGroup.add(badgeSprite);
 
     avatarGroup.userData = {
@@ -3219,48 +3270,57 @@ export class LoyKrathongScene {
     };
   }
 
-  // นำรูปภาพจริงของผู้สมัครมาตกแต่งและเบลนด์ขอบสีผิวลงบนใบหน้า 3D
+  // นำรูปภาพจริงของผู้สมัครมาตกแต่งและเบลนด์ลงบนพื้นผิวศีรษะ 3D ทรงกลมอย่างกลมกลืน
   applyCandidateFaceTexture(faceMat, photoUrl, name) {
     const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = 512;
+    canvas.height = 512;
     const ctx = canvas.getContext("2d");
 
     const drawDefaultFace = () => {
       ctx.fillStyle = "#dfb088";
-      ctx.beginPath();
-      ctx.arc(128, 128, 120, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(0, 0, 512, 512);
+
+      // มุมด้านหลังศีรษะเป็นสีผม
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, 80, 80);
 
       // คิ้ว
       ctx.strokeStyle = "#27272a";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 8;
       ctx.beginPath();
-      ctx.arc(88, 100, 24, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.arc(176, 200, 48, Math.PI * 1.15, Math.PI * 1.85);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(168, 100, 24, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.arc(336, 200, 48, Math.PI * 1.15, Math.PI * 1.85);
       ctx.stroke();
 
-      // ตา
+      // ตาคมกลมโตเป็นประกาย
       ctx.fillStyle = "#18181b";
       ctx.beginPath();
-      ctx.ellipse(88, 118, 10, 7, 0, 0, Math.PI * 2);
-      ctx.ellipse(168, 118, 10, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(176, 236, 20, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(336, 236, 20, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // ประกายตา
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(172, 230, 6, 0, Math.PI * 2);
+      ctx.arc(332, 230, 6, 0, Math.PI * 2);
       ctx.fill();
 
       // แก้มชมพูระเรื่อ
-      ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+      ctx.fillStyle = "rgba(244, 63, 94, 0.28)";
       ctx.beginPath();
-      ctx.arc(72, 142, 16, 0, Math.PI * 2);
-      ctx.arc(184, 142, 16, 0, Math.PI * 2);
+      ctx.arc(144, 284, 32, 0, Math.PI * 2);
+      ctx.arc(368, 284, 32, 0, Math.PI * 2);
       ctx.fill();
 
-      // รอยยิ้ม
+      // รอยยิ้มพิมพ์ใจ
       ctx.strokeStyle = "#be123c";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 8;
       ctx.beginPath();
-      ctx.arc(128, 148, 24, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.arc(256, 296, 48, 0.15 * Math.PI, 0.85 * Math.PI);
       ctx.stroke();
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -3286,34 +3346,38 @@ export class LoyKrathongScene {
 
     img.onload = () => {
       try {
-        ctx.clearRect(0, 0, 256, 256);
+        ctx.clearRect(0, 0, 512, 512);
 
-        // ฐานสีผิว
+        // ฐานสีผิวเนียนละเอียด
         ctx.fillStyle = "#dfb088";
-        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillRect(0, 0, 512, 512);
 
-        const iw = img.width || 256;
-        const ih = img.height || 256;
+        // มุมสีผมสำหรับด้านหลังศีรษะ
+        ctx.fillStyle = "#18181b";
+        ctx.fillRect(0, 0, 80, 80);
+
+        const iw = img.width || 512;
+        const ih = img.height || 512;
         const cropW = Math.min(iw, ih * 0.85);
         const cropH = cropW * 1.15;
         const sx = (iw - cropW) / 2;
         const sy = Math.max(0, ih * 0.05);
 
-        // ตัดขอบรูปภาพเป็นวงรีใบหน้า
+        // วาดรูปถ่ายลงตรงกลางใบหน้าทรงกลม
         ctx.save();
         ctx.beginPath();
-        ctx.ellipse(128, 128, 105, 120, 0, 0, Math.PI * 2);
+        ctx.ellipse(256, 256, 180, 205, 0, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(img, sx, sy, cropW, Math.min(cropH, ih - sy), 18, 8, 220, 240);
+        ctx.drawImage(img, sx, sy, cropW, Math.min(cropH, ih - sy), 40, 20, 432, 472);
         ctx.restore();
 
-        // ใช้ Soft Radial Gradient กลืนขอบรูปเข้ากับสีผิวโมเดล 3D
-        const radialGrad = ctx.createRadialGradient(128, 128, 75, 128, 128, 126);
+        // ใช้ Soft Radial Gradient กลืนขอบรูปภาพ 100% เข้ากับสีผิว 3D ทรงกลมอย่างเป็นธรรมชาติ ไม่มีขอบเหลี่ยม
+        const radialGrad = ctx.createRadialGradient(256, 256, 120, 256, 256, 215);
         radialGrad.addColorStop(0, "rgba(223, 176, 136, 0)");
-        radialGrad.addColorStop(0.7, "rgba(223, 176, 136, 0.35)");
+        radialGrad.addColorStop(0.65, "rgba(223, 176, 136, 0.45)");
         radialGrad.addColorStop(1, "rgba(223, 176, 136, 1.0)");
         ctx.fillStyle = radialGrad;
-        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillRect(0, 0, 512, 512);
 
         const tex = new THREE.CanvasTexture(canvas);
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -3458,14 +3522,13 @@ export class LoyKrathongScene {
         this.scene.add(mesh);
         this.krathongMeshes.set(entry.id, mesh);
       } else {
-        const oldVotes = mesh.userData.entry?.votes || 0;
+        const oldName = mesh.userData.entry?.name || "";
         mesh.userData.entry = entry;
-        // อัปเดตตัวเลขผลโหวตบนป้ายเหนือกระทงทันทีเมื่อมีคะแนนเปลี่ยนแปลง
-        if (entry.votes !== oldVotes) {
+        if (entry.name !== oldName) {
           const sprite = mesh.getObjectByName("voteBadgeSprite");
           if (sprite) {
             if (sprite.material.map) sprite.material.map.dispose();
-            sprite.material.map = this.createVoteBadgeTexture(entry.votes || 0);
+            sprite.material.map = this.createVoteBadgeTexture(entry.name || "ผู้ร่วมลอยกระทง");
             sprite.material.needsUpdate = true;
           }
         }
