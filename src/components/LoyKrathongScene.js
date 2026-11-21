@@ -4567,18 +4567,8 @@ export class LoyKrathongScene {
     bodyGroup.position.y = 0.12; // ยืนบนแท่นพรมทองพอดี
     avatarGroup.add(bodyGroup);
 
-    // วัสดุใบหน้าพอร์ตเทรตคมชัดสูง (Planar Portrait Masking)
-    const faceMat = new THREE.MeshStandardMaterial({
-      roughness: 0.65,
-      metalness: 0.0,
-      transparent: true,
-      alphaTest: 0.01,
-      polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1,
-      depthWrite: false,
-    });
-    this.applyCandidateFaceTexture(faceMat, isMale, entry.photoUrl);
+    // โครงสร้างศีรษะปั้น 3D แท้ 100% ไร้การแปะภาพถ่าย 2D ลงบนใบหน้า
+    const faceMat = null;
 
     let wavingArm = null;
     let wavingHand = null;
@@ -4654,26 +4644,202 @@ export class LoyKrathongScene {
     return handGroup;
   }
 
-  // ปั้นศีรษะสไตล์ 3D Stylized น่ารัก ยิ้มแย้ม สดใส เป็นมิตร (ไร้ก้อนนูนหลอน Uncanny Valley)
+  // ปั้นศีรษะและเครื่องหน้า 3D แท้ 100% (ตา หู จมูก ปาก คิ้ว คาง ทรงผม) ไร้การแปะภาพ 2D
   buildAnatomicalHead(isMale, skinMat, hairMat, goldMat, faceMat, rubyMat) {
     const headGroup = new THREE.Group();
 
-    // 1. กะโหลกศีรษะ 3D เนื้อเนียนมน ทรงรูปไข่ได้สัดส่วน (Smooth Stylized Cranium)
+    // 1. กะโหลกศีรษะและโครงหน้า 3D (Parametric Sculpted Cranium & Face Mesh)
     const headRadius = 0.125;
-    const headGeo = new THREE.SphereGeometry(headRadius, 32, 24);
-    headGeo.scale(0.96, 1.10, 1.02);
+    const headGeo = new THREE.SphereGeometry(headRadius, 54, 40);
+    const pos = headGeo.attributes.position;
+    const v = new THREE.Vector3();
+
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+
+      v.x *= 0.95;
+      v.y *= 1.05;
+      v.z *= 1.02;
+
+      if (v.z > 0) {
+        // ก. เบ้าตาเว้าเข้าไปในกะโหลกอย่างเป็นธรรมชาติ (Eye Socket Indentation)
+        const eyeDxL = Math.abs(v.x - 0.045);
+        const eyeDxR = Math.abs(v.x + 0.045);
+        const eyeDy = v.y - 0.010;
+        const dL2 = (eyeDxL * eyeDxL) / (0.026 * 0.026) + (eyeDy * eyeDy) / (0.022 * 0.022);
+        const dR2 = (eyeDxR * eyeDxR) / (0.026 * 0.026) + (eyeDy * eyeDy) / (0.022 * 0.022);
+        const eyeD2 = Math.min(dL2, dR2);
+        if (eyeD2 < 1.0) {
+          v.z -= 0.010 * (1.0 - eyeD2);
+        }
+
+        // ข. สันจมูกและปลายจมูกโด่งมนได้รูปสไตล์ไทย (Smooth 3D Nose Bridge & Tip)
+        if (v.y > -0.035 && v.y < 0.025 && Math.abs(v.x) < 0.022) {
+          const xFactor = Math.exp(-(v.x * v.x) / (0.009 * 0.009));
+          let noseH = 0.006;
+          if (v.y < -0.005) {
+            const tipFactor = Math.max(0, 1.0 - Math.abs(v.y - (-0.018)) / 0.016);
+            noseH += 0.012 * tipFactor;
+          }
+          v.z += noseH * xFactor;
+        }
+
+        // ค. แก้มอิ่มเอิบรับรอยยิ้ม
+        const cheekDxL = Math.abs(v.x - 0.055);
+        const cheekDxR = Math.abs(v.x + 0.055);
+        const cheekDy = v.y - (-0.018);
+        const cheekDist = Math.min(
+          cheekDxL * cheekDxL + cheekDy * cheekDy,
+          cheekDxR * cheekDxR + cheekDy * cheekDy
+        );
+        if (cheekDist < 0.035 * 0.035) {
+          v.z += 0.004 * Math.exp(-cheekDist / (0.020 * 0.020));
+        }
+
+        // ง. โครงหน้าเรียวและคางมน (Soft Jaw & Chin Tapering)
+        if (v.y < 0) {
+          const taperRatio = -v.y / 0.125;
+          const taperWidth = isMale ? 0.10 : 0.18;
+          v.x *= (1.0 - taperWidth * taperRatio);
+
+          // คางมนเรียว ได้รูป V-shape ละมุนตา
+          if (v.y < -0.065 && Math.abs(v.x) < 0.036) {
+            const chinFactor = Math.exp(-(v.x * v.x) / (0.020 * 0.020)) * Math.max(0, 1.0 - Math.abs(v.y - (-0.092)) / 0.030);
+            v.z += 0.006 * chinFactor;
+          }
+        }
+      }
+
+      pos.setXYZ(i, v.x, v.y, v.z);
+    }
+    headGeo.computeVertexNormals();
     const headMesh = new THREE.Mesh(headGeo, skinMat);
     headGroup.add(headMesh);
 
-    // 2. แผ่นพอร์ตเทรตใบหน้าสไตล์ 3D Animation น่ารัก ยิ้มแย้ม สดใส ไร้รอยต่อ
-    const facePlateGeo = new THREE.PlaneGeometry(0.18, 0.22);
-    const facePlate = new THREE.Mesh(facePlateGeo, faceMat);
-    facePlate.position.set(0, 0.008, 0.128);
-    facePlate.renderOrder = 3;
-    headGroup.add(facePlate);
+    // 2. ดวงตา 3D ประณีต (3D Expressive Recessed Eyes)
+    const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.15 });
+    const irisMat = new THREE.MeshStandardMaterial({ color: 0x542308, roughness: 0.20 });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x09090b });
+    const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const lashMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.40 });
 
-    // 3. ใบหูทั้งสองข้างพร้อมเครื่องประดับต่างหูไทยโบราณ (3D Ears & Earrings)
-    [-0.120, 0.120].forEach((ex, idx) => {
+    [-0.045, 0.045].forEach((eyeX, idx) => {
+      const isLeft = idx === 0;
+      const eyeSubGroup = new THREE.Group();
+      eyeSubGroup.position.set(eyeX, 0.010, 0.115);
+      eyeSubGroup.rotation.y = isLeft ? 0.07 : -0.07;
+
+      // ตาขาวทรงรีโค้งมน
+      const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.0140, 16, 12), eyeWhiteMat);
+      sclera.scale.set(1.15, 0.78, 0.38);
+      eyeSubGroup.add(sclera);
+
+      // ม่านตาสีน้ำตาลประกายอบอุ่น
+      const iris = new THREE.Mesh(new THREE.SphereGeometry(0.0084, 14, 10), irisMat);
+      iris.position.set(0, 0, 0.0035);
+      iris.scale.set(1.0, 1.0, 0.25);
+      eyeSubGroup.add(iris);
+
+      // รูม่านตาสีดำสนิท
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.0048, 12, 8), pupilMat);
+      pupil.position.set(0, 0, 0.0050);
+      pupil.scale.set(1.0, 1.0, 0.20);
+      eyeSubGroup.add(pupil);
+
+      // ประกายตาคู่ (Catchlights)
+      const catch1 = new THREE.Mesh(new THREE.SphereGeometry(0.0020, 6, 6), catchlightMat);
+      catch1.position.set(-0.0026, 0.0026, 0.0062);
+      eyeSubGroup.add(catch1);
+
+      const catch2 = new THREE.Mesh(new THREE.SphereGeometry(0.0011, 6, 6), catchlightMat);
+      catch2.position.set(0.0024, -0.0020, 0.0062);
+      eyeSubGroup.add(catch2);
+
+      // เปลือกตาและเส้นขอบตาบน 3D (Curved Upper Lash Tube)
+      const wingX = isLeft ? -0.019 : 0.019;
+      const innerX = isLeft ? 0.014 : -0.014;
+      const lashCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(innerX, -0.002, 0.003),
+        new THREE.Vector3(innerX * 0.4, 0.008, 0.0055),
+        new THREE.Vector3(0, 0.009, 0.006),
+        new THREE.Vector3(wingX * 0.6, 0.007, 0.0055),
+        new THREE.Vector3(wingX, isMale ? -0.001 : 0.003, 0.003),
+      ]);
+      const lashGeo = new THREE.TubeGeometry(lashCurve, 14, isMale ? 0.0014 : 0.0018, 6, false);
+      eyeSubGroup.add(new THREE.Mesh(lashGeo, lashMat));
+
+      // ขอบตาล่าง 3D
+      const lowerCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(innerX, -0.002, 0.003),
+        new THREE.Vector3(0, -0.008, 0.0045),
+        new THREE.Vector3(wingX, -0.002, 0.003),
+      ]);
+      const lowerLashGeo = new THREE.TubeGeometry(lowerCurve, 10, 0.0009, 5, false);
+      eyeSubGroup.add(new THREE.Mesh(lowerLashGeo, lashMat));
+
+      headGroup.add(eyeSubGroup);
+    });
+
+    // 3. คิ้ว 3D ปั้นรับรูปหน้า (3D Sculpted Eyebrows)
+    const browMat = new THREE.MeshStandardMaterial({ color: isMale ? 0x1f2937 : 0x27272a, roughness: 0.55 });
+    [-1, 1].forEach((side) => {
+      const isLeft = side === -1;
+      const browInnerX = isLeft ? -0.018 : 0.018;
+      const browMidX = isLeft ? -0.046 : 0.046;
+      const browOuterX = isLeft ? -0.074 : 0.074;
+
+      const browCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(browInnerX, 0.032, 0.123),
+        new THREE.Vector3(browMidX, isMale ? 0.040 : 0.044, 0.119),
+        new THREE.Vector3(browOuterX, isMale ? 0.030 : 0.028, 0.100),
+      ]);
+      const browRadius = isMale ? 0.0026 : 0.0020;
+      const browGeo = new THREE.TubeGeometry(browCurve, 12, browRadius, 6, false);
+      headGroup.add(new THREE.Mesh(browGeo, browMat));
+    });
+
+    // 4. จมูก 3D ปลายมนละเอียด (3D Refined Nose Tip & Wings)
+    const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.0062, 12, 10), skinMat);
+    noseTip.scale.set(1.0, 0.85, 0.95);
+    noseTip.position.set(0, -0.018, 0.134);
+    headGroup.add(noseTip);
+
+    [-0.0072, 0.0072].forEach((nx) => {
+      const wing = new THREE.Mesh(new THREE.SphereGeometry(0.0038, 8, 8), skinMat);
+      wing.scale.set(1.05, 0.75, 0.85);
+      wing.position.set(nx, -0.020, 0.128);
+      headGroup.add(wing);
+    });
+
+    // 5. ริมฝีปาก 3D รอยยิ้มพิมพ์ใจอ่อนหวาน ยกมุมปากสดใส (3D Sweet Upturned Smiling Lips)
+    const lipMat = isMale
+      ? new THREE.MeshStandardMaterial({ color: 0xa84a2d, roughness: 0.50, metalness: 0.02 })
+      : new THREE.MeshStandardMaterial({ color: 0xbe123c, roughness: 0.35, metalness: 0.05 });
+
+    // ริมฝีปากบนโค้งกระจับ ยกมุมปากยิ้ม
+    const upperLipCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.021, -0.043, 0.113),
+      new THREE.Vector3(-0.010, -0.046, 0.119),
+      new THREE.Vector3(0, -0.048, 0.121),
+      new THREE.Vector3(0.010, -0.046, 0.119),
+      new THREE.Vector3(0.021, -0.043, 0.113),
+    ]);
+    const upperLipGeo = new THREE.TubeGeometry(upperLipCurve, 12, isMale ? 0.0028 : 0.0026, 6, false);
+    headGroup.add(new THREE.Mesh(upperLipGeo, lipMat));
+
+    // ริมฝีปากล่างอวบอิ่มรับรอยยิ้มหวาน
+    const lowerLipCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.021, -0.043, 0.113),
+      new THREE.Vector3(-0.011, -0.054, 0.118),
+      new THREE.Vector3(0, -0.057, 0.120),
+      new THREE.Vector3(0.011, -0.054, 0.118),
+      new THREE.Vector3(0.021, -0.043, 0.113),
+    ]);
+    const lowerLipGeo = new THREE.TubeGeometry(lowerLipCurve, 12, isMale ? 0.0032 : 0.0034, 6, false);
+    headGroup.add(new THREE.Mesh(lowerLipGeo, lipMat));
+
+    // 6. ใบหูทั้งสองข้างพร้อมเครื่องประดับต่างหูไทยโบราณ (3D Ears & Earrings)
+    [-0.118, 0.118].forEach((ex, idx) => {
       const earGroup = new THREE.Group();
       earGroup.position.set(ex, 0.005, -0.008);
       earGroup.rotation.y = idx === 0 ? 0.16 : -0.16;
@@ -4711,36 +4877,36 @@ export class LoyKrathongScene {
       headGroup.add(earGroup);
     });
 
-    // 4. ทรงผม 3D ปั้นตามแบบสุภาพบุรุษไทยและสตรีไทย
+    // 7. ทรงผม 3D ปั้นตามแบบสุภาพบุรุษไทยและสตรีไทย (3D Sculpted Hairstyles)
     if (isMale) {
-      // ผมสุภาพบุรุษไทย: ทรงหวีเรียบสง่างาม ครอบรับกะโหลกศีรษะอย่างเป็นธรรมชาติ
-      const maleHair = new THREE.Mesh(new THREE.SphereGeometry(0.129, 20, 16), hairMat);
-      maleHair.position.set(0, 0.022, -0.018);
-      maleHair.scale.set(1.02, 0.98, 1.08);
+      // ผมสุภาพบุรุษไทย: ครอบศีรษะด้านบนและด้านหลัง ไม่ล้ำบังหน้าผาก
+      const maleHair = new THREE.Mesh(new THREE.SphereGeometry(0.128, 24, 18), hairMat);
+      maleHair.position.set(0, 0.038, -0.040);
+      maleHair.scale.set(1.01, 1.00, 0.96);
       headGroup.add(maleHair);
 
       // จอนผมข้างหู
-      [-0.118, 0.118].forEach((sx) => {
+      [-0.116, 0.116].forEach((sx) => {
         const sideburn = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.040, 0.022), hairMat);
-        sideburn.position.set(sx, -0.020, 0.012);
+        sideburn.position.set(sx, -0.020, 0.008);
         headGroup.add(sideburn);
       });
     } else {
-      // ผมสตรีไทย: เกล้ามวยผมสูงด้านหลัง (Royal Thai High Chignon) พร้อมเกี้ยวทองคำและปิ่นปักผมดอกไม้ไหว
-      const femaleHair = new THREE.Mesh(new THREE.SphereGeometry(0.129, 20, 16), hairMat);
-      femaleHair.position.set(0, 0.022, -0.016);
-      femaleHair.scale.set(1.02, 0.98, 1.06);
+      // ผมสตรีไทย: ครอบศีรษะด้านบนและด้านหลัง พร้อมเกล้ามวยผมสูงด้านหลัง (Royal Thai High Chignon)
+      const femaleHair = new THREE.Mesh(new THREE.SphereGeometry(0.128, 24, 18), hairMat);
+      femaleHair.position.set(0, 0.038, -0.038);
+      femaleHair.scale.set(1.01, 1.00, 0.96);
       headGroup.add(femaleHair);
 
       // มวยผมเกล้าสูงด้านหลัง
       const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.070, 16, 12), hairMat);
-      chignon.position.set(0, 0.105, -0.088);
+      chignon.position.set(0, 0.108, -0.088);
       chignon.scale.set(1.10, 0.95, 0.92);
       headGroup.add(chignon);
 
       // เกี้ยวทองรัดมวยผม (Golden Filigree Coronet)
       const coronet = new THREE.Mesh(new THREE.TorusGeometry(0.060, 0.014, 8, 20), goldMat);
-      coronet.position.set(0, 0.088, -0.088);
+      coronet.position.set(0, 0.090, -0.088);
       coronet.rotation.x = Math.PI / 2;
       headGroup.add(coronet);
 
@@ -5755,10 +5921,6 @@ export class LoyKrathongScene {
       if (avatar.badgeSprite.material.map) {
         avatar.badgeSprite.material.map.needsUpdate = true;
       }
-    }
-    // อัปเดต Face Texture หากมีการเปลี่ยนแปลง photoUrl
-    if (avatar.faceMat && entry.photoUrl && entry.photoUrl !== avatar.entry?.photoUrl) {
-      this.applyCandidateFaceTexture(avatar.faceMat, avatar.isMale, entry.photoUrl);
     }
   }
 
