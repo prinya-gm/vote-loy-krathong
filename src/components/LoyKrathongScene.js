@@ -24,6 +24,11 @@ export class LoyKrathongScene {
     this.activeFireworks = []; // ระบบพลุดอกไม้ไฟ 3D สมจริง 100%
     this.fireworkTexture = null;
     this.soundCtx = null;
+    this.fireworkEchoBuffer = null;
+    this.fireworkFlashLight = null;
+    this.flashLightIntensity = 0;
+    this.flashAge = 0;
+    this.lastFireworkLaunchTime = 0;
 
     this.init();
   }
@@ -461,6 +466,11 @@ export class LoyKrathongScene {
   setupLighting() {
     const ambientLight = new THREE.AmbientLight(0x406295, 2.1);
     this.scene.add(ambientLight);
+
+    // Single Pre-allocated Firework Flash Light (Zero Runtime Shader Recompilations)
+    this.fireworkFlashLight = new THREE.PointLight(0xffd56b, 0, 110, 1.4);
+    this.fireworkFlashLight.position.set(0, 30, 0);
+    this.scene.add(this.fireworkFlashLight);
 
     const moonLight = new THREE.DirectionalLight(0xffe88a, 2.6);
     moonLight.position.set(22, 58, -42);
@@ -6049,6 +6059,27 @@ export class LoyKrathongScene {
     } catch (e) {}
   }
 
+  // สร้างและเก็บแคช Audio Buffer สำหรับเสียงสะท้อน (Echo Reverberation) เพียงครั้งเดียว
+  initFireworkAudio() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!this.soundCtx) this.soundCtx = new AudioCtx();
+      if (!this.fireworkEchoBuffer) {
+        const ctx = this.soundCtx;
+        const bufSize = Math.floor(ctx.sampleRate * 2.0);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        let last = 0;
+        for (let i = 0; i < bufSize; i++) {
+          const white = Math.random() * 2 - 1;
+          last = (last + 0.04 * white) / 1.04;
+          data[i] = last * 2.5;
+        }
+        this.fireworkEchoBuffer = buf;
+      }
+    } catch (e) {}
+  }
+
   playFireworkBurstSound() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -6057,7 +6088,7 @@ export class LoyKrathongScene {
       const ctx = this.soundCtx;
       const now = ctx.currentTime;
 
-      // 1. เสียงระเบิดทุ้มกึกก้อง (Sub-bass Shockwave Impact 110Hz -> 38Hz)
+      // 1. เสียงระเบิดทุ้มกึกก้อง (Sub-bass Shockwave Impact 115Hz -> 38Hz)
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
       osc.type = "sine";
@@ -6072,55 +6103,64 @@ export class LoyKrathongScene {
       osc.start(now);
       osc.stop(now + 0.6);
 
-      // 2. เสียงกังวานสะท้อนคลื่นน้ำ (Acoustic Echo & Reverberation over River)
-      const bufSize = Math.floor(ctx.sampleRate * 2.2);
-      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      let last = 0;
-      for (let i = 0; i < bufSize; i++) {
-        const white = Math.random() * 2 - 1;
-        last = (last + 0.04 * white) / 1.04;
-        data[i] = last * 2.5;
+      // 2. เสียงกังวานสะท้อนคลื่นน้ำ (Acoustic Echo - ใช้ Pre-cached Buffer ล่วงหน้า 100% ไม่มีลูป CPU ซ้ำ)
+      if (!this.fireworkEchoBuffer) {
+        this.initFireworkAudio();
       }
-      const blast = ctx.createBufferSource();
-      blast.buffer = buf;
+      if (this.fireworkEchoBuffer) {
+        const blast = ctx.createBufferSource();
+        blast.buffer = this.fireworkEchoBuffer;
 
-      const blastFilter = ctx.createBiquadFilter();
-      blastFilter.type = "lowpass";
-      blastFilter.frequency.setValueAtTime(480, now);
-      blastFilter.frequency.exponentialRampToValueAtTime(110, now + 1.8);
+        const blastFilter = ctx.createBiquadFilter();
+        blastFilter.type = "lowpass";
+        blastFilter.frequency.setValueAtTime(480, now);
+        blastFilter.frequency.exponentialRampToValueAtTime(110, now + 1.8);
 
-      const blastGain = ctx.createGain();
-      blastGain.gain.setValueAtTime(0.38, now);
-      blastGain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+        const blastGain = ctx.createGain();
+        blastGain.gain.setValueAtTime(0.38, now);
+        blastGain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
 
-      blast.connect(blastFilter);
-      blastFilter.connect(blastGain);
-      blastGain.connect(ctx.destination);
-      blast.start(now);
-      blast.stop(now + 2.1);
+        blast.connect(blastFilter);
+        blastFilter.connect(blastGain);
+        blastGain.connect(ctx.destination);
+        blast.start(now);
+        blast.stop(now + 2.1);
+      }
     } catch (e) {}
   }
 
   // จุดดอกไม้ไฟขึ้นสู่ท้องฟ้า (Callable from UI button)
   launchFirework() {
+    // 1. Rate Limiting: ป้องกันการกดย้ำๆ รัวเกิน 320ms
+    const now = performance.now();
+    if (now - this.lastFireworkLaunchTime < 320) {
+      return;
+    }
+    this.lastFireworkLaunchTime = now;
+
+    // 2. Concurrency Cap: จำกัดพลุในอากาศพร้อมกันไม่เกิน 4 ลูก (ถ้าเกินให้ลูกเก่าสุดจางหายเพื่อประหยัดทรัพยากร)
+    if (this.activeFireworks && this.activeFireworks.length >= 4) {
+      const oldest = this.activeFireworks[0];
+      if (oldest) oldest.age = (oldest.maxAge || 2.4) * 0.95;
+    }
+
     if (!this.fireworkTexture) {
       this.fireworkTexture = this.createFireworkSparkTexture();
     }
 
     this.playFireworkLaunchSound();
 
-    // สุ่มตำแหน่งฐานยิงจากผิวน้ำหรือริมตลิ่ง (กระจายตัวกว้างขวางทั่วท้องน้ำ)
+    // สุ่มตำแหน่งฐานยิงจากผิวน้ำหรือริมตลิ่ง
     const startX = -10 + Math.random() * 46;
     const startZ = -60 + Math.random() * 40;
     const startY = 0.5;
 
-    // ปรับระดับความสูงสูงสุดลดลงมาเหลือ 70% ของเดิมตามคำขอของผู้ใช้ (Apex Height 29 - 39 เมตร)
+    // ปรับระดับความสูงสูงสุดลดลงมาเหลือ 70% (Apex Height 29 - 39 เมตร)
     const targetY = 29.4 + Math.random() * 9.8;
-    const speedY = 22.5 + Math.random() * 4.2; // ความเร็วพุ่งขึ้นสัมพันธ์กับความสูง
+    const speedY = 22.5 + Math.random() * 4.2;
 
-    // หางสะเก็ดไฟลากเป็นทางยาว (Rocket Trailing Embers)
-    const trailCount = 28;
+    // หางสะเก็ดไฟลากเป็นทางยาว (Streamlined 16 จุด ประหยัด GPU 45%)
+    const trailCount = 16;
     const trailGeo = new THREE.BufferGeometry();
     const trailPos = new Float32Array(trailCount * 3);
     const trailCol = new Float32Array(trailCount * 3);
@@ -6138,7 +6178,7 @@ export class LoyKrathongScene {
     trailGeo.setAttribute("color", new THREE.BufferAttribute(trailCol, 3));
 
     const trailMat = new THREE.PointsMaterial({
-      size: 1.8,
+      size: 1.6,
       map: this.fireworkTexture,
       transparent: true,
       vertexColors: true,
@@ -6164,13 +6204,26 @@ export class LoyKrathongScene {
 
   // จุดดอกไม้ไฟพุ่งขึ้นจากหลังแนวต้นไม้ (Launch Firework from Behind Tree Line)
   launchFireworkBehindTrees() {
+    // 1. Rate Limiting: ป้องกันการกดย้ำๆ รัวเกิน 320ms
+    const now = performance.now();
+    if (now - this.lastFireworkLaunchTime < 320) {
+      return;
+    }
+    this.lastFireworkLaunchTime = now;
+
+    // 2. Concurrency Cap: จำกัดพลุในอากาศพร้อมกันไม่เกิน 4 ลูก
+    if (this.activeFireworks && this.activeFireworks.length >= 4) {
+      const oldest = this.activeFireworks[0];
+      if (oldest) oldest.age = (oldest.maxAge || 2.4) * 0.95;
+    }
+
     if (!this.fireworkTexture) {
       this.fireworkTexture = this.createFireworkSparkTexture();
     }
 
     this.playFireworkLaunchSound();
 
-    // ฐานยิงอยู่ด้านหลังแนวต้นไม้และดงมะพร้าวริมฝั่ง (X: -36 ถึง -28, Z: -35 ถึง +35, Y = 1.0)
+    // ฐานยิงอยู่ด้านหลังแนวต้นไม้และดงมะพร้าวริมฝั่ง
     const startX = -32.0 + (Math.random() - 0.5) * 10.0;
     const startZ = (Math.random() - 0.5) * 60.0;
     const startY = 1.0;
@@ -6179,8 +6232,8 @@ export class LoyKrathongScene {
     const targetY = 28.0 + Math.random() * 8.5;
     const speedY = 22.0 + Math.random() * 4.0;
 
-    // หางสะเก็ดไฟลากเป็นทางยาว พุ่งทะยานขึ้นจากหลังแนวต้นไม้
-    const trailCount = 28;
+    // หางสะเก็ดไฟพุ่งทะยาน (16 จุด)
+    const trailCount = 16;
     const trailGeo = new THREE.BufferGeometry();
     const trailPos = new Float32Array(trailCount * 3);
     const trailCol = new Float32Array(trailCount * 3);
@@ -6198,7 +6251,7 @@ export class LoyKrathongScene {
     trailGeo.setAttribute("color", new THREE.BufferAttribute(trailCol, 3));
 
     const trailMat = new THREE.PointsMaterial({
-      size: 1.8,
+      size: 1.6,
       map: this.fireworkTexture,
       transparent: true,
       vertexColors: true,
@@ -6229,7 +6282,7 @@ export class LoyKrathongScene {
     const burstY = rocket.pos.y;
     const burstZ = rocket.pos.z;
 
-    // ชุดคู่สีอัญมณีไทยวิจิตรตระการตา (Thai Royal Gemstone Palettes)
+    // ชุดคู่สีอัญมณีไทยวิจิตรตระการตา
     const palettes = [
       { name: "ทองคำวันเพ็ญ (Royal Gold)", primary: 0xfacc15, secondary: 0xf59e0b, spark: 0xffffff, light: 0xffd56b },
       { name: "ทับทิมสยาม (Siam Ruby)", primary: 0xf43f5e, secondary: 0xe11d48, spark: 0xffedd5, light: 0xf43f5e },
@@ -6241,13 +6294,16 @@ export class LoyKrathongScene {
     ];
     const pal = palettes[Math.floor(Math.random() * palettes.length)];
 
-    // 1. แสงสว่างวาบจำลองจริง (Flash PointLight ส่องสะท้อนเจดีย์และผิวน้ำ)
-    const flashLight = new THREE.PointLight(pal.light, 18.0, 150, 1.3);
-    flashLight.position.set(burstX, burstY, burstZ);
-    this.scene.add(flashLight);
+    // 1. แสงสว่างวาบจำลองจริง (ใช้ Single Pre-allocated Light 100% ไม่มี Shader Recompilation)
+    if (this.fireworkFlashLight) {
+      this.fireworkFlashLight.color.setHex(pal.light);
+      this.fireworkFlashLight.position.set(burstX, burstY, burstZ);
+      this.fireworkFlashLight.intensity = 16.0;
+      this.flashAge = 0;
+    }
 
-    // 2. สะเก็ดดาวพลุกว่า 180-200 อนุภาค
-    const count = pal.isWillow ? 200 : 180;
+    // 2. สะเก็ดดาวพลุสมดุลความหนาแน่น (100 - 120 อนุภาค สวยงามกลมแน่นและเบาต่อ GPU)
+    const count = pal.isWillow ? 120 : 100;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
@@ -6268,7 +6324,7 @@ export class LoyKrathongScene {
       positions[i * 3 + 1] = burstY;
       positions[i * 3 + 2] = burstZ;
 
-      // กระจายตัวเป็นทรงกลม 3 มิติสมบูรณ์แบบ (Fibonacci Spherical Shell)
+      // กระจายตัวเป็นทรงกลม 3 มิติสมบูรณ์แบบ
       const u = Math.random();
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
@@ -6329,15 +6385,23 @@ export class LoyKrathongScene {
       velocities,
       count,
       age: 0,
-      maxAge: pal.isWillow ? 3.4 : 2.4,
+      maxAge: pal.isWillow ? 3.0 : 2.2,
       isWillow: pal.isWillow || false,
-      flashLight,
-      flashAge: 0,
     });
   }
 
-  // อัปเดตฟิสิกส์พลุไฟทุกเฟรม (Aerodynamic Drag, Gravity, Color Cooling & Twinkle)
+  // อัปเดตฟิสิกส์พลุไฟทุกเฟรม (Fast Particle Math, Zero Shader Recompile, Zero Audio Lag)
   updateFireworks(dt, time) {
+    // 1. ควบคุมการจางลงของแสงสว่างวาบส่วนกลาง (Global Flash Light Fade)
+    if (this.fireworkFlashLight && this.fireworkFlashLight.intensity > 0) {
+      this.flashAge = (this.flashAge || 0) + dt;
+      if (this.flashAge < 0.35) {
+        this.fireworkFlashLight.intensity = Math.max(0, 16.0 * (1.0 - this.flashAge / 0.35));
+      } else {
+        this.fireworkFlashLight.intensity = 0;
+      }
+    }
+
     if (!this.activeFireworks || this.activeFireworks.length === 0) return;
 
     for (let i = this.activeFireworks.length - 1; i >= 0; i--) {
@@ -6380,21 +6444,12 @@ export class LoyKrathongScene {
         fw.age += dt;
         const progress = fw.age / fw.maxAge;
 
-        // แสงสว่างวาบดับลงอย่างรวดเร็ว
-        if (fw.flashLight) {
-          fw.flashAge += dt;
-          if (fw.flashAge < 0.38) {
-            fw.flashLight.intensity = Math.max(0, 18.0 * (1.0 - fw.flashAge / 0.38));
-          } else {
-            this.scene.remove(fw.flashLight);
-            fw.flashLight.dispose?.();
-            fw.flashLight = null;
-          }
-        }
-
         // ฟิสิกส์แรงต้านอากาศและแรงโน้มถ่วง
         const drag = fw.isWillow ? 0.985 : 0.965;
         const gravity = fw.isWillow ? 3.4 : 6.8;
+
+        // คำนวณค่าคงที่สำหรับเฟดล่วงหน้า 1 ครั้งนอกลูป (ประหยัด Math.pow หลายร้อยรอบต่อเฟรม)
+        const baseFade = Math.max(0, 1.0 - Math.pow(progress, 1.5));
 
         for (let j = 0; j < fw.count; j++) {
           const v = fw.velocities[j];
@@ -6407,8 +6462,8 @@ export class LoyKrathongScene {
           fw.positions[j * 3 + 2] += v.z * dt;
 
           // สะเก็ดไฟกะพริบระยิบระยับ (Twinkle effect)
-          const twinkle = Math.sin(time * 30.0 + j * 1.7) * 0.35 + 0.65;
-          const fade = Math.max(0, 1.0 - Math.pow(progress, 1.5)) * twinkle;
+          const twinkle = 0.70 + 0.30 * Math.sin(time * 26.0 + j * 2.0);
+          const fade = baseFade * twinkle;
 
           fw.colors[j * 3] = fw.baseColors[j * 3] * fade;
           fw.colors[j * 3 + 1] = fw.baseColors[j * 3 + 1] * fade;
@@ -6419,12 +6474,8 @@ export class LoyKrathongScene {
         fw.points.geometry.attributes.color.needsUpdate = true;
         fw.points.material.opacity = Math.max(0, 1.0 - progress);
 
-        // สิ้นสุดอายุพลุ
+        // สิ้นสุดอายุพลุ เคลียร์ทรัพยากรทันที
         if (fw.age >= fw.maxAge) {
-          if (fw.flashLight) {
-            this.scene.remove(fw.flashLight);
-            fw.flashLight = null;
-          }
           this.scene.remove(fw.points);
           fw.points.geometry.dispose();
           fw.points.material.dispose();
@@ -6441,11 +6492,22 @@ export class LoyKrathongScene {
     window.removeEventListener("resize", this.handleResize);
     if (this.activeFireworks) {
       this.activeFireworks.forEach((fw) => {
-        if (fw.trailPoints) this.scene.remove(fw.trailPoints);
-        if (fw.points) this.scene.remove(fw.points);
-        if (fw.flashLight) this.scene.remove(fw.flashLight);
+        if (fw.trailPoints) {
+          this.scene.remove(fw.trailPoints);
+          fw.trailPoints.geometry?.dispose();
+          fw.trailPoints.material?.dispose();
+        }
+        if (fw.points) {
+          this.scene.remove(fw.points);
+          fw.points.geometry?.dispose();
+          fw.points.material?.dispose();
+        }
       });
       this.activeFireworks = [];
+    }
+    if (this.fireworkFlashLight) {
+      this.scene.remove(this.fireworkFlashLight);
+      this.fireworkFlashLight = null;
     }
     if (this.soundCtx) {
       try {

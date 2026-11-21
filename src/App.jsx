@@ -37,6 +37,7 @@ export default function App() {
   const [hasVotedCurrent, setHasVotedCurrent] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioRef = useRef(null);
+  const lastFireworkLaunchRef = useRef(0);
 
   // Initialize 3D Scene
   useEffect(() => {
@@ -145,12 +146,18 @@ export default function App() {
   };
 
   const handleLaunchFirework = () => {
+    const now = Date.now();
+    if (now - lastFireworkLaunchRef.current < 320) return;
+    lastFireworkLaunchRef.current = now;
     if (sceneInstanceRef.current) {
       sceneInstanceRef.current.launchFirework();
     }
   };
 
   const handleLaunchTreeFirework = () => {
+    const now = Date.now();
+    if (now - lastFireworkLaunchRef.current < 320) return;
+    lastFireworkLaunchRef.current = now;
     if (sceneInstanceRef.current) {
       sceneInstanceRef.current.launchFireworkBehindTrees();
     }
