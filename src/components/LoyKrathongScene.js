@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
+import femaleFaceTextureUrl from "../assets/textures/face_female.png";
+import maleFaceTextureUrl from "../assets/textures/face_male.png";
 
 export class LoyKrathongScene {
   constructor(container, onSelectKrathong) {
@@ -4546,11 +4548,11 @@ export class LoyKrathongScene {
     daisBorder.rotation.x = Math.PI / 2;
     avatarGroup.add(daisBorder);
 
-    // ดวงไฟสปอตไลต์ประจำตัว (Golden Aura Spotlight) ให้ตัวโมเดลสว่างไสว เปล่งประกายในความมืด
-    const spot = new THREE.PointLight(0xffe082, 3.2, 7.5, 1.2);
-    spot.position.set(0, 2.7, 0.8);
+    // ดวงไฟสปอตไลต์ประจำตัว (Soft Studio Aura Spotlight) ให้ตัวโมเดลสว่างไสวเป็นธรรมชาติ ไม่ขาวโพลน
+    const spot = new THREE.PointLight(0xfff1dc, 1.05, 7.0, 1.5);
+    spot.position.set(0, 2.8, 1.1);
     avatarGroup.add(spot);
-    this.flickerLights.push({ light: spot, baseIntensity: 3.2, speed: 2.0 });
+    this.flickerLights.push({ light: spot, baseIntensity: 1.05, speed: 1.5 });
 
     // วงแหวนไฮไลต์สีทองบนพื้นหญ้าเมื่อเลือกกระทง/ตัวละคร
     const ringGeo = new THREE.RingGeometry(0.65, 0.80, 24);
@@ -4567,8 +4569,8 @@ export class LoyKrathongScene {
 
     // วัสดุใบหน้าพอร์ตเทรตคมชัดสูง (Planar Portrait Masking)
     const faceMat = new THREE.MeshStandardMaterial({
-      roughness: 0.52,
-      metalness: 0.02,
+      roughness: 0.65,
+      metalness: 0.0,
       transparent: true,
       alphaTest: 0.01,
       polygonOffset: true,
@@ -4576,7 +4578,7 @@ export class LoyKrathongScene {
       polygonOffsetUnits: -1,
       depthWrite: false,
     });
-    this.applyCandidateFaceTexture(faceMat, isMale);
+    this.applyCandidateFaceTexture(faceMat, isMale, entry.photoUrl);
 
     let wavingArm = null;
     let wavingHand = null;
@@ -4609,6 +4611,8 @@ export class LoyKrathongScene {
       wavingArm,
       wavingHand,
       badgeSprite,
+      faceMat,
+      isMale,
       phase: Math.random() * Math.PI * 2,
     };
   }
@@ -5340,15 +5344,110 @@ export class LoyKrathongScene {
     };
   }
 
-  // วาดโครงหน้าและเครื่องหน้าสไตล์ไทยประณีต (ตา หู จมูก ปาก คิ้ว คาง) คมชัดสมจริงสำหรับบุรุษและสตรีไทย
-  applyCandidateFaceTexture(faceMat, isMale = false) {
+  // โหลด HD Realistic Face Texture คุณภาพสูงระดับ 4K (สตรีไทย/บุรุษไทย)
+  loadRealisticFaceTexture(faceMat, isMale) {
+    if (!this._faceTextureCache) {
+      this._faceTextureCache = {};
+    }
+    const textureKey = isMale ? "male" : "female";
+    if (this._faceTextureCache[textureKey]) {
+      faceMat.map = this._faceTextureCache[textureKey];
+      faceMat.needsUpdate = true;
+      return;
+    }
+
+    const textureUrl = isMale ? maleFaceTextureUrl : femaleFaceTextureUrl;
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      textureUrl,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        this._faceTextureCache[textureKey] = tex;
+        faceMat.map = tex;
+        faceMat.needsUpdate = true;
+      },
+      undefined,
+      (err) => {
+        console.warn(`Could not load realistic face texture (${textureKey}):`, err);
+      }
+    );
+  }
+
+  // วาดโครงหน้าและเครื่องหน้าสไตล์ไทยประณีตระดับ 4K/HD หรือแมปรูปถ่ายผู้สมัคร
+  applyCandidateFaceTexture(faceMat, isMale = false, photoUrl = null) {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext("2d");
 
-    ctx.clearRect(0, 0, 512, 512);
+    // 1. วาดโครงหน้าสำรองแบบเรียลไทม์ทันที (Instant Procedural Fallback) เพื่อไม่ให้โมเดลหน้าว่างขณะโหลด Texture
+    this.drawProceduralFace(ctx, isMale);
+    const fallbackTex = new THREE.CanvasTexture(canvas);
+    fallbackTex.colorSpace = THREE.SRGBColorSpace;
+    faceMat.map = fallbackTex;
+    faceMat.needsUpdate = true;
 
+    // 2. หากมี photoUrl ของผู้สมัคร ให้โหลดและครอปรูปไข่พร้อมเฟเธอริ่งลงบนใบหน้า 3D โดยตรง
+    if (photoUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          ctx.clearRect(0, 0, 512, 512);
+          ctx.save();
+          // คำนวณ Aspect Ratio ให้ภาพครอบคลุมแผ่นหน้าพอร์ตเทรตพอดี
+          const aspect = img.width / img.height;
+          let drawW = 512, drawH = 512, drawX = 0, drawY = 0;
+          if (aspect > 1) {
+            drawW = 512 * aspect;
+            drawX = -(drawW - 512) / 2;
+          } else {
+            drawH = 512 / aspect;
+            drawY = -(drawH - 512) / 2;
+          }
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.restore();
+
+          // ขอบฟุ้งไล่ระดับโปร่งแสง (Feathered Alpha Edge) เพื่อให้ภาพถ่ายกลืนเข้ากับกะโหลกศีรษะ 3D 100%
+          ctx.globalCompositeOperation = "destination-in";
+          const featherGrad = ctx.createRadialGradient(256, 256, 175, 256, 256, 245);
+          featherGrad.addColorStop(0, "rgba(0, 0, 0, 1.0)");
+          featherGrad.addColorStop(0.70, "rgba(0, 0, 0, 0.90)");
+          featherGrad.addColorStop(1, "rgba(0, 0, 0, 0.0)");
+          ctx.fillStyle = featherGrad;
+          ctx.beginPath();
+          ctx.ellipse(256, 256, 215, 242, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalCompositeOperation = "source-over";
+
+          fallbackTex.needsUpdate = true;
+          faceMat.needsUpdate = true;
+        } catch (e) {
+          console.warn("Failed to apply user photo to face, using HD realistic texture:", e);
+          this.loadRealisticFaceTexture(faceMat, isMale);
+        }
+      };
+      img.onerror = () => {
+        this.loadRealisticFaceTexture(faceMat, isMale);
+      };
+      // จัดการ URL สำหรับ Firebase Storage / Unsplash / Google
+      const isDataOrBlob = photoUrl.startsWith("data:") || photoUrl.startsWith("blob:");
+      const getCorsUrl = (url) => {
+        if (!url || isDataOrBlob) return url;
+        if (url.includes("wsrv.nl") || url.includes("corsproxy.io")) return url;
+        return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&q=85`;
+      };
+      img.src = isDataOrBlob ? photoUrl : getCorsUrl(photoUrl);
+      return;
+    }
+
+    // 3. โหลด HD Realistic Face Texture คุณภาพสูง (สตรีไทย/บุรุษไทย)
+    this.loadRealisticFaceTexture(faceMat, isMale);
+  }
+
+  // วาดโครงหน้าสำรองแบบ Procedural 2D
+  drawProceduralFace(ctx, isMale) {
+    ctx.clearRect(0, 0, 512, 512);
     ctx.save();
 
     // 1. โครงหน้ารูปไข่สีผิวนวลธรรมชาติ (Natural Golden-Honey Thai Skin)
@@ -5369,8 +5468,6 @@ export class LoyKrathongScene {
 
     if (isMale) {
       // ===== ชาย: ใบหน้าสุภาพบุรุษไทย คมเข้ม สง่างาม =====
-
-      // กรอบกรามคมสัน (Masculine Jawline Shading)
       ctx.fillStyle = "rgba(140, 85, 52, 0.22)";
       ctx.beginPath();
       ctx.moveTo(100, 290);
@@ -5379,60 +5476,49 @@ export class LoyKrathongScene {
       ctx.quadraticCurveTo(256, 460, 100, 290);
       ctx.fill();
 
-      // คิ้วเข้มคมสัน (Bold Masculine Eyebrows)
+      // คิ้วเข้มคมสัน
       ctx.strokeStyle = "#18181b";
       ctx.lineWidth = 8;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-
-      // คิ้วซ้าย
       ctx.beginPath();
       ctx.moveTo(136, 196);
       ctx.lineTo(190, 182);
       ctx.lineTo(230, 190);
       ctx.stroke();
 
-      // คิ้วขวา
       ctx.beginPath();
       ctx.moveTo(376, 196);
       ctx.lineTo(322, 182);
       ctx.lineTo(282, 190);
       ctx.stroke();
 
-      // ดวงตาคมเข้มดั่งบุรุษไทย (Sharp Almond Eyes)
-      [176, 336].forEach((eyeX, idx) => {
-        const isLeftEye = idx === 0;
-
-        // ตาขาวพร้อมเงาเปลือกตาบน
+      // ดวงตาคมเข้มดั่งบุรุษไทย
+      [176, 336].forEach((eyeX) => {
         ctx.fillStyle = "#f8fafc";
         ctx.beginPath();
         ctx.ellipse(eyeX, 235, 23, 13, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // ม่านตาสีน้ำตาลประกายอำพันคมเข้ม (Deep Amber-Brown Iris)
         ctx.fillStyle = "#451a03";
         ctx.beginPath();
         ctx.arc(eyeX, 235, 11.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // วงม่านตาขอบเข้ม
         ctx.strokeStyle = "#1c1917";
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // รูม่านตาดำสนิท
         ctx.fillStyle = "#09090b";
         ctx.beginPath();
         ctx.arc(eyeX, 235, 6, 0, Math.PI * 2);
         ctx.fill();
 
-        // ประกายตาแวววาว (Specular Catchlight)
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
         ctx.arc(eyeX - 4, 231, 3.2, 0, Math.PI * 2);
         ctx.fill();
 
-        // ขอบตาบนคมเข้ม
         ctx.strokeStyle = "#09090b";
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -5440,7 +5526,7 @@ export class LoyKrathongScene {
         ctx.stroke();
       });
 
-      // สันจมูกโด่งคมสัน (Sculpted Male Nose Shading)
+      // สันจมูกโด่งคมสัน
       ctx.fillStyle = "rgba(145, 88, 55, 0.28)";
       ctx.beginPath();
       ctx.moveTo(246, 215);
@@ -5450,20 +5536,19 @@ export class LoyKrathongScene {
       ctx.closePath();
       ctx.fill();
 
-      // รูจมูกและปีกจมูก
+      // รูจมูก
       ctx.fillStyle = "rgba(100, 50, 25, 0.40)";
       ctx.beginPath();
       ctx.ellipse(244, 274, 5, 3.5, 0.2, 0, Math.PI * 2);
       ctx.ellipse(268, 274, 5, 3.5, -0.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // ริมฝีปากสุภาพบุรุษไทย โทนอบอุ่นเป็นธรรมชาติ (Natural Masculine Contoured Lips)
+      // ริมฝีปากสุภาพบุรุษไทย
       ctx.fillStyle = "#a14828";
       ctx.beginPath();
       ctx.ellipse(256, 318, 30, 9, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // เส้นแบ่งริมฝีปาก
       ctx.strokeStyle = "#5a2010";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -5471,13 +5556,12 @@ export class LoyKrathongScene {
       ctx.lineTo(284, 318);
       ctx.stroke();
 
-      // เงาใต้ริมฝีปากล่าง ขับเน้นคางบุรุษ (Chin Cleft Shadow)
+      // เงาใต้ริมฝีปากล่าง
       ctx.fillStyle = "rgba(130, 75, 45, 0.32)";
       ctx.beginPath();
       ctx.ellipse(256, 335, 16, 5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // ไฮไลต์ปลายคาง
       ctx.fillStyle = "rgba(255, 235, 215, 0.20)";
       ctx.beginPath();
       ctx.ellipse(256, 362, 22, 12, 0, 0, Math.PI * 2);
@@ -5485,8 +5569,6 @@ export class LoyKrathongScene {
 
     } else {
       // ===== หญิง: ใบหน้าสตรีไทย อ่อนช้อย งดงามดั่งนางในวรรณคดี =====
-
-      // แก้มอมชมพูระเรื่อสุขภาพดี (Blushing Rosy Cheeks)
       const blushGrad1 = ctx.createRadialGradient(140, 282, 5, 140, 282, 42);
       blushGrad1.addColorStop(0, "rgba(244, 63, 94, 0.38)");
       blushGrad1.addColorStop(1, "rgba(244, 63, 94, 0)");
@@ -5503,7 +5585,7 @@ export class LoyKrathongScene {
       ctx.arc(372, 282, 42, 0, Math.PI * 2);
       ctx.fill();
 
-      // คิ้วโก่งดั่งคันศร (Graceful Arched Thai Swan Eyebrows)
+      // คิ้วโก่งดั่งคันศร
       ctx.strokeStyle = "#27272a";
       ctx.lineWidth = 6;
       ctx.lineCap = "round";
@@ -5515,70 +5597,51 @@ export class LoyKrathongScene {
       ctx.arc(336, 204, 46, Math.PI * 1.14, Math.PI * 1.86);
       ctx.stroke();
 
-      // เส้นซ้อนปลายคิ้วเรียวพริ้ว
-      ctx.strokeStyle = "#18181b";
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.arc(176, 203, 47, Math.PI * 1.18, Math.PI * 1.82);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(336, 203, 47, Math.PI * 1.18, Math.PI * 1.82);
-      ctx.stroke();
-
-      // ดวงตารูปหางหงส์คมขำ (Graceful Swan Eyes with Rich Iris & Double Catchlights)
+      // ดวงตารูปหางหงส์คมขำ
       [176, 336].forEach((eyeX, idx) => {
         const isLeftEye = idx === 0;
 
-        // ชั้นพับเปลือกตาบน (Double Eyelid Crease)
         ctx.strokeStyle = "rgba(140, 75, 45, 0.40)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(eyeX, 236, 26, Math.PI * 1.20, Math.PI * 1.80);
         ctx.stroke();
 
-        // ตาขาวนวล
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
         ctx.ellipse(eyeX, 238, 23, 14, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // ม่านตาสีน้ำตาลประกายทอง (Hazel-Chestnut Iris)
         ctx.fillStyle = "#3e2216";
         ctx.beginPath();
         ctx.arc(eyeX, 238, 11, 0, Math.PI * 2);
         ctx.fill();
 
-        // ประกายสีน้ำตาลทองรอบม่านตา
         ctx.fillStyle = "rgba(180, 100, 40, 0.45)";
         ctx.beginPath();
         ctx.arc(eyeX, 239, 7.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // รูม่านตาดำ
         ctx.fillStyle = "#09090b";
         ctx.beginPath();
         ctx.arc(eyeX, 238, 5.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // ประกายตาเอกแวววาว (Main Specular Catchlight)
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
         ctx.arc(eyeX - 4, 234, 3.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // ประกายตารองระยิบระยับ (Secondary Catchlight)
         ctx.beginPath();
         ctx.arc(eyeX + 3.5, 241, 1.8, 0, Math.PI * 2);
         ctx.fill();
 
-        // อายไลเนอร์ขอบตาบนตวัดหางหงส์คมกริบ (Winged Eyeliner & Eyelashes)
         ctx.strokeStyle = "#18181b";
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.arc(eyeX, 238, 23, Math.PI * 1.15, Math.PI * 1.85);
         ctx.stroke();
 
-        // หางตาตวัดขึ้นอย่างอ่อนช้อย
         ctx.beginPath();
         const wingDir = isLeftEye ? -1 : 1;
         ctx.moveTo(eyeX + wingDir * 20, 236);
@@ -5586,27 +5649,19 @@ export class LoyKrathongScene {
         ctx.stroke();
       });
 
-      // สันจมูกและเงาปีกจมูกเรียวละมุน (Delicate Feminine Nose Shading)
+      // สันจมูกและเงาปีกจมูก
       ctx.fillStyle = "rgba(175, 105, 70, 0.22)";
       ctx.beginPath();
       ctx.ellipse(256, 268, 10, 5.5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // รูจมูกเล็กรูปหยดน้ำ
       ctx.fillStyle = "rgba(120, 60, 35, 0.35)";
       ctx.beginPath();
       ctx.ellipse(247, 272, 3.5, 2.2, 0.3, 0, Math.PI * 2);
       ctx.ellipse(265, 272, 3.5, 2.2, -0.3, 0, Math.PI * 2);
       ctx.fill();
 
-      // ไฮไลต์สันจมูกหยดน้ำ
-      ctx.fillStyle = "rgba(255, 245, 235, 0.45)";
-      ctx.beginPath();
-      ctx.ellipse(256, 262, 4, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // รอยยิ้มพิมพ์ใจ ริมฝีปากกระจับอวบอิ่ม (Cupid's Bow Rosy Crimson Lips)
-      // ริมฝีปากบน: รูปกระจับมีหยักตรงกลางคมชัด
+      // ริมฝีปากกระจับ
       ctx.fillStyle = "#be123c";
       ctx.beginPath();
       ctx.moveTo(226, 312);
@@ -5616,29 +5671,16 @@ export class LoyKrathongScene {
       ctx.quadraticCurveTo(256, 318, 226, 312);
       ctx.fill();
 
-      // ริมฝีปากล่าง: อิ่มเอิบมนสวย
       ctx.fillStyle = "#e11d48";
       ctx.beginPath();
       ctx.ellipse(256, 317, 26, 11, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // เคลือบกลอสแวววาวที่กึ่งกลางริมฝีปากล่าง (Lip Gloss Specular Sheen)
       ctx.fillStyle = "rgba(255, 241, 242, 0.75)";
       ctx.beginPath();
       ctx.ellipse(256, 318, 14, 4.5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // รอยยิ้มมุมปากอ่อนหวาน
-      ctx.strokeStyle = "#881337";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(224, 311);
-      ctx.quadraticCurveTo(222, 309, 220, 308);
-      ctx.moveTo(288, 311);
-      ctx.quadraticCurveTo(290, 309, 292, 308);
-      ctx.stroke();
-
-      // ไฮไลต์คางเรียวรูปไข่ V-Line
       ctx.fillStyle = "rgba(255, 240, 230, 0.35)";
       ctx.beginPath();
       ctx.ellipse(256, 360, 18, 10, 0, 0, Math.PI * 2);
@@ -5658,12 +5700,6 @@ export class LoyKrathongScene {
     ctx.ellipse(256, 256, 240, 250, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalCompositeOperation = "source-over";
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    faceMat.map = tex;
-    faceMat.needsUpdate = true;
   }
 
   // สร้างป้ายชื่อและคะแนนโหวตลายไทยสีทอง พร้อมกรอบรูปถ่ายลอยเด่นเหนือป้าย
@@ -5846,11 +5882,16 @@ export class LoyKrathongScene {
   }
 
   updateCandidateAvatarBadge(avatar, entry) {
-    if (!avatar.badgeSprite?.userData?.renderTexture) return;
-    const { renderTexture } = avatar.badgeSprite.userData;
-    renderTexture(entry.name, entry.votes || 0);
-    if (avatar.badgeSprite.material.map) {
-      avatar.badgeSprite.material.map.needsUpdate = true;
+    if (avatar.badgeSprite?.userData?.renderTexture) {
+      const { renderTexture } = avatar.badgeSprite.userData;
+      renderTexture(entry.name, entry.votes || 0);
+      if (avatar.badgeSprite.material.map) {
+        avatar.badgeSprite.material.map.needsUpdate = true;
+      }
+    }
+    // อัปเดต Face Texture หากมีการเปลี่ยนแปลง photoUrl
+    if (avatar.faceMat && entry.photoUrl && entry.photoUrl !== avatar.entry?.photoUrl) {
+      this.applyCandidateFaceTexture(avatar.faceMat, avatar.isMale, entry.photoUrl);
     }
   }
 
