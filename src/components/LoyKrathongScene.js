@@ -32,9 +32,9 @@ export class LoyKrathongScene {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
 
-    // 1. Scene Setup
+    // 1. Scene Setup - บรรยากาศเคลียร์สดใส ไม่มีหมอกตามคำขอของผู้ใช้ (Crystal Clear Atmosphere - No Fog)
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x1a264a, 0.0075);
+    this.scene.fog = null;
 
     // 2. Camera
     this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -2145,24 +2145,180 @@ export class LoyKrathongScene {
         primary: 0xb45309, secondary: 0x451a03, sash: 0xfbbf24,
         pose: "standing_holding",
       },
+
+      // ==========================================================
+      // กลุ่มพุทธศาสนิกชนและชาวบ้าน 15 คน เดินบริเวณลานวัดและลานเจดีย์ (Temple & Pagoda Plaza Walkers - Y = 3.2)
+      // ==========================================================
+      // 1. หญิงสาวสไบสีชมพูกลีบบัว เดินทอดน่องลานหน้าวัดริมน้ำ
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 5.0, y: 3.2, z: -32.0,
+        primary: 0xec4899, secondary: 0xbe185d, gold: 0xfbbf24,
+        minPos: -1.0, maxPos: 15.0,
+        axis: "x", dir: 1, speed: 1.10, walkPhase: 0.0,
+      },
+      // 2. ชายหนุ่มเสื้อผ้าไหมสีทอง เดินชมสายน้ำลานหน้าวัด
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 8.0, y: 3.2, z: -31.2,
+        primary: 0xf59e0b, secondary: 0x881337, sash: 0xd97706,
+        minPos: 2.0, maxPos: 22.0,
+        axis: "x", dir: 1, speed: 1.05, walkPhase: 0.8,
+      },
+      // 3. หญิงสาวสไบแพรสีเขียวมรกต เดินชมกระทงจากลานวัดฝั่งตะวันออก
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 24.0, y: 3.2, z: -33.0,
+        primary: 0x059669, secondary: 0x064e3b, gold: 0xfef08a,
+        minPos: 10.0, maxPos: 32.0,
+        axis: "x", dir: -1, speed: 1.15, walkPhase: 1.9,
+      },
+      // 4. ชายหนุ่มเสื้อไหมสีกรมท่า เดินเล่นหน้าวิหาร
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 18.0, y: 3.2, z: -34.0,
+        primary: 0x1e3a8a, secondary: 0x172554, sash: 0xf59e0b,
+        minPos: 4.0, maxPos: 28.0,
+        axis: "x", dir: -1, speed: 0.95, walkPhase: 3.2,
+      },
+      // 5. หญิงสาวสไบสองชั้นสีม่วงดอกรัก เดินชมโคมลอยลานหน้าวัด
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 2.0, y: 3.2, z: -35.0,
+        primary: 0x7c3aed, secondary: 0x4c1d95, gold: 0xfef08a,
+        minPos: -1.0, maxPos: 18.0,
+        axis: "x", dir: 1, speed: 1.20, walkPhase: 4.1,
+      },
+      // 6. หญิงสาวสไบสีขาวงาช้างปักดิ้นทอง เดินเวียนเทียนทักษิณาวัตรด้านทิศตะวันตกของเจดีย์
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 2.0, y: 3.2, z: -40.0,
+        primary: 0xfffdf5, secondary: 0x881337, gold: 0xf59e0b,
+        minPos: -52.0, maxPos: -38.0,
+        axis: "z", dir: 1, speed: 1.00, walkPhase: 1.5,
+      },
+      // 7. ชายหนุ่มเสื้อพระราชทานไหมทอง เดินประทักษิณทิศตะวันออกขององค์เจดีย์
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 17.5, y: 3.2, z: -48.0,
+        primary: 0xf59e0b, secondary: 0x78350f, sash: 0xd97706,
+        minPos: -52.0, maxPos: -38.0,
+        axis: "z", dir: -1, speed: 1.08, walkPhase: 2.7,
+      },
+      // 8. หญิงสาวสไบสีแดงทับทิมสยาม เดินเวียนหลังองค์เจดีย์
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 9.0, y: 3.2, z: -53.0,
+        primary: 0xbe123c, secondary: 0x881337, gold: 0xfef08a,
+        minPos: 2.0, maxPos: 17.0,
+        axis: "x", dir: 1, speed: 1.12, walkPhase: 0.5,
+      },
+      // 9. ชายหนุ่มเสื้อผ้าไหมสีคราม เดินรอบฐานเจดีย์ฝั่งหน้า
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 14.0, y: 3.2, z: -38.0,
+        primary: 0x1d4ed8, secondary: 0x172554, sash: 0xfbbf24,
+        minPos: 2.0, maxPos: 17.0,
+        axis: "x", dir: -1, speed: 1.02, walkPhase: 3.6,
+      },
+      // 10. หญิงสาวสไบสีเหลืองดอกดาวเรือง เดินเวียนรอบพระธาตุเจดีย์
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 1.2, y: 3.2, z: -46.0,
+        primary: 0xeab308, secondary: 0x78350f, gold: 0xfef08a,
+        minPos: -52.0, maxPos: -38.0,
+        axis: "z", dir: -1, speed: 0.98, walkPhase: 4.9,
+      },
+      // 11. ชายหนุ่มสวมเสื้อผ้าไหมสีส้มทอง เดินระหว่างพระเจดีย์และพระวิหาร
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 18.0, y: 3.2, z: -38.0,
+        primary: 0xea580c, secondary: 0x7c2d12, sash: 0xf59e0b,
+        minPos: -52.0, maxPos: -30.0,
+        axis: "z", dir: 1, speed: 1.15, walkPhase: 1.2,
+      },
+      // 12. หญิงสาวสไบจักรีสีฟ้าอมคราม เดินทางเดินเชื่อมระหว่างเจดีย์-วิหาร
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 19.5, y: 3.2, z: -46.0,
+        primary: 0x0284c7, secondary: 0x0c4a6e, gold: 0xfbbf24,
+        minPos: -52.0, maxPos: -30.0,
+        axis: "z", dir: -1, speed: 1.10, walkPhase: 2.4,
+      },
+      // 13. ชายหนุ่มชุดราชปะแตนสีงาช้าง เดินเล่นลานฝั่งตะวันออกของวิหาร
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 32.0, y: 3.2, z: -36.0,
+        primary: 0xfffdf5, secondary: 0x172554, sash: 0xf59e0b,
+        minPos: -50.0, maxPos: -32.0,
+        axis: "z", dir: 1, speed: 1.05, walkPhase: 0.3,
+      },
+      // 14. หญิงสาวสไบลูกไม้สีชมพูดอกบัว เดินเลียบระเบียงวิหาร
+      {
+        gender: "female",
+        role: "walking",
+        area: "temple",
+        x: 31.0, y: 3.2, z: -44.0,
+        primary: 0xf472b6, secondary: 0x831843, gold: 0xfef08a,
+        minPos: -50.0, maxPos: -32.0,
+        axis: "z", dir: -1, speed: 1.20, walkPhase: 3.8,
+      },
+      // 15. ชายหนุ่มเสื้อผ้าไหมสีแดงทับทิม เดินรอบลานหลังวิหาร
+      {
+        gender: "male",
+        role: "walking",
+        area: "temple",
+        x: 27.0, y: 3.2, z: -48.0,
+        primary: 0x991b1b, secondary: 0x450a0a, sash: 0xf59e0b,
+        minPos: 19.0, maxPos: 33.0,
+        axis: "x", dir: 1, speed: 1.00, walkPhase: 5.1,
+      },
     ];
 
     // เข็มขัดและเครื่องประดับแบบเรียบง่ายสำหรับชาวบ้านทั่วไป (ไม่ฉูดฉาด ไม่แย่งซีนผู้สมัคร)
     const modestMat = new THREE.MeshStandardMaterial({ color: 0x5c2c16, roughness: 0.7 });
 
     characterConfigs.forEach((cfg) => {
-      // ผู้ร่วมงานทั่วไปในฉาก: สวมเสื้อม่อฮ่อมสีน้ำเงิน และสวมโจงกระเบนสีน้ำตาล ตามคำขอของผู้ใช้
-      // เพื่อไม่ให้การแต่งกายโดดเด่นกว่าผู้ที่โพสต์รูปร่วมโหวต
-      const npcCfg = {
-        ...cfg,
-        primary: 0x1e3a8a,   // เสื้อม่อฮ่อมสีน้ำเงินคราม
-        secondary: 0x78350f, // โจงกระเบนสีน้ำตาลเข้ม
-        sash: 0x5c2c16,      // ผ้าคาดเอวสีน้ำตาลเรียบง่าย
-      };
+      const isTemple = cfg.area === "temple";
+      const npcCfg = isTemple
+        ? { ...cfg }
+        : {
+            ...cfg,
+            primary: 0x1e3a8a,   // เสื้อม่อฮ่อมสีน้ำเงินคราม
+            secondary: 0x78350f, // โจงกระเบนสีน้ำตาลเข้ม
+            sash: 0x5c2c16,      // ผ้าคาดเอวสีน้ำตาลเรียบง่าย
+          };
       const char = cfg.gender === "female"
-        ? this.buildFemaleThaiCharacter(npcCfg, skinMat, hairMat, modestMat)
-        : this.buildMaleThaiCharacter(npcCfg, skinMat, hairMat, modestMat);
+        ? this.buildFemaleThaiCharacter(npcCfg, skinMat, hairMat, isTemple ? goldMat : modestMat)
+        : this.buildMaleThaiCharacter(npcCfg, skinMat, hairMat, isTemple ? goldMat : modestMat);
 
+      char.area = cfg.area || "promenade";
       this.scene.add(char.group);
       this.thaiPeople.push(char);
     });
@@ -4694,7 +4850,9 @@ export class LoyKrathongScene {
           }
 
           // --- 2. ระบบป้องกันไม่ให้คนเดินทะลุขอบตลิ่งเด็ดขาด (Strict Riverbank Boundary Protection) ---
-          if (char.group.position.y > 1.2) {
+          if (char.area === "temple") {
+            // บนลานวัดและลานเจดีย์ (Temple Platform Y = 3.2): เดินอย่างสง่างามภายในขอบเขตลานวัด
+          } else if (char.group.position.y > 1.2) {
             // บนทางเดินเลียบแม่น้ำ (Promenade Y = 1.5)
             // ขอบหินกั้นแม่น้ำอยู่ที่ X = -20.0 (ขอบหินกว้างครอบคลุม X: -22.0 ถึง -18.0)
             // บังคับให้อยู่บนทางเดินคนเดิน X: -26.0 ถึง -22.8 ไม่เดินเบียดหรือทะลุขอบหินเด็ดขาด
@@ -4969,9 +5127,9 @@ export class LoyKrathongScene {
     const startZ = -60 + Math.random() * 40;
     const startY = 0.5;
 
-    // สุ่มระดับความสูงที่ระเบิดบนท้องฟ้า (Apex Height 42 - 56 เมตร)
-    const targetY = 42 + Math.random() * 14;
-    const speedY = 32 + Math.random() * 6; // ความเร็วพุ่งขึ้น
+    // ปรับระดับความสูงสูงสุดลดลงมาเหลือ 70% ของเดิมตามคำขอของผู้ใช้ (Apex Height 29 - 39 เมตร)
+    const targetY = 29.4 + Math.random() * 9.8;
+    const speedY = 22.5 + Math.random() * 4.2; // ความเร็วพุ่งขึ้นสัมพันธ์กับความสูง
 
     // หางสะเก็ดไฟลากเป็นทางยาว (Rocket Trailing Embers)
     const trailCount = 28;
@@ -4998,7 +5156,66 @@ export class LoyKrathongScene {
       vertexColors: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      fog: false,
+    });
+    const trailPoints = new THREE.Points(trailGeo, trailMat);
+    this.scene.add(trailPoints);
+
+    this.activeFireworks.push({
+      type: "rocket",
+      pos: new THREE.Vector3(startX, startY, startZ),
+      velY: speedY,
+      targetY,
+      trailPoints,
+      trailPos,
+      trailCol,
+      trailCount,
+      history: [],
+      age: 0,
+    });
+  }
+
+  // จุดดอกไม้ไฟพุ่งขึ้นจากหลังแนวต้นไม้ (Launch Firework from Behind Tree Line)
+  launchFireworkBehindTrees() {
+    if (!this.fireworkTexture) {
+      this.fireworkTexture = this.createFireworkSparkTexture();
+    }
+
+    this.playFireworkLaunchSound();
+
+    // ฐานยิงอยู่ด้านหลังแนวต้นไม้และดงมะพร้าวริมฝั่ง (X: -36 ถึง -28, Z: -35 ถึง +35, Y = 1.0)
+    const startX = -32.0 + (Math.random() - 0.5) * 10.0;
+    const startZ = (Math.random() - 0.5) * 60.0;
+    const startY = 1.0;
+
+    // ระดับความสูงที่ระเบิดแตกกระจายเหนือยอดไม้ (Apex Height 28 - 36 เมตร)
+    const targetY = 28.0 + Math.random() * 8.5;
+    const speedY = 22.0 + Math.random() * 4.0;
+
+    // หางสะเก็ดไฟลากเป็นทางยาว พุ่งทะยานขึ้นจากหลังแนวต้นไม้
+    const trailCount = 28;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPos = new Float32Array(trailCount * 3);
+    const trailCol = new Float32Array(trailCount * 3);
+
+    for (let i = 0; i < trailCount; i++) {
+      trailPos[i * 3] = startX;
+      trailPos[i * 3 + 1] = startY;
+      trailPos[i * 3 + 2] = startZ;
+
+      trailCol[i * 3] = 1.0;
+      trailCol[i * 3 + 1] = 0.88;
+      trailCol[i * 3 + 2] = 0.45;
+    }
+    trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPos, 3));
+    trailGeo.setAttribute("color", new THREE.BufferAttribute(trailCol, 3));
+
+    const trailMat = new THREE.PointsMaterial({
+      size: 1.8,
+      map: this.fireworkTexture,
+      transparent: true,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
     });
     const trailPoints = new THREE.Points(trailGeo, trailMat);
     this.scene.add(trailPoints);
