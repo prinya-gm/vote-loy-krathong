@@ -1449,24 +1449,6 @@ export class LoyKrathongScene {
       }
     });
 
-    // เสาหลักพร้อมโคมไฟประดับด้านหลังพื้นที่สีเขียวริมท่าน้ำ (ย้ายไปอยู่ด้านหลังเพื่อไม่ให้บังโมเดลคน)
-    const pierLanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
-    [-16.0, -8.0, 0, 8.0, 16.0].forEach((pz) => {
-      const px = -pierWidthX / 2 + 0.6; // ย้ายไปแนวหลังสุดของพื้นที่สีเขียวริมท่าน้ำ
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.2, 8), pierWoodMat);
-      post.position.set(px, 1.35, pz);
-      greenPierGroup.add(post);
-
-      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.4, 8), pierLanternMat);
-      lamp.position.set(px, 2.05, pz);
-      greenPierGroup.add(lamp);
-
-      const lampLight = new THREE.PointLight(0xffaa33, 2.4, 12, 1.4);
-      lampLight.position.set(px, 2.2, pz);
-      greenPierGroup.add(lampLight);
-      this.flickerLights.push({ light: lampLight, baseIntensity: 2.4, speed: 4.0 });
-    });
-
     this.scene.add(greenPierGroup);
   }
 
@@ -1574,15 +1556,16 @@ export class LoyKrathongScene {
     });
   }
 
-  // 2. White Canopy Market Stalls (Low-poly, Fake Ground Glow, Zero PointLights)
+  // 2. White Canopy Market Stalls (ปรับขาเต็นท์ให้สูงขึ้นอีก 1 เท่า: เสาสูง 4.2m ชายคา 4.15m)
   buildMarketStalls(group, mats) {
-    const postGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.1, 6);
-    const canopyGeo = new THREE.ConeGeometry(1.88, 0.95, 4);
+    const postHeight = 4.2;
+    const postGeo = new THREE.CylinderGeometry(0.04, 0.04, postHeight, 6);
+    const canopyGeo = new THREE.ConeGeometry(1.88, 1.05, 4);
     canopyGeo.rotateY(Math.PI / 4);
     const counterGeo = new THREE.BoxGeometry(2.2, 0.88, 0.65);
     const backShelfGeo = new THREE.BoxGeometry(2.0, 0.78, 0.45);
     const bulbGeo = new THREE.SphereGeometry(0.09, 6, 6);
-    const fakeDiscGeo = new THREE.CircleGeometry(1.5, 12);
+    const fakeDiscGeo = new THREE.CircleGeometry(1.6, 12);
     fakeDiscGeo.rotateX(-Math.PI / 2);
 
     const buildSingleStall = (x, z, rotY, themeIndex) => {
@@ -1590,23 +1573,23 @@ export class LoyKrathongScene {
       stall.position.set(x, 0.52, z);
       stall.rotation.y = rotY;
 
-      // 4 White Metal Posts
+      // 4 White Metal Posts (สูงโปร่ง 4.2 เมตร เดินลอดได้สบาย)
       [-1.15, 1.15].forEach((px) => {
         [-1.15, 1.15].forEach((pz) => {
           const post = new THREE.Mesh(postGeo, mats.metalPole);
-          post.position.set(px, 1.05, pz);
+          post.position.set(px, postHeight / 2, pz);
           stall.add(post);
         });
       });
 
       // White Canopy Fabric Pyramid Roof
       const canopy = new THREE.Mesh(canopyGeo, mats.whiteCanopy);
-      canopy.position.set(0, 2.58, 0);
+      canopy.position.set(0, postHeight + 0.52, 0);
       stall.add(canopy);
 
-      // Valance Skirt around eaves (2 streamlined boxes)
-      const valanceZ = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.22, 2.42), mats.whiteCanopy);
-      valanceZ.position.set(0, 2.05, 0);
+      // Valance Skirt around eaves
+      const valanceZ = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.24, 2.42), mats.whiteCanopy);
+      valanceZ.position.set(0, postHeight - 0.05, 0);
       stall.add(valanceZ);
 
       // Sales Counter Desk
@@ -1619,12 +1602,12 @@ export class LoyKrathongScene {
       backShelf.position.set(0, 0.39, -0.9);
       stall.add(backShelf);
 
-      // Hanging Warm Bulb (Emissive - ZERO light computation overhead)
+      // Hanging Warm Bulb (Emissive)
       const bulb = new THREE.Mesh(bulbGeo, mats.warmBulb);
-      bulb.position.set(0, 1.95, 0);
+      bulb.position.set(0, postHeight - 0.2, 0);
       stall.add(bulb);
 
-      // Fake Ground Glow Disc (จำลองแสงส้มอบอุ่นส่องกระทบพื้น โดยใช้พลัง GPU = 0)
+      // Fake Ground Glow Disc
       const groundGlow = new THREE.Mesh(fakeDiscGeo, mats.fakeGlow);
       groundGlow.position.set(0, 0.015, 0.5);
       stall.add(groundGlow);
@@ -1977,12 +1960,13 @@ export class LoyKrathongScene {
     const marqGroup = new THREE.Group();
     marqGroup.position.set(-7.5, 0.52, 2.0);
 
-    // 6 Support Posts
-    const postGeo = new THREE.BoxGeometry(0.14, 2.8, 0.14);
+    // 6 Support Posts (ปรับให้สูงโปร่ง 5.2 เมตร)
+    const postH = 5.2;
+    const postGeo = new THREE.BoxGeometry(0.14, postH, 0.14);
     [-3.4, 0, 3.4].forEach((px) => {
       [-2.3, 2.3].forEach((pz) => {
         const post = new THREE.Mesh(postGeo, mats.metalPole);
-        post.position.set(px, 1.4, pz);
+        post.position.set(px, postH / 2, pz);
         marqGroup.add(post);
       });
     });
@@ -1991,7 +1975,7 @@ export class LoyKrathongScene {
     const roofPyramid = new THREE.Mesh(new THREE.ConeGeometry(3.6, 1.45, 4), mats.whiteCanopy);
     roofPyramid.scale.set(1.95, 1.0, 1.35);
     roofPyramid.rotation.y = Math.PI / 4;
-    roofPyramid.position.set(0, 3.45, 0);
+    roofPyramid.position.set(0, postH + 0.65, 0);
     marqGroup.add(roofPyramid);
 
     // Interior Long Banquet Tables & Benches
@@ -2003,7 +1987,7 @@ export class LoyKrathongScene {
 
     // Warm Interior Pendant Bulb (Emissive)
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), mats.warmBulb);
-    bulb.position.set(0, 2.6, 0);
+    bulb.position.set(0, postH - 0.4, 0);
     marqGroup.add(bulb);
 
     // Fake Floor Glow
@@ -2456,41 +2440,46 @@ export class LoyKrathongScene {
      BAMBOO FIRE TORCHES
   ========================================================== */
   createBambooTorches() {
-    const torchCount = 12;
+    // จำกัดตำแหน่งให้อยู่ในแนวตลิ่ง Z: -45 ถึง +75 (นำ 2 จุดที่ลอยเคว้งเกินฉากออกไปตามรูปแนบ 2)
+    const torchCount = 10;
     const bambooMat = new THREE.MeshStandardMaterial({ color: 0xd4a359, roughness: 0.6 });
     const coneMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.7 });
 
     for (let i = 0; i < torchCount; i++) {
-      const zPos = -45 + i * 14;
+      const zPos = -45 + i * 13;
+      if (zPos > 75) continue; // ตัดคบเพลิงที่เกินแนวตลิ่งออกเด็ดขาด
       const torch = new THREE.Group();
       torch.position.set(-18.2, 1.0, zPos);
 
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 4.8, 8), bambooMat);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 4.8, 6), bambooMat);
       pole.position.y = 2.4;
-      pole.castShadow = true;
       torch.add(pole);
 
-      const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.18, 0.75, 8), coneMat);
+      const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.18, 0.75, 6), coneMat);
       basket.position.y = 4.8;
       torch.add(basket);
 
       const flame = new THREE.Mesh(
-        new THREE.ConeGeometry(0.28, 0.9, 8),
+        new THREE.ConeGeometry(0.28, 0.9, 6),
         new THREE.MeshBasicMaterial({ color: 0xff6600 })
       );
       flame.position.y = 5.4;
       torch.add(flame);
 
       const core = new THREE.Mesh(
-        new THREE.ConeGeometry(0.16, 0.65, 8),
+        new THREE.ConeGeometry(0.16, 0.65, 6),
         new THREE.MeshBasicMaterial({ color: 0xffea33 })
       );
       core.position.y = 5.3;
       torch.add(core);
 
-      const fLight = new THREE.PointLight(0xff7700, 3.4, 19, 1.3);
-      fLight.position.set(0, 5.6, 0);
-      torch.add(fLight);
+      // ใช้ไฟส่องสว่าง PointLight เฉพาะจุดสำคัญ 2 จุดหลัก (ประหยัดพลัง GPU ได้ 80%)
+      let fLight = null;
+      if (i === 1 || i === 7) {
+        fLight = new THREE.PointLight(0xff7700, 3.4, 22, 1.3);
+        fLight.position.set(0, 5.6, 0);
+        torch.add(fLight);
+      }
 
       this.scene.add(torch);
 
@@ -5448,7 +5437,9 @@ export class LoyKrathongScene {
         item.flame.scale.set(flameDance * 0.9, flameDance * 1.2, flameDance * 0.9);
         item.flame.rotation.z = Math.sin(time * 8.0 + item.phase) * 0.12;
         item.core.scale.set(flameDance, flameDance, flameDance);
-        item.light.intensity = 3.0 + Math.sin(time * 14.0 + item.phase) * 0.8;
+        if (item.light) {
+          item.light.intensity = 3.0 + Math.sin(time * 14.0 + item.phase) * 0.8;
+        }
       });
     }
 
