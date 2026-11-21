@@ -7,7 +7,8 @@ import {
   increment, 
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  limit
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage, isFirebaseConfigured } from "../firebase";
@@ -351,3 +352,139 @@ export function compressAndPreserveAspectRatio(file, maxDim = 640, quality = 0.8
     reader.readAsDataURL(file);
   });
 }
+
+// ============================================================================
+// REALTIME LIVE FIREWORK SYNCHRONIZATION (วิธีที่ 1: Firebase + BroadcastChannel)
+// เมื่อเครื่องใดกดจุดพลุ เครื่องอื่นๆ จะเห็นพลุแตกกระจายพร้อมกันทันทีทั่วโลก
+// ============================================================================
+
+let fireworkBroadcastChannel = null;
+try {
+  if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+    fireworkBroadcastChannel = new BroadcastChannel("loy_krathong_live_fireworks");
+  }
+} catch {
+  // BroadcastChannel unsupported or restricted in context
+}
+
+// Client Session ID เพื่อคัดกรองไม่ให้เล่นเสียงหรือเอฟเฟกต์ซ้ำกับตัวเองที่เพิ่งกด
+export const getClientSessionId = () => {
+  try {
+    let sid = sessionStorage.getItem("lk_client_session_id");
+    if (!sid) {
+      sid = "user-" + Math.random().toString(36).substring(2, 9) + "-" + Date.now().toString(36);
+      sessionStorage.setItem("lk_client_session_id", sid);
+    }
+    return sid;
+  } catch {
+    return "anon-" + Math.random().toString(36).substring(2, 9);
+  }
+};
+
+/**
+ * ส่งสัญญาณเหตุการณ์การจุดพลุไปยังเครื่องอื่นๆ ทั่วโลกผ่าน Firebase + แท็บอื่นๆ ผ่าน BroadcastChannel
+ */
+export const broadcastLiveFirework = async (type = "sky", payload = {}) => {
+  const sessionId = getClientSessionId();
+  const eventData = {
+    type,
+    paletteIndex: payload.paletteIndex ?? Math.floor(Math.random() * 7),
+    startX: payload.startX,
+    startZ: payload.startZ,
+    targetY: payload.targetY,
+    speedY: payload.speedY,
+    senderId: sessionId,
+    clientTimestamp: Date.now()
+  };
+
+  // 1. Broadcast ส่งต่อให้แท็บอื่นๆ ในเบราว์เซอร์เดียวกันทันที (0ms latency)
+  if (fireworkBroadcastChannel) {
+    try {
+      fireworkBroadcastChannel.postMessage(eventData);
+    } catch (e) {
+      console.warn("BroadcastChannel post error:", e);
+    }
+  }
+
+  // 2. ส่ง Event ขึ้น Firebase Firestore ไปยังเครื่องอื่นๆ ทั่วโลกแบบ Realtime
+  if (isFirebaseConfigured && db) {
+    try {
+      await addDoc(collection(db, "live_fireworks"), {
+        ...eventData,
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.warn("Firestore live firework broadcast error:", err);
+    }
+  }
+};
+
+/**
+ * ดักฟัง Event การจุดพลุสดจากเครื่องอื่นๆ แบบ Realtime
+ */
+export const subscribeToLiveFireworks = (onFireworkReceived) => {
+  const mySessionId = getClientSessionId();
+  const processedEventIds = new Set();
+  const sessionStartTime = Date.now() - 3500; // เพิกเฉยพลุที่จุดไปแล้วก่อนเปิดเว็บ
+
+  // 1. รับ Event จากแท็บอื่นๆ ในเบราว์เซอร์เดียวกัน
+  const handleBcMessage = (msgEvent) => {
+    const data = msgEvent.data;
+    if (!data || data.senderId === mySessionId) return;
+    if (data.clientTimestamp && Date.now() - data.clientTimestamp > 4000) return;
+    onFireworkReceived({ ...data, isRemote: true });
+  };
+
+  if (fireworkBroadcastChannel) {
+    fireworkBroadcastChannel.addEventListener("message", handleBcMessage);
+  }
+
+  // 2. รับ Event จาก Firebase Firestore ดักฟังแบบ Realtime
+  let unsubscribeFirestore = () => {};
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(
+        collection(db, "live_fireworks"),
+        orderBy("clientTimestamp", "desc"),
+        limit(8)
+      );
+
+      unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const docId = change.doc.id;
+            if (processedEventIds.has(docId)) return;
+            processedEventIds.add(docId);
+
+            const data = change.doc.data();
+            if (!data) return;
+
+            // คัดกรองไม่ให้รันซ้ำกับเครื่องตัวเองที่เพิ่งกด
+            if (data.senderId === mySessionId) return;
+
+            // ไม่แสดงพลุที่เกิดขึ้นก่อนผู้ใช้เข้าเว็บ หรือพลุที่เก่าเกิน 4.5 วินาที
+            const eventTime = data.clientTimestamp || sessionStartTime;
+            if (eventTime < sessionStartTime || Date.now() - eventTime > 4500) return;
+
+            // จุดพลุบนหน้าจอทันที!
+            onFireworkReceived({
+              ...data,
+              isRemote: true
+            });
+          }
+        });
+      }, (err) => {
+        console.warn("Firestore live_fireworks listener warning:", err);
+      });
+    } catch (e) {
+      console.warn("Failed to subscribe to firestore live fireworks:", e);
+    }
+  }
+
+  return () => {
+    if (fireworkBroadcastChannel) {
+      fireworkBroadcastChannel.removeEventListener("message", handleBcMessage);
+    }
+    unsubscribeFirestore();
+  };
+};

@@ -7384,17 +7384,19 @@ export class LoyKrathongScene {
     } catch (e) {}
   }
 
-  // จุดดอกไม้ไฟขึ้นสู่ท้องฟ้า (Callable from UI button)
-  launchFirework() {
-    // 1. Rate Limiting: ป้องกันการกดย้ำๆ รัวเกิน 320ms
+  // จุดดอกไม้ไฟขึ้นสู่ท้องฟ้า (Callable from UI button or Remote Sync Event)
+  launchFirework(opts = {}) {
+    // 1. Rate Limiting: ป้องกันการกดเองย้ำๆ รัวเกิน 320ms (ถ้าเป็น remote event จากเครื่องอื่น ไม่บล็อก)
     const now = performance.now();
-    if (now - this.lastFireworkLaunchTime < 320) {
-      return;
+    if (!opts.isRemote) {
+      if (now - this.lastFireworkLaunchTime < 320) {
+        return null;
+      }
+      this.lastFireworkLaunchTime = now;
     }
-    this.lastFireworkLaunchTime = now;
 
-    // 2. Concurrency Cap: จำกัดพลุในอากาศพร้อมกันไม่เกิน 4 ลูก (ถ้าเกินให้ลูกเก่าสุดจางหายเพื่อประหยัดทรัพยากร)
-    if (this.activeFireworks && this.activeFireworks.length >= 4) {
+    // 2. Concurrency Cap: จำกัดพลุในอากาศพร้อมกันไม่เกิน 5 ลูก (ถ้าเกินให้ลูกเก่าสุดจางหายเพื่อประหยัดทรัพยากร)
+    if (this.activeFireworks && this.activeFireworks.length >= 5) {
       const oldest = this.activeFireworks[0];
       if (oldest) oldest.age = (oldest.maxAge || 2.4) * 0.95;
     }
@@ -7405,14 +7407,15 @@ export class LoyKrathongScene {
 
     this.playFireworkLaunchSound();
 
-    // สุ่มตำแหน่งฐานยิงจากผิวน้ำหรือริมตลิ่ง
-    const startX = -10 + Math.random() * 46;
-    const startZ = -60 + Math.random() * 40;
+    // สุ่มตำแหน่งฐานยิงจากผิวน้ำหรือริมตลิ่ง (หรือใช้พิกัดที่ส่งมาจากเครื่องต้นทาง)
+    const startX = opts.startX !== undefined ? opts.startX : (-10 + Math.random() * 46);
+    const startZ = opts.startZ !== undefined ? opts.startZ : (-60 + Math.random() * 40);
     const startY = 0.5;
 
-    // ปรับระดับความสูงสูงสุดลดลงมาเหลือ 70% (Apex Height 29 - 39 เมตร)
-    const targetY = 29.4 + Math.random() * 9.8;
-    const speedY = 22.5 + Math.random() * 4.2;
+    // ระดับความสูงสูงสุด (Apex Height 29 - 39 เมตร)
+    const targetY = opts.targetY !== undefined ? opts.targetY : (29.4 + Math.random() * 9.8);
+    const speedY = opts.speedY !== undefined ? opts.speedY : (22.5 + Math.random() * 4.2);
+    const paletteIndex = opts.paletteIndex !== undefined ? opts.paletteIndex : Math.floor(Math.random() * 7);
 
     // หางสะเก็ดไฟลากเป็นทางยาว (Streamlined 16 จุด ประหยัด GPU 45%)
     const trailCount = 16;
@@ -7448,6 +7451,7 @@ export class LoyKrathongScene {
       pos: new THREE.Vector3(startX, startY, startZ),
       velY: speedY,
       targetY,
+      paletteIndex,
       trailPoints,
       trailPos,
       trailCol,
@@ -7455,19 +7459,22 @@ export class LoyKrathongScene {
       history: [],
       age: 0,
     });
+
+    return { startX, startZ, targetY, speedY, paletteIndex };
   }
 
   // จุดดอกไม้ไฟพุ่งขึ้นจากหลังแนวต้นไม้ (Launch Firework from Behind Tree Line)
-  launchFireworkBehindTrees() {
-    // 1. Rate Limiting: ป้องกันการกดย้ำๆ รัวเกิน 320ms
+  launchFireworkBehindTrees(opts = {}) {
     const now = performance.now();
-    if (now - this.lastFireworkLaunchTime < 320) {
-      return;
+    if (!opts.isRemote) {
+      if (now - this.lastFireworkLaunchTime < 320) {
+        return null;
+      }
+      this.lastFireworkLaunchTime = now;
     }
-    this.lastFireworkLaunchTime = now;
 
-    // 2. Concurrency Cap: จำกัดพลุในอากาศพร้อมกันไม่เกิน 4 ลูก
-    if (this.activeFireworks && this.activeFireworks.length >= 4) {
+    // 2. Concurrency Cap: จำกัดพลุในอากาศพร้อมกันไม่เกิน 5 ลูก
+    if (this.activeFireworks && this.activeFireworks.length >= 5) {
       const oldest = this.activeFireworks[0];
       if (oldest) oldest.age = (oldest.maxAge || 2.4) * 0.95;
     }
@@ -7479,13 +7486,14 @@ export class LoyKrathongScene {
     this.playFireworkLaunchSound();
 
     // ฐานยิงอยู่ด้านหลังแนวต้นไม้และดงมะพร้าวริมฝั่ง
-    const startX = -32.0 + (Math.random() - 0.5) * 10.0;
-    const startZ = (Math.random() - 0.5) * 60.0;
+    const startX = opts.startX !== undefined ? opts.startX : (-32.0 + (Math.random() - 0.5) * 10.0);
+    const startZ = opts.startZ !== undefined ? opts.startZ : ((Math.random() - 0.5) * 60.0);
     const startY = 1.0;
 
     // ระดับความสูงที่ระเบิดแตกกระจายเหนือยอดไม้ (Apex Height 28 - 36 เมตร)
-    const targetY = 28.0 + Math.random() * 8.5;
-    const speedY = 22.0 + Math.random() * 4.0;
+    const targetY = opts.targetY !== undefined ? opts.targetY : (28.0 + Math.random() * 8.5);
+    const speedY = opts.speedY !== undefined ? opts.speedY : (22.0 + Math.random() * 4.0);
+    const paletteIndex = opts.paletteIndex !== undefined ? opts.paletteIndex : Math.floor(Math.random() * 7);
 
     // หางสะเก็ดไฟพุ่งทะยาน (16 จุด)
     const trailCount = 16;
@@ -7521,6 +7529,7 @@ export class LoyKrathongScene {
       pos: new THREE.Vector3(startX, startY, startZ),
       velY: speedY,
       targetY,
+      paletteIndex,
       trailPoints,
       trailPos,
       trailCol,
@@ -7528,6 +7537,8 @@ export class LoyKrathongScene {
       history: [],
       age: 0,
     });
+
+    return { startX, startZ, targetY, speedY, paletteIndex };
   }
 
   // ระเบิดแตกกระจายกลางเวหา (Multi-stage Burst Explosion)
@@ -7547,7 +7558,10 @@ export class LoyKrathongScene {
       { name: "ฝอยทองหลั่งไหล (Golden Kamuro)", primary: 0xfbbf24, secondary: 0xd97706, spark: 0xfef08a, light: 0xfbbf24, isWillow: true },
       { name: "รุ้งราตรีเพ็ญ (Rainbow Sparkle)", primary: 0, secondary: 0, spark: 0xffffff, light: 0xffe88a, isRainbow: true },
     ];
-    const pal = palettes[Math.floor(Math.random() * palettes.length)];
+    const palIndex = (rocket.paletteIndex !== undefined && rocket.paletteIndex >= 0)
+      ? (rocket.paletteIndex % palettes.length)
+      : Math.floor(Math.random() * palettes.length);
+    const pal = palettes[palIndex];
 
     // 1. แสงสว่างวาบจำลองจริง (ใช้ Single Pre-allocated Light 100% ไม่มี Shader Recompilation)
     if (this.fireworkFlashLight) {

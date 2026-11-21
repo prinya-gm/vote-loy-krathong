@@ -22,7 +22,9 @@ import {
   subscribeToEntries, 
   addKrathongEntry, 
   voteForEntry, 
-  hasVotedFor 
+  hasVotedFor,
+  broadcastLiveFirework,
+  subscribeToLiveFireworks
 } from "./services/dataService";
 import { isFirebaseConfigured } from "./firebase";
 
@@ -36,6 +38,8 @@ export default function App() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [hasVotedCurrent, setHasVotedCurrent] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [remoteFireworkToast, setRemoteFireworkToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
   const audioRef = useRef(null);
   const lastFireworkLaunchRef = useRef(0);
 
@@ -138,6 +142,31 @@ export default function App() {
     }
   };
 
+  // Subscribe to Live Realtime Fireworks across all devices (Firebase + BroadcastChannel)
+  useEffect(() => {
+    const unsubscribe = subscribeToLiveFireworks((event) => {
+      if (sceneInstanceRef.current) {
+        if (event.type === "tree") {
+          sceneInstanceRef.current.launchFireworkBehindTrees(event);
+        } else {
+          sceneInstanceRef.current.launchFirework(event);
+        }
+
+        // Floating toast badge indicating another participant launched a firework
+        setRemoteFireworkToast("🎆 มีผู้ร่วมงานจุดพลุขึ้นสู่ท้องฟ้า!");
+        if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = setTimeout(() => {
+          setRemoteFireworkToast(null);
+        }, 2400);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
+
   const resetCamera = () => {
     if (sceneInstanceRef.current) {
       sceneInstanceRef.current.camera.position.set(0, 18, 38);
@@ -150,7 +179,10 @@ export default function App() {
     if (now - lastFireworkLaunchRef.current < 320) return;
     lastFireworkLaunchRef.current = now;
     if (sceneInstanceRef.current) {
-      sceneInstanceRef.current.launchFirework();
+      const payload = sceneInstanceRef.current.launchFirework();
+      if (payload) {
+        broadcastLiveFirework("sky", payload);
+      }
     }
   };
 
@@ -159,7 +191,10 @@ export default function App() {
     if (now - lastFireworkLaunchRef.current < 320) return;
     lastFireworkLaunchRef.current = now;
     if (sceneInstanceRef.current) {
-      sceneInstanceRef.current.launchFireworkBehindTrees();
+      const payload = sceneInstanceRef.current.launchFireworkBehindTrees();
+      if (payload) {
+        broadcastLiveFirework("tree", payload);
+      }
     }
   };
 
@@ -244,6 +279,14 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Live Remote Firework Toast Alert */}
+      {remoteFireworkToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 px-4 py-2 bg-slate-900/90 text-amber-300 rounded-full border border-amber-400/40 shadow-xl shadow-amber-500/25 text-xs sm:text-sm backdrop-blur-md flex items-center gap-2 pointer-events-none animate-bounce">
+          <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
+          <span className="font-medium">{remoteFireworkToast}</span>
+        </div>
+      )}
 
       {/* 3D Navigation & Firework Controls Widget (Responsive: Bottom-Right on mobile, Bottom-Left on tablet/desktop) */}
       <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col items-center gap-2">
