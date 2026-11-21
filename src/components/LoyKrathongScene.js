@@ -43,7 +43,7 @@ export class LoyKrathongScene {
     // 3. Renderer with ACES Tone Mapping
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -629,7 +629,7 @@ export class LoyKrathongScene {
      RIVER WATER
   ========================================================== */
   createRiver() {
-    const riverGeo = new THREE.PlaneGeometry(180, 180, 80, 80);
+    const riverGeo = new THREE.PlaneGeometry(180, 180, 40, 40);
     riverGeo.rotateX(-Math.PI / 2);
 
     this.waterMat = new THREE.MeshStandardMaterial({
@@ -1484,6 +1484,18 @@ export class LoyKrathongScene {
       blueCloth: new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.75 }),
       chairWood: new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.65 }),
       warmBulb: new THREE.MeshBasicMaterial({ color: 0xffdf70 }),
+      warmEaveGlow: new THREE.MeshBasicMaterial({ color: 0xffea88 }), // ขอบไฟระย้าชายคาสีทองเรืองแสง
+      signRed: new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 }),
+      signOrange: new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.5 }),
+      signGreen: new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 }),
+      signBlue: new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5 }),
+      signYellow: new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 }),
+      lanternPink: new THREE.MeshBasicMaterial({ color: 0xf43f5e }),
+      lanternCyan: new THREE.MeshBasicMaterial({ color: 0x06b6d4 }),
+      lanternGold: new THREE.MeshBasicMaterial({ color: 0xfacc15 }),
+      vendorSkin: new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.65 }),
+      vendorHair: new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.5 }),
+      vendorApron: new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7 }),
       fakeGlow: new THREE.MeshBasicMaterial({
         color: 0xffa022,
         transparent: true,
@@ -1556,24 +1568,32 @@ export class LoyKrathongScene {
     });
   }
 
-  // 2. White Canopy Market Stalls (ปรับขาเต็นท์ให้สูงขึ้นอีก 1 เท่า: เสาสูง 4.2m ชายคา 4.15m)
+  // 2. White Canopy Market Stalls (ปรับเสาเต็นท์ให้สมส่วน 2.45m ชายคาสวยงาม พร้อมไฟระย้าชายคา พ่อค้าแม่ค้า และสินค้าจัดเต็ม)
   buildMarketStalls(group, mats) {
-    const postHeight = 4.2;
-    const postGeo = new THREE.CylinderGeometry(0.04, 0.04, postHeight, 6);
-    const canopyGeo = new THREE.ConeGeometry(1.88, 1.05, 4);
+    const postHeight = 2.45;
+    const postGeo = new THREE.CylinderGeometry(0.035, 0.035, postHeight, 6);
+    const canopyGeo = new THREE.ConeGeometry(1.88, 0.90, 4);
     canopyGeo.rotateY(Math.PI / 4);
     const counterGeo = new THREE.BoxGeometry(2.2, 0.88, 0.65);
-    const backShelfGeo = new THREE.BoxGeometry(2.0, 0.78, 0.45);
-    const bulbGeo = new THREE.SphereGeometry(0.09, 6, 6);
+    const backShelfGeo = new THREE.BoxGeometry(2.0, 0.80, 0.45);
+    const bulbGeo = new THREE.SphereGeometry(0.10, 6, 6);
     const fakeDiscGeo = new THREE.CircleGeometry(1.6, 12);
     fakeDiscGeo.rotateX(-Math.PI / 2);
+    const eaveLightGeo = new THREE.BoxGeometry(2.46, 0.04, 2.46);
+    const signGeo = new THREE.BoxGeometry(1.85, 0.22, 0.03);
+    const latticeGeo = new THREE.BoxGeometry(2.1, 1.25, 0.03);
+    const lanternGeo = new THREE.SphereGeometry(0.10, 6, 6);
+
+    // ป้ายชื่อร้านหลากสีสันสไตล์สตรีทฟู้ดไทย
+    const signMats = [mats.signRed, mats.signOrange, mats.signGreen, mats.signBlue, mats.signYellow];
+    const lanternMats = [mats.lanternPink, mats.lanternCyan, mats.lanternGold];
 
     const buildSingleStall = (x, z, rotY, themeIndex) => {
       const stall = new THREE.Group();
       stall.position.set(x, 0.52, z);
       stall.rotation.y = rotY;
 
-      // 4 White Metal Posts (สูงโปร่ง 4.2 เมตร เดินลอดได้สบาย)
+      // 4 เสาเต็นท์สีขาวสะอาดตา (ความสูง 2.45 เมตร พอดีกับคนเดิน ลอดสบาย สัดส่วนสมจริง)
       [-1.15, 1.15].forEach((px) => {
         [-1.15, 1.15].forEach((pz) => {
           const post = new THREE.Mesh(postGeo, mats.metalPole);
@@ -1582,43 +1602,86 @@ export class LoyKrathongScene {
         });
       });
 
-      // White Canopy Fabric Pyramid Roof
+      // ผ้าใบเต็นท์ทรงปิรามิดสีขาว
       const canopy = new THREE.Mesh(canopyGeo, mats.whiteCanopy);
-      canopy.position.set(0, postHeight + 0.52, 0);
+      canopy.position.set(0, postHeight + 0.45, 0);
       stall.add(canopy);
 
-      // Valance Skirt around eaves
-      const valanceZ = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.24, 2.42), mats.whiteCanopy);
-      valanceZ.position.set(0, postHeight - 0.05, 0);
+      // ชายผ้าใบเต็นท์รอบ 4 ด้าน
+      const valanceZ = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.26, 2.42), mats.whiteCanopy);
+      valanceZ.position.set(0, postHeight - 0.08, 0);
       stall.add(valanceZ);
 
-      // Sales Counter Desk
+      // เส้นไฟระย้าชายคาเรืองแสงสีทองอบอุ่นรอบเต็นท์ (Warm Eave Glow ให้บรรยากาศตลาดนัดกลางคืนตามรูปอ้างอิง)
+      const eaveGlow = new THREE.Mesh(eaveLightGeo, mats.warmEaveGlow);
+      eaveGlow.position.set(0, postHeight - 0.20, 0);
+      stall.add(eaveGlow);
+
+      // ป้ายร้านค้าสีสดใสหน้าร้านเหนือเคาน์เตอร์
+      const signMat = signMats[themeIndex % signMats.length];
+      const sign = new THREE.Mesh(signGeo, signMat);
+      sign.position.set(0, postHeight - 0.35, 0.85);
+      stall.add(sign);
+
+      // โต๊ะเคาน์เตอร์ขายของ
       const counter = new THREE.Mesh(counterGeo, mats.counterWood);
       counter.position.set(0, 0.44, 0.85);
       stall.add(counter);
 
-      // Back Prep Shelf
+      // โต๊ะเตรียมของด้านหลัง
       const backShelf = new THREE.Mesh(backShelfGeo, mats.darkWood);
-      backShelf.position.set(0, 0.39, -0.9);
+      backShelf.position.set(0, 0.40, -0.9);
       stall.add(backShelf);
 
-      // Hanging Warm Bulb (Emissive)
+      // ผนังระแนงไม้และโคมไฟประดับด้านหลังร้าน (ทำให้มองจากภายนอก/ริมน้ำก็สวยงาม มีชีวิตชีวา)
+      const rearLattice = new THREE.Mesh(latticeGeo, mats.darkWood);
+      rearLattice.position.set(0, 1.05, -1.15);
+      stall.add(rearLattice);
+
+      [-0.6, 0.6].forEach((lx, lIdx) => {
+        const lMat = lanternMats[(themeIndex + lIdx) % lanternMats.length];
+        const rLantern = new THREE.Mesh(lanternGeo, lMat);
+        rLantern.position.set(lx, 1.35, -1.18);
+        stall.add(rLantern);
+      });
+
+      // แม่ค้า/พ่อค้า ประจำร้าน (Stall Vendor ยืนปรุงอาหาร/ต้อนรับลูกค้าหลังเคาน์เตอร์)
+      const vendor = new THREE.Group();
+      vendor.position.set(0, 0, 0.15);
+      const vBody = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.22), mats.vendorApron);
+      vBody.position.y = 0.68;
+      vendor.add(vBody);
+
+      const vApron = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.42, 0.02), mats.whiteCanopy);
+      vApron.position.set(0, 0.70, 0.12);
+      vendor.add(vApron);
+
+      const vHead = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mats.vendorSkin);
+      vHead.position.y = 1.08;
+      vendor.add(vHead);
+
+      const vHat = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.12, 10), mats.chairWood);
+      vHat.position.y = 1.20;
+      vendor.add(vHat);
+      stall.add(vendor);
+
+      // หลอดไฟส้มอบอุ่นใต้เต็นท์ (เรืองแสงในตัวเอง)
       const bulb = new THREE.Mesh(bulbGeo, mats.warmBulb);
-      bulb.position.set(0, postHeight - 0.2, 0);
+      bulb.position.set(0, postHeight - 0.28, 0);
       stall.add(bulb);
 
-      // Fake Ground Glow Disc
+      // แผ่นจำลองแสงไฟส่องพื้น (Fake Ground Glow Disc)
       const groundGlow = new THREE.Mesh(fakeDiscGeo, mats.fakeGlow);
       groundGlow.position.set(0, 0.015, 0.5);
       stall.add(groundGlow);
 
-      // Streamlined Goods & Displays on counter
+      // สินค้าและอาหารหลากสีสันจัดวางเต็มเคาน์เตอร์
       this.populateStallGoods(stall, themeIndex, mats);
 
       group.add(stall);
     };
 
-    // Avenue 1 (Front Row, near promenade)
+    // Avenue 1 (แถวหน้า หันหน้าเข้าหาทางเดินกลาง)
     const ave1Configs = [
       { z: -17.0, theme: 0 },
       { z: -11.5, theme: 1 },
@@ -1630,7 +1693,7 @@ export class LoyKrathongScene {
       buildSingleStall(6.2, cfg.z, -Math.PI / 2, cfg.theme);
     });
 
-    // Avenue 2 (Middle Row)
+    // Avenue 2 (แถวกลาง หันหน้าเข้าหาทางเดินกลาง)
     const ave2Configs = [
       { z: -17.0, theme: 5 },
       { z: -11.5, theme: 6 },
@@ -1642,7 +1705,7 @@ export class LoyKrathongScene {
       buildSingleStall(-1.2, cfg.z, Math.PI / 2, cfg.theme);
     });
 
-    // Avenue 3 (Rear Row)
+    // Avenue 3 (แถวหลัง หันออกสู่ลานอเนกประสงค์)
     const ave3Configs = [
       { z: -17.0, theme: 2 },
       { z: -11.5, theme: 7 },
@@ -1653,59 +1716,160 @@ export class LoyKrathongScene {
     });
   }
 
-  // Populate Display Goods (Streamlined Low-poly blocks)
+  // สินค้า อาหารสตรีทฟู้ด ขนมไทย และของที่ระลึก สีสันสดใสจัดเต็มทุกร้าน
   populateStallGoods(stall, themeIndex, mats) {
     const foodMatSatay = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 });
     const foodMatGrill = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 });
     const foodMatGoldSweets = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
     const fruitGreen = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.6 });
     const fruitOrange = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 });
+    const fruitRed = new THREE.MeshStandardMaterial({ color: 0xd92d20, roughness: 0.6 });
     const traySilver = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.75, roughness: 0.25 });
+    const bananaLeaf = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 });
 
     if (themeIndex === 0) {
-      // BBQ & Skewers (Simplified Grill + Platter)
-      const grill = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.42), foodMatGrill);
-      grill.position.set(-0.45, 0.92, 0.85);
+      // 1. ร้านสตรีทฟู้ด ปิ้งย่าง & ลูกชิ้นหมูปิ้งเสียบไม้ (BBQ & Satay Grill)
+      const grill = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.12, 0.48), foodMatGrill);
+      grill.position.set(-0.48, 0.94, 0.85);
       stall.add(grill);
-      const coal = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.02, 0.38), new THREE.MeshBasicMaterial({ color: 0xff3b00 }));
-      coal.position.set(-0.45, 0.94, 0.85);
+
+      // ถ่านแดงคุร้อนเรืองแสง
+      const coal = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.03, 0.42), new THREE.MeshBasicMaterial({ color: 0xff3b00 }));
+      coal.position.set(-0.48, 0.99, 0.85);
       stall.add(coal);
-      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.45), foodMatSatay);
-      tray.position.set(0.45, 0.92, 0.85);
+
+      // ถาดวางไม้ปิ้งย่างสีทอง
+      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.08, 0.48), traySilver);
+      tray.position.set(0.48, 0.92, 0.85);
       stall.add(tray);
+
+      const skewers = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.06, 0.40), foodMatSatay);
+      skewers.position.set(0.48, 0.98, 0.85);
+      stall.add(skewers);
+
+      // โถน้ำจิ้มรสเด็ดสีส้มแดง
+      const saucePot = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.10, 0.22, 8), fruitRed);
+      saucePot.position.set(0, 0.98, 0.85);
+      stall.add(saucePot);
+
     } else if (themeIndex === 1) {
-      // Thai Sweets (2 golden/pandan sweet platters)
-      [-0.4, 0.4].forEach((tx, idx) => {
-        const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.04, 8), traySilver);
-        tray.position.set(tx, 0.9, 0.85);
-        stall.add(tray);
-        const sweetPile = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.12, 8), idx === 0 ? foodMatGoldSweets : mats.warmBulb);
-        sweetPile.position.set(tx, 0.96, 0.85);
-        stall.add(sweetPile);
-      });
+      // 2. ร้านขนมไทยโบราณ & ข้าวเหนียวมะม่วง (Thai Golden Sweets & Mango Sticky Rice)
+      // ถาดขนมทองหยิบทองหยอดพูนถาด
+      const tray1 = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.26, 0.05, 10), traySilver);
+      tray1.position.set(-0.52, 0.91, 0.85);
+      stall.add(tray1);
+      const sweets1 = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.16, 8), foodMatGoldSweets);
+      sweets1.position.set(-0.52, 0.99, 0.85);
+      stall.add(sweets1);
+
+      // ถาดข้าวเหนียวมะม่วงรองใบตอง
+      const leafMat = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.02, 0.46), bananaLeaf);
+      leafMat.position.set(0.42, 0.90, 0.85);
+      stall.add(leafMat);
+
+      // กองข้าวเหนียวมูนสีขาว
+      const rice = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.08, 8), mats.whiteCanopy);
+      rice.position.set(0.28, 0.94, 0.85);
+      stall.add(rice);
+
+      // มะม่วงสุกสีเหลืองทองอร่าม
+      const mango = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mats.fairyGold);
+      mango.scale.set(1.4, 0.8, 0.9);
+      mango.position.set(0.56, 0.95, 0.85);
+      stall.add(mango);
+
     } else if (themeIndex === 2) {
-      // Miniature Krathongs (2 low-poly krathong props)
-      [-0.45, 0.45].forEach((kx) => {
-        const kBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.08, 8), mats.leafSolid);
+      // 3. ร้านกระทงประดิษฐ์งานฝีมือ (Handcrafted Krathongs & Lotuses)
+      [-0.55, 0, 0.55].forEach((kx, idx) => {
+        const kBase = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.16, 0.09, 8), bananaLeaf);
         kBase.position.set(kx, 0.92, 0.85);
         stall.add(kBase);
-        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.10, 6), new THREE.MeshBasicMaterial({ color: 0xff8800 }));
-        flame.position.set(kx, 1.02, 0.85);
+
+        // ดอกดาวเรืองสีเหลืองสด / ดอกบัวสีชมพู
+        const flower = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 6, 6),
+          idx === 1 ? mats.lanternPink : mats.fairyGold
+        );
+        flower.position.set(kx, 0.98, 0.85);
+        stall.add(flower);
+
+        // เปลวเทียนสว่างไสว
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 6), mats.warmBulb);
+        flame.position.set(kx, 1.08, 0.85);
         stall.add(flame);
       });
+
     } else if (themeIndex === 3) {
-      // Juice Dispensers
-      [-0.4, 0.4].forEach((dx, i) => {
-        const dispenser = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.38, 8), i === 0 ? fruitOrange : fruitGreen);
-        dispenser.position.set(dx, 1.08, 0.85);
+      // 4. ร้านน้ำผลไม้และสมุนไพรสด (Herbal Drinks & Juice Dispensers)
+      [-0.52, 0, 0.52].forEach((dx, i) => {
+        const drinkColor = i === 0 ? fruitOrange : i === 1 ? fruitGreen : mats.lanternPink;
+        const dispenser = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.42, 8), drinkColor);
+        dispenser.position.set(dx, 1.09, 0.85);
         stall.add(dispenser);
+
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.06, 8), traySilver);
+        cap.position.set(dx, 1.32, 0.85);
+        stall.add(cap);
       });
+
+    } else if (themeIndex === 4) {
+      // 5. ร้านผัดไทยกระทะยักษ์ (Pad Thai & Fried Street Delicacy)
+      const giantWok = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.35, 0.10, 12), foodMatGrill);
+      giantWok.position.set(-0.35, 0.94, 0.85);
+      stall.add(giantWok);
+
+      // เส้นผัดไทยคลุกเคล้าสีส้มอิฐ
+      const noodles = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.06, 10), foodMatSatay);
+      noodles.position.set(-0.35, 0.98, 0.85);
+      stall.add(noodles);
+
+      // กองกล่องใส่อาหารกลับบ้านสีขาว
+      const takeoutBox = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.28, 0.42), mats.whiteCanopy);
+      takeoutBox.position.set(0.48, 1.02, 0.85);
+      stall.add(takeoutBox);
+
+    } else if (themeIndex === 5) {
+      // 6. ร้านก๋วยเตี๋ยวเรือหม้อไฟ (Boat Noodles & Soup Pot)
+      const soupPot = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.30, 0.32, 10), traySilver);
+      soupPot.position.set(-0.42, 1.04, 0.85);
+      stall.add(soupPot);
+
+      // กองชามก๋วยเตี๋ยวซ้อนกัน
+      [-0.1, 0.1].forEach((bx, bIdx) => {
+        const bowls = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.10, 0.18, 8), mats.signGreen);
+        bowls.position.set(0.28 + bx, 0.97, 0.85);
+        stall.add(bowls);
+      });
+
+    } else if (themeIndex === 6) {
+      // 7. ร้านผลไม้สดฉ่ำ (Fresh Thai Cut Fruits)
+      const showcase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.48), mats.chrome);
+      showcase.position.set(0, 1.0, 0.85);
+      stall.add(showcase);
+
+      // แตงโมสีแดง สับปะรดสีเหลือง ฝรั่งสีเขียว
+      const fruitRedBlock = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.38), fruitRed);
+      fruitRedBlock.position.set(-0.5, 1.06, 0.85);
+      stall.add(fruitRedBlock);
+
+      const fruitYellowBlock = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.38), mats.fairyGold);
+      fruitYellowBlock.position.set(0, 1.06, 0.85);
+      stall.add(fruitYellowBlock);
+
+      const fruitGreenBlock = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.38), fruitGreen);
+      fruitGreenBlock.position.set(0.5, 1.06, 0.85);
+      stall.add(fruitGreenBlock);
+
     } else {
-      // Fresh Goods / Crates
-      [-0.45, 0.45].forEach((bx) => {
+      // 8. ร้านของที่ระลึก โคมลอย & พัดสาน (Yi Peng Lanterns & Crafts)
+      [-0.45, 0.45].forEach((cx, cIdx) => {
         const crate = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.16, 0.4), mats.counterWood);
-        crate.position.set(bx, 0.94, 0.85);
+        crate.position.set(cx, 0.94, 0.85);
         stall.add(crate);
+
+        const fan = new THREE.Mesh(new THREE.CircleGeometry(0.18, 8), cIdx === 0 ? mats.fairyGold : mats.signOrange);
+        fan.position.set(cx, 1.10, 0.85);
+        stall.add(fan);
       });
     }
   }
@@ -1955,14 +2119,14 @@ export class LoyKrathongScene {
     group.add(treeGroup);
   }
 
-  // 6. Large Covered Pavilion Marquee (Zero PointLight, Fake Floor Glow)
+  // 6. Large Covered Pavilion Marquee (Zero PointLight, Fake Floor Glow, Proportional 3.0m Height)
   buildMarketPavilionMarquee(group, mats) {
     const marqGroup = new THREE.Group();
     marqGroup.position.set(-7.5, 0.52, 2.0);
 
-    // 6 Support Posts (ปรับให้สูงโปร่ง 5.2 เมตร)
-    const postH = 5.2;
-    const postGeo = new THREE.BoxGeometry(0.14, postH, 0.14);
+    // 6 Support Posts (ความสูงสมส่วน 3.0 เมตร)
+    const postH = 3.0;
+    const postGeo = new THREE.BoxGeometry(0.12, postH, 0.12);
     [-3.4, 0, 3.4].forEach((px) => {
       [-2.3, 2.3].forEach((pz) => {
         const post = new THREE.Mesh(postGeo, mats.metalPole);
@@ -1972,11 +2136,16 @@ export class LoyKrathongScene {
     });
 
     // White Hip Marquee Roof
-    const roofPyramid = new THREE.Mesh(new THREE.ConeGeometry(3.6, 1.45, 4), mats.whiteCanopy);
+    const roofPyramid = new THREE.Mesh(new THREE.ConeGeometry(3.6, 1.35, 4), mats.whiteCanopy);
     roofPyramid.scale.set(1.95, 1.0, 1.35);
     roofPyramid.rotation.y = Math.PI / 4;
-    roofPyramid.position.set(0, postH + 0.65, 0);
+    roofPyramid.position.set(0, postH + 0.60, 0);
     marqGroup.add(roofPyramid);
+
+    // Warm Eave Glow around pavilion
+    const marqEaveGlow = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.05, 5.0), mats.warmEaveGlow);
+    marqEaveGlow.position.set(0, postH - 0.08, 0);
+    marqGroup.add(marqEaveGlow);
 
     // Interior Long Banquet Tables & Benches
     [-1.6, 1.6].forEach((tx) => {
@@ -1987,7 +2156,7 @@ export class LoyKrathongScene {
 
     // Warm Interior Pendant Bulb (Emissive)
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), mats.warmBulb);
-    bulb.position.set(0, postH - 0.4, 0);
+    bulb.position.set(0, postH - 0.35, 0);
     marqGroup.add(bulb);
 
     // Fake Floor Glow
@@ -2893,58 +3062,174 @@ export class LoyKrathongScene {
 
       // ==========================================================
       // ผู้คนในตลาดนัดกลางคืนริมน้ำ (Night Market Visitors, Diners & Live Band)
+      // มีชีวิตชีวา เดินเลือกซื้อของ ยืนสั่งอาหาร นั่งกิน และเล่นดนตรี
       // ==========================================================
-      // 1. หญิงสาวชุดไทยประยุกต์ เดินเลือกซื้อของกินในตลาดนัด
+      // 1-6. คนเดินเลือกซื้อของในทางเดินกลางตลาด (Main Market Aisle Walkers X: -34 to -33)
       {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -33.5, y: 0.65, z: 22.0,
+        x: -33.2, y: 0.65, z: 22.0,
         primary: 0xec4899, secondary: 0x9d174d, gold: 0xfef08a,
-        minPos: 20.0, maxPos: 40.0,
+        minPos: 18.0, maxPos: 40.0,
         axis: "z", dir: 1, speed: 1.10, walkPhase: 0.2,
       },
-      // 2. ชายหนุ่มเสื้อผ้าฝ้ายสีส้ม เดินชมตลาดริมน้ำ
       {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -34.8, y: 0.65, z: 36.0,
+        x: -34.5, y: 0.65, z: 36.0,
         primary: 0xf97316, secondary: 0x7c2d12, sash: 0xfbbf24,
-        minPos: 20.0, maxPos: 40.0,
-        axis: "z", dir: -1, speed: 1.00, walkPhase: 1.8,
+        minPos: 18.0, maxPos: 40.0,
+        axis: "z", dir: -1, speed: 1.05, walkPhase: 1.8,
       },
-      // 3. หญิงสาวสไบสีเขียวมิ้นต์ เดินถือขนมชมตรอกตลาด
       {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -32.8, y: 0.65, z: 28.0,
+        x: -33.6, y: 0.65, z: 29.0,
         primary: 0x10b981, secondary: 0x064e3b, gold: 0xfef08a,
-        minPos: 22.0, maxPos: 39.0,
+        minPos: 20.0, maxPos: 39.0,
         axis: "z", dir: 1, speed: 1.15, walkPhase: 3.5,
       },
-      // 4. ชายหนุ่มเสื้อเชิ้ตผ้าไหมสีคราม เดินกับเพื่อนในตลาด
       {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -35.2, y: 0.65, z: 32.0,
+        x: -34.8, y: 0.65, z: 32.0,
         primary: 0x0284c7, secondary: 0x0f172a, sash: 0xf59e0b,
-        minPos: 21.0, maxPos: 41.0,
-        axis: "z", dir: -1, speed: 1.05, walkPhase: 4.6,
+        minPos: 19.0, maxPos: 41.0,
+        axis: "z", dir: -1, speed: 1.00, walkPhase: 4.6,
       },
-      // 5. ลูกค้านั่งโต๊ะอาหารริมน้ำ (โต๊ะ 1) ชมบรรยากาศ
+      {
+        gender: "female",
+        role: "walking",
+        area: "market",
+        x: -33.0, y: 0.65, z: 25.0,
+        primary: 0xf59e0b, secondary: 0x78350f, gold: 0xfef08a,
+        minPos: 18.0, maxPos: 38.0,
+        axis: "z", dir: 1, speed: 1.08, walkPhase: 2.1,
+      },
+      {
+        gender: "male",
+        role: "walking",
+        area: "market",
+        x: -34.2, y: 0.65, z: 20.0,
+        primary: 0x8b5cf6, secondary: 0x3b0764, sash: 0xfbbf24,
+        minPos: 18.0, maxPos: 39.0,
+        axis: "z", dir: 1, speed: 1.12, walkPhase: 5.0,
+      },
+
+      // 7-10. คนเดินเชื่อมต่อระหว่างริมตลิ่งกับโซนโต๊ะอาหาร (Promenade Connection Walkers X: -27 to -29)
+      {
+        gender: "female",
+        role: "walking",
+        area: "market",
+        x: -28.2, y: 0.65, z: 24.0,
+        primary: 0xec4899, secondary: 0x831843, gold: 0xfef08a,
+        minPos: 20.0, maxPos: 44.0,
+        axis: "z", dir: 1, speed: 1.18, walkPhase: 1.2,
+      },
+      {
+        gender: "male",
+        role: "walking",
+        area: "market",
+        x: -27.5, y: 0.65, z: 42.0,
+        primary: 0x06b6d4, secondary: 0x164e63, sash: 0xf59e0b,
+        minPos: 22.0, maxPos: 48.0,
+        axis: "z", dir: -1, speed: 1.05, walkPhase: 3.0,
+      },
+      {
+        gender: "female",
+        role: "walking",
+        area: "market",
+        x: -28.8, y: 0.65, z: 35.0,
+        primary: 0xa855f7, secondary: 0x581c87, gold: 0xfef08a,
+        minPos: 21.0, maxPos: 43.0,
+        axis: "z", dir: 1, speed: 1.10, walkPhase: 4.1,
+      },
+      {
+        gender: "male",
+        role: "walking",
+        area: "market",
+        x: -28.0, y: 0.65, z: 46.0,
+        primary: 0xe11d48, secondary: 0x4c0519, sash: 0xfacc15,
+        minPos: 25.0, maxPos: 50.0,
+        axis: "z", dir: -1, speed: 1.02, walkPhase: 2.7,
+      },
+
+      // 11-16. ลูกค้ายืนเลือกซื้อของหน้าร้าน (Shoppers browsing & ordering at stalls)
+      // ลูกค้าหน้าร้านปิ้งย่าง (Avenue 1, Z = 19.0, หันหน้ามองร้าน)
+      {
+        gender: "female",
+        role: "spectator",
+        area: "market",
+        x: -31.8, y: 0.65, z: 19.0,
+        rotY: -Math.PI / 2,
+        primary: 0xf43f5e, secondary: 0x9f1239, gold: 0xfef08a,
+        pose: "standing_look",
+      },
+      // ลูกค้าหน้าร้านขนมไทย (Avenue 1, Z = 24.5)
+      {
+        gender: "male",
+        role: "spectator",
+        area: "market",
+        x: -31.8, y: 0.65, z: 24.5,
+        rotY: -Math.PI / 2,
+        primary: 0x10b981, secondary: 0x064e3b, sash: 0xfbbf24,
+        pose: "standing_holding",
+      },
+      // ลูกค้าหน้าร้านกระทง (Avenue 1, Z = 30.0)
+      {
+        gender: "female",
+        role: "spectator",
+        area: "market",
+        x: -31.8, y: 0.65, z: 30.0,
+        rotY: -Math.PI / 2,
+        primary: 0x06b6d4, secondary: 0x0e7490, gold: 0xfef08a,
+        pose: "standing_holding",
+      },
+      // ลูกค้าหน้าร้านน้ำผลไม้ (Avenue 1, Z = 35.5)
+      {
+        gender: "male",
+        role: "spectator",
+        area: "market",
+        x: -31.8, y: 0.65, z: 35.5,
+        rotY: -Math.PI / 2,
+        primary: 0xf97316, secondary: 0x9a3412, sash: 0xfbbf24,
+        pose: "standing_look",
+      },
+      // ลูกค้าหน้าร้านก๋วยเตี๋ยวเรือ (Avenue 2, Z = 24.5, หันหน้ามองร้าน)
+      {
+        gender: "female",
+        role: "spectator",
+        area: "market",
+        x: -35.2, y: 0.65, z: 24.5,
+        rotY: Math.PI / 2,
+        primary: 0x8b5cf6, secondary: 0x4c1d95, gold: 0xfef08a,
+        pose: "standing_look",
+      },
+      // ลูกค้าหน้าร้านผลไม้สด (Avenue 2, Z = 35.5)
+      {
+        gender: "male",
+        role: "spectator",
+        area: "market",
+        x: -35.2, y: 0.65, z: 35.5,
+        rotY: Math.PI / 2,
+        primary: 0x14b8a6, secondary: 0x134e4a, sash: 0xf59e0b,
+        pose: "standing_holding",
+      },
+
+      // 17-20. ลูกค้านั่งโต๊ะอาหารริมน้ำ (Diners at outdoor tables)
       {
         gender: "female",
         role: "spectator",
         area: "market",
         x: -31.5, y: 0.65, z: 47.0,
         rotY: -Math.PI / 4,
-        primary: 0x8b5cf6, secondary: 0x4c1d95, gold: 0xfef08a,
+        primary: 0xec4899, secondary: 0x831843, gold: 0xfef08a,
         pose: "standing_holding",
       },
-      // 6. ลูกค้านั่งโต๊ะอาหารริมน้ำ (โต๊ะ 2) ดื่มน้ำผลไม้
       {
         gender: "male",
         role: "spectator",
@@ -2954,7 +3239,26 @@ export class LoyKrathongScene {
         primary: 0x0d9488, secondary: 0x134e4a, sash: 0xf59e0b,
         pose: "standing_look",
       },
-      // 7. นักร้องนำ / มือกีตาร์โฟล์คซอง บนเวทีดนตรีสด
+      {
+        gender: "male",
+        role: "spectator",
+        area: "market",
+        x: -31.5, y: 0.65, z: 51.5,
+        rotY: Math.PI / 3,
+        primary: 0x3b82f6, secondary: 0x1e3a8a, sash: 0xfbbf24,
+        pose: "standing_holding",
+      },
+      {
+        gender: "female",
+        role: "spectator",
+        area: "market",
+        x: -27.5, y: 0.65, z: 47.0,
+        rotY: -Math.PI * 0.75,
+        primary: 0xf59e0b, secondary: 0x92400e, gold: 0xfef08a,
+        pose: "standing_look",
+      },
+
+      // 21-22. นักดนตรีบนเวทีสด (Live Acoustic Music Stage)
       {
         gender: "male",
         role: "spectator",
@@ -2964,7 +3268,6 @@ export class LoyKrathongScene {
         primary: 0xb45309, secondary: 0x18181b, sash: 0xf59e0b,
         pose: "standing_holding",
       },
-      // 8. มือคีย์บอร์ด บนเวทีดนตรีสด
       {
         gender: "female",
         role: "spectator",
@@ -5530,12 +5833,12 @@ export class LoyKrathongScene {
           if (char.area === "temple") {
             // บนลานวัดและลานเจดีย์ (Temple Platform Y = 3.2): เดินอย่างสง่างามภายในขอบเขตลานวัด
           } else if (char.area === "market") {
-            // ในตลาดนัดริมน้ำ (Market Plaza Y = 0.65): เดินภายในตรอกทางเดินคนเดินตลาดอย่างปลอดภัย
-            if (char.group.position.x < -36.5) {
-              char.group.position.x = -36.5;
+            // ในตลาดนัดริมน้ำ (Market Plaza Y = 0.65): เดินภายในขอบเขตลานตลาดอย่างปลอดภัย (X: -47.0 ถึง -26.0)
+            if (char.group.position.x < -47.0) {
+              char.group.position.x = -47.0;
             }
-            if (char.group.position.x > -31.5) {
-              char.group.position.x = -31.5;
+            if (char.group.position.x > -26.0) {
+              char.group.position.x = -26.0;
             }
           } else if (char.group.position.y > 1.2) {
             // บนทางเดินเลียบแม่น้ำ (Promenade Y = 1.5)
