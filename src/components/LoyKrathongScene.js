@@ -104,6 +104,9 @@ export class LoyKrathongScene {
     this.flashLightIntensity = 0;
     this.flashAge = 0;
     this.lastFireworkLaunchTime = 0;
+    this.activeLevelUpEffects = []; // เอฟเฟกต์แสงประกายเรืองรองและลำแสงพุ่งขึ้นเมื่อโมเดลได้รับการโหวต (Level-Up Celebration)
+    this.levelUpBeamTexture = null;
+    this.levelUpRingTexture = null;
 
     this.init();
   }
@@ -6624,6 +6627,9 @@ export class LoyKrathongScene {
         avatar.group.userData.entry = entry;
         if (entry.votes !== oldVotes) {
           this.updateCandidateAvatarBadge(avatar, entry);
+          if (entry.votes > oldVotes) {
+            this.triggerAvatarLevelUp(entry.id);
+          }
         }
       }
     });
@@ -7313,22 +7319,41 @@ export class LoyKrathongScene {
     if (this.candidateAvatars) {
       this.candidateAvatars.forEach((avatar) => {
         const aPhase = avatar.phase || 0;
+        const isCelebrating = (avatar.celebrateTime || 0) > 0;
+        if (isCelebrating) {
+          avatar.celebrateTime -= dt;
+          if (avatar.celebrateTime <= 0) {
+            // สิ้นสุดเวลาฉลอง Level Up สลับกลับมาแสดงข้อความปัจจุบันของ ticker
+            if (avatar.badgeSprite?.userData?.renderTexture) {
+              avatar.badgeSprite.userData.renderTexture(
+                avatar.entry?.name,
+                avatar.entry?.votes || 0,
+                avatar.ticker?.currentSubText || null
+              );
+              if (avatar.badgeSprite.material.map) {
+                avatar.badgeSprite.material.map.needsUpdate = true;
+              }
+            }
+          }
+        }
+
         const isPleading = avatar.ticker?.mode === 1;
 
-        // แขนขวาโบกมือทักทายอย่างนุ่มนวลและเป็นธรรมชาติ (โบกกระตือรือร้นขึ้นเล็กน้อยขณะส่งข้อความอ้อน)
-        const waveSpeed = isPleading ? 4.8 : 3.5;
-        const waveAmp = isPleading ? 0.20 : 0.14;
+        // แขนขวาโบกมือทักทายอย่างนุ่มนวลและเป็นธรรมชาติ (โบกกระตือรือร้นขึ้นมากเมื่อเฉลิมฉลอง Level Up)
+        const waveSpeed = isCelebrating ? 7.0 : (isPleading ? 4.8 : 3.5);
+        const waveAmp = isCelebrating ? 0.30 : (isPleading ? 0.20 : 0.14);
         if (avatar.wavingArm) {
-          avatar.wavingArm.rotation.z = -0.32 + Math.sin(time * (isPleading ? 2.0 : 1.5) + aPhase) * (isPleading ? 0.035 : 0.02);
+          avatar.wavingArm.rotation.z = -0.32 + Math.sin(time * (isCelebrating ? 3.0 : (isPleading ? 2.0 : 1.5)) + aPhase) * (isCelebrating ? 0.07 : (isPleading ? 0.035 : 0.02));
         }
         if (avatar.wavingHand) {
           avatar.wavingHand.rotation.z = -0.10 + Math.sin(time * waveSpeed + aPhase) * waveAmp;
         }
 
-        // ลำตัวหายใจเบาๆ โดยอิงจากระดับความสูงฐานเดิม (basePos.y) และหันหน้าเข้าหากล้องตลอดเวลา (Cylindrical Billboard LookAt)
+        // ลำตัวหายใจเบาๆ หรือกระโดดดีใจเล็กน้อยเมื่อได้ Level Up (Joyful Celebrate Bounce)
         if (avatar.group) {
           const baseY = avatar.basePos?.y ?? 0.89;
-          avatar.group.position.y = baseY + Math.sin(time * 1.5 + aPhase) * 0.008;
+          const bounce = isCelebrating ? Math.abs(Math.sin(time * 8.0)) * 0.12 : 0;
+          avatar.group.position.y = baseY + Math.sin(time * 1.5 + aPhase) * 0.008 + bounce;
 
           // หันหน้าเข้าหากล้องตลอดเวลาตามแกน Y เพื่อให้เห็นใบหน้าและชุดไทยสง่างามเสมอ
           if (this.camera) {
@@ -7339,7 +7364,8 @@ export class LoyKrathongScene {
         }
 
         // Dynamic Ticker เหนือศีรษะ: สลับข้อความเรียกร้องความสนใจสุ่มภาษาไทย/อังกฤษ/อีโมจิ กับคะแนนโหวต (Option C)
-        if (avatar.ticker && time >= avatar.ticker.nextSwitch) {
+        // (ระงับการสลับข้อความชั่วขณะขณะกำลังฉลอง Level Up)
+        if (!isCelebrating && avatar.ticker && time >= avatar.ticker.nextSwitch) {
           if (avatar.ticker.mode === 0) {
             // สลับเป็นข้อความเรียกร้องความสนใจ (สุ่ม ไทย 40%, อังกฤษ 30%, อีโมจิ 30%)
             avatar.ticker.mode = 1;
@@ -7375,11 +7401,400 @@ export class LoyKrathongScene {
       });
     }
 
+    // 11.6 อัปเดตเอฟเฟกต์แสงประกายเรืองรองและลำแสงพุ่งขึ้นเมื่อโมเดลได้รับการโหวต (Level-Up Celebration VFX)
+    this.updateLevelUpEffects(dt, time);
+
     // 12. อัปเดตระบบพลุดอกไม้ไฟ 3D ฟิสิกส์สมจริง 100%
     this.updateFireworks(dt, time);
 
     // 13. Render
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /* ==========================================================
+     LEVEL-UP CELEBRATION SYSTEM (ระบบฉลองอัพเลเวลเมื่อได้รับโหวต)
+     - แสงประกายเรืองรองรอบตัวโมเดล (Aura & Magic Ground Ring)
+     - ลำแสงพุ่งทะยานสู่ท้องฟ้าแล้วค่อยๆ จางหายไป (Ascending Divine Beam)
+     - ละอองดาวประกายระยิบระยับลอยวนขึ้น (Swirling Golden Sparkles)
+     - แสงไฟเรืองรองสว่างวาบส่องชุดไทยและท่าน้ำ (Dynamic Radiance PointLight)
+     - โมเดลดีใจกระโดดโบกมือทักทายพร้อมป้าย LEVEL UP
+     - เสียงเอฟเฟกต์ฉลองอัพเลเวลไพเราะก้องกังวาน (Synthesized Web Audio Fanfare)
+  ========================================================== */
+
+  createLevelUpBeamTexture() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+
+    // ลำแสงสีทองไล่เฉด สว่างจ้าที่ฐานและค่อยๆ โปร่งแสงขึ้นสู่ยอด
+    const grad = ctx.createLinearGradient(0, 256, 0, 0);
+    grad.addColorStop(0.0, "rgba(255, 255, 255, 0.95)");
+    grad.addColorStop(0.15, "rgba(254, 240, 138, 0.90)");
+    grad.addColorStop(0.45, "rgba(245, 158, 11, 0.65)");
+    grad.addColorStop(0.75, "rgba(251, 113, 133, 0.30)");
+    grad.addColorStop(1.0, "rgba(255, 255, 255, 0.0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 256);
+
+    // ริ้วแสงแนวตั้งช่วยให้เห็นการหมุนควงของเสาลำแสงอย่างงดงาม
+    for (let x = 0; x < 128; x += 16) {
+      const streakGrad = ctx.createLinearGradient(0, 256, 0, 0);
+      streakGrad.addColorStop(0.0, "rgba(255, 255, 255, 0.45)");
+      streakGrad.addColorStop(0.5, "rgba(254, 240, 138, 0.25)");
+      streakGrad.addColorStop(1.0, "rgba(255, 255, 255, 0.0)");
+      ctx.fillStyle = streakGrad;
+      ctx.fillRect(x + 2, 0, 8, 256);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    return tex;
+  }
+
+  createLevelUpRingTexture() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+
+    const cx = 64, cy = 64, r = 58;
+    const radGrad = ctx.createRadialGradient(cx, cy, r * 0.4, cx, cy, r);
+    radGrad.addColorStop(0.0, "rgba(255, 255, 255, 0.0)");
+    radGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.0)");
+    radGrad.addColorStop(0.72, "rgba(255, 255, 255, 0.95)");
+    radGrad.addColorStop(0.82, "rgba(254, 240, 138, 0.85)");
+    radGrad.addColorStop(0.92, "rgba(245, 158, 11, 0.4)");
+    radGrad.addColorStop(1.0, "rgba(255, 255, 255, 0.0)");
+
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, 128, 128);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  playLevelUpSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!this.soundCtx) this.soundCtx = new AudioCtx();
+      if (this.soundCtx.state === "suspended") this.soundCtx.resume().catch(() => {});
+      const ctx = this.soundCtx;
+      const now = ctx.currentTime;
+
+      // 1. คอร์ดอุ่นนุ่มนวลรองรับพื้นหลัง (Warm E-Major Pad Swell)
+      const chordNotes = [164.81, 246.94, 329.63]; // E3, B3, E4
+      chordNotes.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.09, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.25);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.3);
+      });
+
+      // 2. เสียงกระดิ่งคริสตัลไล่ระดับฉลองชัยชนะ (Ascending Crystal Fanfare Chimes)
+      const chimes = [
+        { freq: 659.25, time: 0.00 }, // E5
+        { freq: 830.61, time: 0.09 }, // G#5
+        { freq: 987.77, time: 0.18 }, // B5
+        { freq: 1318.51, time: 0.28 }, // E6
+        { freq: 1661.22, time: 0.38 }, // G#6
+        { freq: 1975.53, time: 0.48 }, // B6 (Climax sustained bell)
+      ];
+
+      chimes.forEach((chime, idx) => {
+        const noteStart = now + chime.time;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        // โทนเสียงกังวานใสด้วยรูปคลื่น Triangle
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(chime.freq, noteStart);
+
+        const isLast = idx === chimes.length - 1;
+        const dur = isLast ? 1.4 : 0.65;
+        const peakGain = isLast ? 0.22 : 0.15;
+
+        gain.gain.setValueAtTime(0, noteStart);
+        gain.gain.linearRampToValueAtTime(peakGain, noteStart + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(noteStart);
+        osc.stop(noteStart + dur + 0.05);
+
+        // เสียงฮาร์โมนิกประกายดาว (Overtone Shimmer)
+        const harm = ctx.createOscillator();
+        const harmGain = ctx.createGain();
+        harm.type = "sine";
+        harm.frequency.setValueAtTime(chime.freq * 2.0, noteStart);
+        harmGain.gain.setValueAtTime(0, noteStart);
+        harmGain.gain.linearRampToValueAtTime(peakGain * 0.4, noteStart + 0.02);
+        harmGain.gain.exponentialRampToValueAtTime(0.0001, noteStart + dur * 0.8);
+
+        harm.connect(harmGain);
+        harmGain.connect(ctx.destination);
+        harm.start(noteStart);
+        harm.stop(noteStart + dur + 0.05);
+      });
+
+      // 3. เสียงประกายดาวระยิบระยับ (Twinkling Starlight Glissando)
+      const shimmer = ctx.createOscillator();
+      const sGain = ctx.createGain();
+      shimmer.type = "sine";
+      shimmer.frequency.setValueAtTime(2400, now + 0.1);
+      shimmer.frequency.exponentialRampToValueAtTime(5000, now + 0.7);
+
+      sGain.gain.setValueAtTime(0, now + 0.1);
+      sGain.gain.linearRampToValueAtTime(0.06, now + 0.3);
+      sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+      shimmer.connect(sGain);
+      sGain.connect(ctx.destination);
+      shimmer.start(now + 0.1);
+      shimmer.stop(now + 0.9);
+    } catch (e) {
+      console.warn("Level up sound error:", e);
+    }
+  }
+
+  triggerAvatarLevelUp(candidateId) {
+    const avatar = this.candidateAvatars?.get(candidateId);
+    if (!avatar || !avatar.group) return;
+
+    const nowTime = this.clock ? this.clock.getElapsedTime() : performance.now() / 1000;
+    // ป้องกันการเล่นเอฟเฟกต์ซ้ำซ้อนภายใน 1.2 วินาที
+    if (avatar.lastLevelUpTime && (nowTime - avatar.lastLevelUpTime) < 1.2) {
+      return;
+    }
+    avatar.lastLevelUpTime = nowTime;
+
+    // เล่นเสียงเอฟเฟกต์ Level-Up กึกก้องไพเราะ (Web Audio API)
+    this.playLevelUpSound();
+
+    // แสดงข้อความดีใจบนป้ายชื่อทันที
+    avatar.celebrateTime = 2.4;
+    if (avatar.badgeSprite?.userData?.renderTexture) {
+      avatar.badgeSprite.userData.renderTexture(
+        avatar.entry?.name,
+        avatar.entry?.votes || 0,
+        "🎉 LEVEL UP! ขอบคุณน้า 💖✨"
+      );
+      if (avatar.badgeSprite.material.map) {
+        avatar.badgeSprite.material.map.needsUpdate = true;
+      }
+    }
+
+    // สร้าง Visual Effect Group ที่ตำแหน่งของโมเดล
+    const pos = avatar.group.position.clone();
+    const effectGroup = new THREE.Group();
+    effectGroup.position.set(pos.x, pos.y, pos.z);
+    this.scene.add(effectGroup);
+
+    // 1. ลำแสงประกายสีทองพุ่งทะยานสู่ท้องฟ้า (Ascending Divine Light Pillar)
+    if (!this.levelUpBeamTexture) {
+      this.levelUpBeamTexture = this.createLevelUpBeamTexture();
+    }
+    const beamGeo = new THREE.CylinderGeometry(0.85, 1.25, 6.0, 32, 1, true);
+    beamGeo.translate(0, 3.0, 0); // จุดหมุนอยู่ที่ฐานกระบอก
+    const beamMat = new THREE.MeshBasicMaterial({
+      map: this.levelUpBeamTexture,
+      transparent: true,
+      opacity: 0.95,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+    beamMesh.scale.set(0.6, 0.05, 0.6);
+    effectGroup.add(beamMesh);
+
+    // 2. วงแหวนเวทมนตร์เรืองรองที่พื้น (Ground Aura Shockwave Ring)
+    if (!this.levelUpRingTexture) {
+      this.levelUpRingTexture = this.createLevelUpRingTexture();
+    }
+    const groundRingGeo = new THREE.PlaneGeometry(2.4, 2.4);
+    const groundRingMat = new THREE.MeshBasicMaterial({
+      map: this.levelUpRingTexture,
+      transparent: true,
+      opacity: 0.95,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const groundRing = new THREE.Mesh(groundRingGeo, groundRingMat);
+    groundRing.rotation.x = -Math.PI / 2;
+    groundRing.position.y = 0.04;
+    groundRing.scale.set(0.4, 0.4, 0.4);
+    effectGroup.add(groundRing);
+
+    // 3. วงแหวนพลังงานพุ่งขึ้นตามลำตัว (Ascending Energy Halo)
+    const ascRingMat = groundRingMat.clone();
+    const ascRing = new THREE.Mesh(groundRingGeo, ascRingMat);
+    ascRing.rotation.x = -Math.PI / 2;
+    ascRing.position.y = 0.1;
+    ascRing.scale.set(0.6, 0.6, 0.6);
+    effectGroup.add(ascRing);
+
+    // 4. ละอองดาวประกายระยิบระยับลอยวนขึ้น (Swirling Golden Sparkles)
+    const sparkCount = 60;
+    const sparkGeo = new THREE.BufferGeometry();
+    const sparkPositions = new Float32Array(sparkCount * 3);
+    const sparkColors = new Float32Array(sparkCount * 3);
+    const sparkData = [];
+
+    if (!this.fireworkTexture) {
+      this.fireworkTexture = this.createFireworkSparkTexture();
+    }
+
+    for (let i = 0; i < sparkCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 0.3 + Math.random() * 0.7;
+      const y = Math.random() * 0.8;
+      sparkPositions[i * 3] = Math.cos(angle) * radius;
+      sparkPositions[i * 3 + 1] = y;
+      sparkPositions[i * 3 + 2] = Math.sin(angle) * radius;
+
+      // สีทองสลับสีขาวประกายดาว
+      const isGold = Math.random() > 0.3;
+      sparkColors[i * 3] = 1.0;
+      sparkColors[i * 3 + 1] = isGold ? 0.85 : 1.0;
+      sparkColors[i * 3 + 2] = isGold ? 0.35 : 0.85;
+
+      sparkData.push({
+        angle,
+        radius,
+        y,
+        vy: 2.2 + Math.random() * 2.8,
+        omega: (Math.random() - 0.5) * 6.0,
+        vr: 0.2 + Math.random() * 0.4,
+      });
+    }
+
+    sparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPositions, 3));
+    sparkGeo.setAttribute("color", new THREE.BufferAttribute(sparkColors, 3));
+
+    const sparkMat = new THREE.PointsMaterial({
+      size: 0.32,
+      map: this.fireworkTexture,
+      transparent: true,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+    effectGroup.add(sparkPoints);
+
+    // 5. แสงไฟเรืองรองสว่างวาบส่องตัวโมเดลและท่าน้ำ (Dynamic Radiance PointLight)
+    const radianceLight = new THREE.PointLight(0xfef08a, 6.0, 7.0, 1.6);
+    radianceLight.position.set(0, 1.2, 0);
+    effectGroup.add(radianceLight);
+
+    if (!this.activeLevelUpEffects) this.activeLevelUpEffects = [];
+    this.activeLevelUpEffects.push({
+      group: effectGroup,
+      beamMesh,
+      groundRing,
+      ascRing,
+      sparkPoints,
+      sparkData,
+      radianceLight,
+      age: 0,
+      maxAge: 2.0, // แสดงผล 2.0 วินาที
+    });
+  }
+
+  updateLevelUpEffects(dt, time) {
+    if (!this.activeLevelUpEffects || this.activeLevelUpEffects.length === 0) return;
+
+    for (let i = this.activeLevelUpEffects.length - 1; i >= 0; i--) {
+      const effect = this.activeLevelUpEffects[i];
+      effect.age += dt;
+      const t = effect.age / effect.maxAge; // 0.0 -> 1.0
+
+      if (t >= 1.0) {
+        // ทำความสะอาดและลบวัตถุออกจากฉาก (Dispose)
+        this.scene.remove(effect.group);
+        effect.beamMesh?.geometry?.dispose();
+        effect.beamMesh?.material?.dispose();
+        effect.groundRing?.geometry?.dispose();
+        effect.groundRing?.material?.dispose();
+        effect.ascRing?.material?.dispose();
+        effect.sparkPoints?.geometry?.dispose();
+        effect.sparkPoints?.material?.dispose();
+        this.activeLevelUpEffects.splice(i, 1);
+        continue;
+      }
+
+      // 1. แอนิเมชันลำแสงพุ่งขึ้นสู่ท้องฟ้า (Light Beam Ascension)
+      if (effect.beamMesh) {
+        effect.beamMesh.rotation.y += dt * 3.5;
+        if (t < 0.25) {
+          // ช่วงขยายรอบตัวและเริ่มพุ่ง
+          const grow = t / 0.25;
+          effect.beamMesh.scale.set(0.6 + grow * 0.4, grow * 0.8, 0.6 + grow * 0.4);
+          effect.beamMesh.material.opacity = 0.95 * grow;
+        } else {
+          // พุ่งทะยานขึ้นสูงสู่ท้องฟ้าและค่อยๆ จางหายไป
+          const riseT = (t - 0.25) / 0.75;
+          effect.beamMesh.scale.y = 0.8 + riseT * 2.5;
+          effect.beamMesh.scale.x = 1.0 + riseT * 0.6;
+          effect.beamMesh.scale.z = 1.0 + riseT * 0.6;
+          effect.beamMesh.material.opacity = Math.max(0, 0.95 * Math.pow(1.0 - riseT, 1.4));
+        }
+      }
+
+      // 2. วงแหวนคลื่นพลังงานที่พื้น (Ground Ring Expansion)
+      if (effect.groundRing) {
+        const ringScale = 0.4 + t * 2.6;
+        effect.groundRing.scale.set(ringScale, ringScale, ringScale);
+        effect.groundRing.material.opacity = Math.max(0, (1.0 - t * 1.3) * 0.95);
+      }
+
+      // 3. วงแหวนลอยขึ้นผ่านศีรษะ (Ascending Energy Halo)
+      if (effect.ascRing) {
+        effect.ascRing.position.y = t * 4.5;
+        const ascScale = 0.6 + t * 1.4;
+        effect.ascRing.scale.set(ascScale, ascScale, ascScale);
+        effect.ascRing.rotation.z += dt * 3.0;
+        effect.ascRing.material.opacity = Math.max(0, Math.sin(t * Math.PI) * 0.85);
+      }
+
+      // 4. ละอองดาวประกายระยิบระยับลอยควงสว่านขึ้น (Swirling Sparkles)
+      if (effect.sparkPoints) {
+        const positions = effect.sparkPoints.geometry.attributes.position.array;
+        for (let j = 0; j < effect.sparkData.length; j++) {
+          const sp = effect.sparkData[j];
+          sp.y += sp.vy * dt;
+          sp.angle += sp.omega * dt;
+          sp.radius += sp.vr * dt;
+
+          positions[j * 3] = Math.cos(sp.angle) * sp.radius;
+          positions[j * 3 + 1] = sp.y;
+          positions[j * 3 + 2] = Math.sin(sp.angle) * sp.radius;
+        }
+        effect.sparkPoints.geometry.attributes.position.needsUpdate = true;
+        effect.sparkPoints.material.opacity = Math.max(0, (1.0 - t * 1.05));
+      }
+
+      // 5. แสงไฟเรืองรองสว่างวาบ (Radiance Light Decay)
+      if (effect.radianceLight) {
+        const pulse = t < 0.2 ? (t / 0.2) : Math.pow(1.0 - (t - 0.2) / 0.8, 2.0);
+        effect.radianceLight.intensity = Math.max(0, 6.0 * pulse);
+      }
+    }
   }
 
   /* ==========================================================
@@ -7936,6 +8351,27 @@ export class LoyKrathongScene {
       try {
         this.soundCtx.close();
       } catch (e) {}
+    }
+    if (this.activeLevelUpEffects && this.activeLevelUpEffects.length > 0) {
+      this.activeLevelUpEffects.forEach((effect) => {
+        if (effect.group) this.scene.remove(effect.group);
+        effect.beamMesh?.geometry?.dispose();
+        effect.beamMesh?.material?.dispose();
+        effect.groundRing?.geometry?.dispose();
+        effect.groundRing?.material?.dispose();
+        effect.ascRing?.material?.dispose();
+        effect.sparkPoints?.geometry?.dispose();
+        effect.sparkPoints?.material?.dispose();
+      });
+      this.activeLevelUpEffects = [];
+    }
+    if (this.levelUpBeamTexture) {
+      this.levelUpBeamTexture.dispose();
+      this.levelUpBeamTexture = null;
+    }
+    if (this.levelUpRingTexture) {
+      this.levelUpRingTexture.dispose();
+      this.levelUpRingTexture = null;
     }
     if (this.renderer?.domElement) {
       if (this.handlePointerDown) {

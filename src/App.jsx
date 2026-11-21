@@ -128,6 +128,9 @@ export default function App() {
     setHasVotedCurrent(true);
     // Refresh selected krathong votes
     setSelectedKrathong((prev) => (prev ? { ...prev, votes: (prev.votes || 0) + 1 } : null));
+    if (sceneInstanceRef.current) {
+      sceneInstanceRef.current.triggerAvatarLevelUp(id);
+    }
   };
 
   const handleFocusKrathong = (id) => {
