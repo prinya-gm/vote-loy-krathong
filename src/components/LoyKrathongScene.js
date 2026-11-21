@@ -1412,7 +1412,8 @@ export class LoyKrathongScene {
     const bankGeo = new THREE.BoxGeometry(32, 10, 180);
     const bankMat = new THREE.MeshStandardMaterial({ color: 0x223a1a, roughness: 0.85 });
     const bank = new THREE.Mesh(bankGeo, bankMat);
-    bank.position.set(-36, -3, 0);
+    // วางระดับความสูงพื้นตลิ่งให้อยู่ที่ Y = 1.50 (-3.5 + 5 = 1.50) ระดับเดียวกับแนวหินขอบทางเดินและต้นมะพร้าวอย่างแนบสนิท
+    bank.position.set(-36, -3.5, 0);
     bank.receiveShadow = true;
     this.scene.add(bank);
 
@@ -1472,8 +1473,8 @@ export class LoyKrathongScene {
   ========================================================== */
   createNightMarket() {
     const marketGroup = new THREE.Group();
-    // จุดกึ่งกลางลานตลาดริมน้ำบนสนามหญ้าเดิม (X: -48 ถึง -24, Z: +14 ถึง +58)
-    marketGroup.position.set(-36.0, 0, 36.0);
+    // จุดกึ่งกลางลานตลาดริมน้ำบนสนามหญ้า (X: -48 ถึง -24, Z: +14 ถึง +58, Y = 1.50 ให้ฐานลานเทศกาลตั้งอยู่บนสนามหญ้าอย่างสง่างาม)
+    marketGroup.position.set(-36.0, 1.50, 36.0);
 
     const mats = {
       paver: new THREE.MeshStandardMaterial({
@@ -1572,8 +1573,9 @@ export class LoyKrathongScene {
 
     // 3 Ramps connecting to the promenade
     [-11.0, 3.0, 16.0].forEach((rz) => {
-      const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 4.2), mats.stoneCurb);
-      ramp.position.set(13.2, 0.22, rz);
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.20, 4.2), mats.stoneCurb);
+      ramp.position.set(13.2, 0.20, rz);
+      ramp.rotation.z = -0.15;
       group.add(ramp);
     });
   }
@@ -3074,12 +3076,12 @@ export class LoyKrathongScene {
       // ผู้คนในตลาดนัดกลางคืนริมน้ำ (Night Market Visitors, Diners & Live Band)
       // มีชีวิตชีวา เดินเลือกซื้อของ ยืนสั่งอาหาร นั่งกิน และเล่นดนตรี
       // ==========================================================
-      // 1-6. คนเดินเลือกซื้อของในทางเดินกลางตลาด (Main Market Aisle Walkers X: -34 to -33)
+      // 1-6. คนเดินเลือกซื้อของในทางเดินกลางตลาด (Main Market Aisle Walkers X: -34 to -33, Y = 2.02 บนพื้นลานหิน)
       {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -33.2, y: 0.65, z: 22.0,
+        x: -33.2, y: 2.02, z: 22.0,
         primary: 0xec4899, secondary: 0x9d174d, gold: 0xfef08a,
         minPos: 18.0, maxPos: 40.0,
         axis: "z", dir: 1, speed: 1.10, walkPhase: 0.2,
@@ -3088,7 +3090,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -34.5, y: 0.65, z: 36.0,
+        x: -34.5, y: 2.02, z: 36.0,
         primary: 0xf97316, secondary: 0x7c2d12, sash: 0xfbbf24,
         minPos: 18.0, maxPos: 40.0,
         axis: "z", dir: -1, speed: 1.05, walkPhase: 1.8,
@@ -3097,7 +3099,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -33.6, y: 0.65, z: 29.0,
+        x: -33.6, y: 2.02, z: 29.0,
         primary: 0x10b981, secondary: 0x064e3b, gold: 0xfef08a,
         minPos: 20.0, maxPos: 39.0,
         axis: "z", dir: 1, speed: 1.15, walkPhase: 3.5,
@@ -3106,7 +3108,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -34.8, y: 0.65, z: 32.0,
+        x: -34.8, y: 2.02, z: 32.0,
         primary: 0x0284c7, secondary: 0x0f172a, sash: 0xf59e0b,
         minPos: 19.0, maxPos: 41.0,
         axis: "z", dir: -1, speed: 1.00, walkPhase: 4.6,
@@ -3115,7 +3117,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -33.0, y: 0.65, z: 25.0,
+        x: -33.0, y: 2.02, z: 25.0,
         primary: 0xf59e0b, secondary: 0x78350f, gold: 0xfef08a,
         minPos: 18.0, maxPos: 38.0,
         axis: "z", dir: 1, speed: 1.08, walkPhase: 2.1,
@@ -3124,7 +3126,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -34.2, y: 0.65, z: 20.0,
+        x: -34.2, y: 2.02, z: 20.0,
         primary: 0x8b5cf6, secondary: 0x3b0764, sash: 0xfbbf24,
         minPos: 18.0, maxPos: 39.0,
         axis: "z", dir: 1, speed: 1.12, walkPhase: 5.0,
@@ -3135,7 +3137,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -28.2, y: 0.65, z: 24.0,
+        x: -28.2, y: 2.02, z: 24.0,
         primary: 0xec4899, secondary: 0x831843, gold: 0xfef08a,
         minPos: 20.0, maxPos: 44.0,
         axis: "z", dir: 1, speed: 1.18, walkPhase: 1.2,
@@ -3144,7 +3146,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -27.5, y: 0.65, z: 42.0,
+        x: -27.5, y: 2.02, z: 42.0,
         primary: 0x06b6d4, secondary: 0x164e63, sash: 0xf59e0b,
         minPos: 22.0, maxPos: 48.0,
         axis: "z", dir: -1, speed: 1.05, walkPhase: 3.0,
@@ -3153,7 +3155,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "walking",
         area: "market",
-        x: -28.8, y: 0.65, z: 35.0,
+        x: -28.8, y: 2.02, z: 35.0,
         primary: 0xa855f7, secondary: 0x581c87, gold: 0xfef08a,
         minPos: 21.0, maxPos: 43.0,
         axis: "z", dir: 1, speed: 1.10, walkPhase: 4.1,
@@ -3162,7 +3164,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "walking",
         area: "market",
-        x: -28.0, y: 0.65, z: 46.0,
+        x: -28.0, y: 2.02, z: 46.0,
         primary: 0xe11d48, secondary: 0x4c0519, sash: 0xfacc15,
         minPos: 25.0, maxPos: 50.0,
         axis: "z", dir: -1, speed: 1.02, walkPhase: 2.7,
@@ -3174,7 +3176,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "spectator",
         area: "market",
-        x: -31.8, y: 0.65, z: 19.0,
+        x: -31.8, y: 2.02, z: 19.0,
         rotY: -Math.PI / 2,
         primary: 0xf43f5e, secondary: 0x9f1239, gold: 0xfef08a,
         pose: "standing_look",
@@ -3184,7 +3186,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "spectator",
         area: "market",
-        x: -31.8, y: 0.65, z: 24.5,
+        x: -31.8, y: 2.02, z: 24.5,
         rotY: -Math.PI / 2,
         primary: 0x10b981, secondary: 0x064e3b, sash: 0xfbbf24,
         pose: "standing_holding",
@@ -3194,7 +3196,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "spectator",
         area: "market",
-        x: -31.8, y: 0.65, z: 30.0,
+        x: -31.8, y: 2.02, z: 30.0,
         rotY: -Math.PI / 2,
         primary: 0x06b6d4, secondary: 0x0e7490, gold: 0xfef08a,
         pose: "standing_holding",
@@ -3204,7 +3206,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "spectator",
         area: "market",
-        x: -31.8, y: 0.65, z: 35.5,
+        x: -31.8, y: 2.02, z: 35.5,
         rotY: -Math.PI / 2,
         primary: 0xf97316, secondary: 0x9a3412, sash: 0xfbbf24,
         pose: "standing_look",
@@ -3214,7 +3216,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "spectator",
         area: "market",
-        x: -35.2, y: 0.65, z: 24.5,
+        x: -35.2, y: 2.02, z: 24.5,
         rotY: Math.PI / 2,
         primary: 0x8b5cf6, secondary: 0x4c1d95, gold: 0xfef08a,
         pose: "standing_look",
@@ -3224,7 +3226,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "spectator",
         area: "market",
-        x: -35.2, y: 0.65, z: 35.5,
+        x: -35.2, y: 2.02, z: 35.5,
         rotY: Math.PI / 2,
         primary: 0x14b8a6, secondary: 0x134e4a, sash: 0xf59e0b,
         pose: "standing_holding",
@@ -3235,7 +3237,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "spectator",
         area: "market",
-        x: -31.5, y: 0.65, z: 47.0,
+        x: -31.5, y: 2.02, z: 47.0,
         rotY: -Math.PI / 4,
         primary: 0xec4899, secondary: 0x831843, gold: 0xfef08a,
         pose: "standing_holding",
@@ -3244,7 +3246,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "spectator",
         area: "market",
-        x: -27.5, y: 0.65, z: 51.5,
+        x: -27.5, y: 2.02, z: 51.5,
         rotY: -Math.PI / 2,
         primary: 0x0d9488, secondary: 0x134e4a, sash: 0xf59e0b,
         pose: "standing_look",
@@ -3253,7 +3255,7 @@ export class LoyKrathongScene {
         gender: "male",
         role: "spectator",
         area: "market",
-        x: -31.5, y: 0.65, z: 51.5,
+        x: -31.5, y: 2.02, z: 51.5,
         rotY: Math.PI / 3,
         primary: 0x3b82f6, secondary: 0x1e3a8a, sash: 0xfbbf24,
         pose: "standing_holding",
@@ -3262,18 +3264,18 @@ export class LoyKrathongScene {
         gender: "female",
         role: "spectator",
         area: "market",
-        x: -27.5, y: 0.65, z: 47.0,
+        x: -27.5, y: 2.02, z: 47.0,
         rotY: -Math.PI * 0.75,
         primary: 0xf59e0b, secondary: 0x92400e, gold: 0xfef08a,
         pose: "standing_look",
       },
 
-      // 21-22. นักดนตรีบนเวทีสด (Live Acoustic Music Stage)
+      // 21-22. นักดนตรีบนเวทีสด (Live Acoustic Music Stage Y = 2.47 บนพื้นเวทีไม้)
       {
         gender: "male",
         role: "spectator",
         area: "market",
-        x: -41.4, y: 0.98, z: 52.8,
+        x: -41.4, y: 2.47, z: 52.8,
         rotY: 0.15,
         primary: 0xb45309, secondary: 0x18181b, sash: 0xf59e0b,
         pose: "standing_holding",
@@ -3282,7 +3284,7 @@ export class LoyKrathongScene {
         gender: "female",
         role: "spectator",
         area: "market",
-        x: -44.0, y: 0.98, z: 53.0,
+        x: -44.0, y: 2.47, z: 53.0,
         rotY: 0.25,
         primary: 0xdb2777, secondary: 0x4c0519, gold: 0xfef08a,
         pose: "standing_holding",
@@ -5849,7 +5851,7 @@ export class LoyKrathongScene {
           if (char.area === "temple") {
             // บนลานวัดและลานเจดีย์ (Temple Platform Y = 3.2): เดินอย่างสง่างามภายในขอบเขตลานวัด
           } else if (char.area === "market") {
-            // ในตลาดนัดริมน้ำ (Market Plaza Y = 0.65): เดินภายในขอบเขตลานตลาดอย่างปลอดภัย (X: -47.0 ถึง -26.0)
+            // ในตลาดนัดริมน้ำ (Market Plaza Y = 2.02): เดินภายในขอบเขตลานตลาดอย่างปลอดภัย (X: -47.0 ถึง -26.0)
             if (char.group.position.x < -47.0) {
               char.group.position.x = -47.0;
             }
