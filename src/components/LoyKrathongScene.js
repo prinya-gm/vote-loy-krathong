@@ -463,13 +463,63 @@ export class LoyKrathongScene {
     this.marketPaversTexture.wrapS = THREE.RepeatWrapping;
     this.marketPaversTexture.wrapT = THREE.RepeatWrapping;
     this.marketPaversTexture.repeat.set(6, 11);
+
+    // 11. Photorealistic Seamless Water Ripple Normal Map (ผิวระลอกคลื่นน้ำเจ้าพระยา)
+    const waterNormCanvas = document.createElement("canvas");
+    waterNormCanvas.width = 256;
+    waterNormCanvas.height = 256;
+    const wnCtx = waterNormCanvas.getContext("2d");
+    const imgData = wnCtx.createImageData(256, 256);
+    const data = imgData.data;
+
+    for (let y = 0; y < 256; y++) {
+      for (let x = 0; x < 256; x++) {
+        // Multi-frequency wave normal synthesis (คลื่นระลอกผิวน้ำซ้อนทับกันอย่างเป็นธรรมชาติ)
+        const nx1 = Math.sin((x / 256) * Math.PI * 8 + Math.cos((y / 256) * Math.PI * 4));
+        const ny1 = Math.cos((y / 256) * Math.PI * 8 + Math.sin((x / 256) * Math.PI * 4));
+        const nx2 = Math.sin((x / 256) * Math.PI * 16 - (y / 256) * Math.PI * 12);
+        const ny2 = Math.cos((y / 256) * Math.PI * 16 + (x / 256) * Math.PI * 12);
+
+        const dx = (nx1 * 0.65 + nx2 * 0.35) * 0.45;
+        const dy = (ny1 * 0.65 + ny2 * 0.35) * 0.45;
+
+        // Normal vector RGB (R=X normal, G=Y normal, B=Z vertical normal)
+        data[(y * 256 + x) * 4] = Math.floor((dx + 1.0) * 0.5 * 255);
+        data[(y * 256 + x) * 4 + 1] = Math.floor((dy + 1.0) * 0.5 * 255);
+        data[(y * 256 + x) * 4 + 2] = 255;
+        data[(y * 256 + x) * 4 + 3] = 255;
+      }
+    }
+    wnCtx.putImageData(imgData, 0, 0);
+    this.waterNormalTexture = new THREE.CanvasTexture(waterNormCanvas);
+    this.waterNormalTexture.wrapS = THREE.RepeatWrapping;
+    this.waterNormalTexture.wrapT = THREE.RepeatWrapping;
+    this.waterNormalTexture.repeat.set(10, 10);
+
+    // 12. Soft Warm Candle Glow Reflection Disc for Floating Krathongs (รัศมีแสงเทียนสะท้อนผิวน้ำใต้กระทง)
+    const glowCanvas = document.createElement("canvas");
+    glowCanvas.width = 128;
+    glowCanvas.height = 128;
+    const gCtx = glowCanvas.getContext("2d");
+    const gGrad = gCtx.createRadialGradient(64, 64, 4, 64, 64, 64);
+    gGrad.addColorStop(0, "rgba(254, 215, 170, 0.95)");
+    gGrad.addColorStop(0.22, "rgba(251, 146, 60, 0.65)");
+    gGrad.addColorStop(0.55, "rgba(234, 88, 12, 0.28)");
+    gGrad.addColorStop(1.0, "rgba(0, 0, 0, 0)");
+    gCtx.fillStyle = gGrad;
+    gCtx.fillRect(0, 0, 128, 128);
+    this.waterGlowTexture = new THREE.CanvasTexture(glowCanvas);
   }
 
   /* ==========================================================
      LIGHTING
   ========================================================== */
   setupLighting() {
-    const ambientLight = new THREE.AmbientLight(0x406295, 2.1);
+    // 1. Hemisphere Light: แสงบรรยากาศสมจริง ท้องฟ้าราตรีสีกรมท่าเข้ม + แสงสะท้อนผิวน้ำด้านล่าง
+    const hemiLight = new THREE.HemisphereLight(0x283e68, 0x0a1422, 1.25);
+    this.scene.add(hemiLight);
+
+    const ambientLight = new THREE.AmbientLight(0x38527a, 0.85);
     this.scene.add(ambientLight);
 
     // Single Pre-allocated Firework Flash Light (Zero Runtime Shader Recompilations)
@@ -477,8 +527,9 @@ export class LoyKrathongScene {
     this.fireworkFlashLight.position.set(0, 30, 0);
     this.scene.add(this.fireworkFlashLight);
 
-    const moonLight = new THREE.DirectionalLight(0xffe88a, 2.6);
-    moonLight.position.set(22, 58, -42);
+    // ลำแสงจันทราสีทองสาดส่องผิวน้ำ (Moon Light with Specular Highlight Path)
+    const moonLight = new THREE.DirectionalLight(0xfff2b2, 2.8);
+    moonLight.position.set(24, 60, -45);
     moonLight.castShadow = true;
     moonLight.shadow.mapSize.width = 2048;
     moonLight.shadow.mapSize.height = 2048;
@@ -492,7 +543,7 @@ export class LoyKrathongScene {
     moonLight.shadow.normalBias = 0.04;
     this.scene.add(moonLight);
 
-    const riverGlowLight = new THREE.DirectionalLight(0xff9e24, 1.4);
+    const riverGlowLight = new THREE.DirectionalLight(0xff9e24, 1.2);
     riverGlowLight.position.set(-15, 20, 20);
     this.scene.add(riverGlowLight);
 
@@ -619,23 +670,65 @@ export class LoyKrathongScene {
   }
 
   createTwinklingStars() {
-    const count = 900;
+    const count = 750;
     const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    const starColorList = [
+      new THREE.Color(0xffffff),
+      new THREE.Color(0xfef08a), // warm golden star
+      new THREE.Color(0x93c5fd), // cool soft cyan star
+      new THREE.Color(0xfbcfe8), // soft rose star
+    ];
 
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 260;
-      positions[i * 3 + 1] = 18 + Math.random() * 95;
-      positions[i * 3 + 2] = -140 + Math.random() * 110;
+      // กระจายตัวเต็มครึ่งทรงกลมท้องฟ้าราตรี (Upper Celestial Dome)
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 210 + Math.random() * 25;
+
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = Math.abs(r * Math.cos(phi)) + 12;
+      const z = r * Math.sin(phi) * Math.sin(theta);
+
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+
+      const c = starColorList[Math.floor(Math.random() * starColorList.length)];
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
     }
 
     const starGeo = new THREE.BufferGeometry();
     starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    starGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    // เท็กซ์เจอร์อนุภาคดาวทรงกลมส่องสว่างนุ่มนวล
+    const starCanvas = document.createElement("canvas");
+    starCanvas.width = 32;
+    starCanvas.height = 32;
+    const sCtx = starCanvas.getContext("2d");
+    const sGrad = sCtx.createRadialGradient(16, 16, 2, 16, 16, 16);
+    sGrad.addColorStop(0, "rgba(255, 255, 255, 1.0)");
+    sGrad.addColorStop(0.35, "rgba(255, 255, 255, 0.75)");
+    sGrad.addColorStop(1.0, "rgba(255, 255, 255, 0)");
+    sCtx.fillStyle = sGrad;
+    sCtx.fillRect(0, 0, 32, 32);
+    const starTex = new THREE.CanvasTexture(starCanvas);
 
     const starMat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 1.1,
+      size: 2.2,
+      map: starTex,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
+      opacity: 0.88,
     });
     this.starField = new THREE.Points(starGeo, starMat);
     this.scene.add(this.starField);
@@ -649,9 +742,11 @@ export class LoyKrathongScene {
     riverGeo.rotateX(-Math.PI / 2);
 
     this.waterMat = new THREE.MeshStandardMaterial({
-      color: 0x0a3258,
-      metalness: 0.65,
-      roughness: 0.2,
+      color: 0x061c33,
+      normalMap: this.waterNormalTexture,
+      normalScale: new THREE.Vector2(0.40, 0.40),
+      metalness: 0.84,
+      roughness: 0.12,
       flatShading: false,
     });
 
@@ -3910,7 +4005,25 @@ export class LoyKrathongScene {
 
     const flameLight = new THREE.PointLight(0xffa500, 2.5, 9, 1.5);
     flameLight.position.set(0.3, 1.85, 0.2);
+    flameLight.name = "candleLight";
     group.add(flameLight);
+
+    // แสงสะท้อนสีทองส้มนุ่มนวลใต้กระทงบนผิวน้ำ (Soft Golden Candle Reflection on Water Surface)
+    if (this.waterGlowTexture) {
+      const glowGeo = new THREE.PlaneGeometry(3.2, 3.2);
+      glowGeo.rotateX(-Math.PI / 2);
+      const glowMat = new THREE.MeshBasicMaterial({
+        map: this.waterGlowTexture,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        opacity: 0.42,
+      });
+      const waterGlow = new THREE.Mesh(glowGeo, glowMat);
+      waterGlow.position.y = 0.02;
+      waterGlow.name = "waterCandleGlow";
+      group.add(waterGlow);
+    }
 
     const incenseGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.6, 6);
     const incenseMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
@@ -5519,7 +5632,11 @@ export class LoyKrathongScene {
     // 1. Controls
     this.controls.update();
 
-    // 2. Animated River Water Waves (ผิวน้ำกระเพื่อมไหว)
+    // 2. Animated River Water Waves (ผิวน้ำกระเพื่อมไหวพร้อมระลอกคลื่นสะท้อนแสง)
+    if (this.waterNormalTexture) {
+      this.waterNormalTexture.offset.x = (time * 0.006) % 1;
+      this.waterNormalTexture.offset.y = (time * 0.016) % 1;
+    }
     if (this.riverPositions && this.baseRiverCoords) {
       const pos = this.riverPositions.array;
       for (let i = 0; i < pos.length; i += 3) {
@@ -5568,11 +5685,19 @@ export class LoyKrathongScene {
       mesh.rotation.x = slopeZ * 0.75;
       mesh.rotation.y += (mesh.userData.rotSpeed || 0.001) * 0.35;
 
-      // เปลวไฟเทียนสะบัดไหว
+      // เปลวไฟเทียนและเงาสะท้อนผิวน้ำสะบัดไหวอย่างเป็นธรรมชาติ (Organic Multi-frequency Candle Flicker)
       const flame = mesh.getObjectByName("candleFlame");
       if (flame) {
-        const flicker = Math.sin(time * 16.0 + bob) * 0.15 + 1.0;
-        flame.scale.set(flicker, flicker * 1.1, flicker);
+        const flicker = 1.0 + Math.sin(time * 12.0 + bob * 3.0) * 0.08 + Math.cos(time * 17.5 + bob * 5.0) * 0.05;
+        flame.scale.set(flicker, flicker * 1.08, flicker);
+      }
+      const candleLight = mesh.getObjectByName("candleLight");
+      if (candleLight) {
+        candleLight.intensity = 2.5 + Math.sin(time * 14.0 + bob) * 0.45;
+      }
+      const waterGlow = mesh.getObjectByName("waterCandleGlow");
+      if (waterGlow && waterGlow.material) {
+        waterGlow.material.opacity = 0.38 + Math.sin(time * 8.5 + bob * 2.0) * 0.08;
       }
 
       // ป้ายผลโหวตลอยพลิ้วเบาๆ เหนือกกระทง
@@ -5851,9 +5976,12 @@ export class LoyKrathongScene {
       this.templeLight.intensity = 5.5 + Math.sin(time * 1.5) * 0.5;
     }
 
-    // 10. Stars Rotation
+    // 10. Stars Rotation & Twinkle
     if (this.starField) {
-      this.starField.rotation.y = time * 0.002;
+      this.starField.rotation.y = time * 0.0015;
+      if (this.starField.material) {
+        this.starField.material.opacity = 0.82 + Math.sin(time * 2.2) * 0.12;
+      }
     }
 
     // 11. Animated Thai People (คนสวมชุดไทยหลากสี เดินเล่นไม่ทะลุขอบตลิ่ง และลอยกระทงขยับเคลื่อนไหวจริงริมท่าน้ำ)
