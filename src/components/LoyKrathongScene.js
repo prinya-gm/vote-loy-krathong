@@ -41,12 +41,17 @@ export class LoyKrathongScene {
     this.scene = new THREE.Scene();
     this.scene.fog = null;
 
-    // 2. Camera
-    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    // 2. Camera - ปรับ near plane 0.5 และ far plane 500 เพิ่มความละเอียดของ Depth Buffer ป้องกัน Z-fighting
+    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
     this.camera.position.set(0, 19, 42);
 
-    // 3. Renderer with ACES Tone Mapping
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // 3. Renderer with ACES Tone Mapping & Logarithmic Depth Buffer (ขจัดอาการกระพริบวูบวาบและชิ้นส่วน 3D มาๆ หายๆ 100%)
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
+      logarithmicDepthBuffer: true,
+    });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.shadowMap.enabled = true;
@@ -483,7 +488,8 @@ export class LoyKrathongScene {
     moonLight.shadow.camera.right = 55;
     moonLight.shadow.camera.top = 55;
     moonLight.shadow.camera.bottom = -55;
-    moonLight.shadow.bias = -0.0005;
+    moonLight.shadow.bias = -0.0001;
+    moonLight.shadow.normalBias = 0.04;
     this.scene.add(moonLight);
 
     const riverGlowLight = new THREE.DirectionalLight(0xff9e24, 1.4);
@@ -845,8 +851,8 @@ export class LoyKrathongScene {
   ========================================================== */
   createRealisticThaiHouse() {
     const compound = new THREE.Group();
-    // Position on riverbank lawn - STRICTLY PARALLEL to the river edge (rotation.y = 0)
-    compound.position.set(-32, 0.4, -2);
+    // วางตำแหน่งเรือนไทยบนสนามหญ้าริมตลิ่ง (ความสูง Y = 0.66 ให้ฐานสนามหญ้าเรือนไทยอยู่ที่ 1.505 รับกับขอบทางเดินหินพอดี)
+    compound.position.set(-32, 0.66, -2);
     compound.rotation.y = 0;
 
     const mats = {
@@ -1409,19 +1415,20 @@ export class LoyKrathongScene {
   }
 
   createRiverbankPromenade() {
-    const bankGeo = new THREE.BoxGeometry(32, 10, 180);
+    // พื้นหญ้าตลิ่งกว้าง 30 หน่วย (X: -52 ถึง -22) ชนกับแนวทางเดินหินพอดีที่ X = -22 ไม่ซ้อนทับกัน (Zero Z-Fighting)
+    const bankGeo = new THREE.BoxGeometry(30, 10, 180);
     const bankMat = new THREE.MeshStandardMaterial({ color: 0x223a1a, roughness: 0.85 });
     const bank = new THREE.Mesh(bankGeo, bankMat);
-    // วางระดับความสูงพื้นตลิ่งให้อยู่ที่ Y = 1.50 (-3.5 + 5 = 1.50) ระดับเดียวกับแนวหินขอบทางเดินและต้นมะพร้าวอย่างแนบสนิท
-    bank.position.set(-36, -3.5, 0);
+    bank.position.set(-37, -3.5, 0);
     bank.receiveShadow = true;
     this.scene.add(bank);
 
+    // ทางเดินหินปูเลียบแม่น้ำกว้าง 4 หน่วย (X: -22 ถึง -18) ยกสูงกว่าแนวหญ้า 5mm (Y = 1.505) ป้องกันการแย่งชิงระนาบลึก (Z-Buffer Fighting) 100%
     const stoneEdge = new THREE.Mesh(
       new THREE.BoxGeometry(4, 2, 180),
       new THREE.MeshStandardMaterial({ color: 0x5a6369, roughness: 0.7 })
     );
-    stoneEdge.position.set(-20, 0.5, 0);
+    stoneEdge.position.set(-20, 0.505, 0);
     stoneEdge.receiveShadow = true;
     this.scene.add(stoneEdge);
 
@@ -1571,12 +1578,17 @@ export class LoyKrathongScene {
     rightCurb.position.set(0, 0.29, 21.5);
     group.add(rightCurb);
 
-    // 3 Ramps connecting to the promenade
+    // 3 จุด บันไดหินกว้าง 2 ขั้น (Two-tier Stone Plaza Steps) เชื่อมลานเทศกาลลงสู่ทางเดินริมน้ำอย่างมั่นคง เรียบร้อย ไร้การบิดเอียงซ้อนทับ
     [-11.0, 3.0, 16.0].forEach((rz) => {
-      const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.20, 4.2), mats.stoneCurb);
-      ramp.position.set(13.2, 0.20, rz);
-      ramp.rotation.z = -0.15;
-      group.add(ramp);
+      // ขั้นบน (ความสูง Y = 0.36, กว้าง 0.8)
+      const step1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.36, 4.2), mats.stoneCurb);
+      step1.position.set(12.75, 0.18, rz);
+      group.add(step1);
+
+      // ขั้นล่าง (ความสูง Y = 0.18, กว้าง 0.8)
+      const step2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.18, 4.2), mats.stoneCurb);
+      step2.position.set(13.45, 0.09, rz);
+      group.add(step2);
     });
   }
 
