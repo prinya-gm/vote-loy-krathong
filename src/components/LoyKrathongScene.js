@@ -4460,7 +4460,7 @@ export class LoyKrathongScene {
       alphaTest: 0.02,
       depthWrite: true,
     });
-    this.applyCandidateFaceTexture(faceMat, entry.photoUrl, entry.name);
+    this.applyCandidateFaceTexture(faceMat);
 
     let wavingArm = null;
     let wavingHand = null;
@@ -4475,9 +4475,9 @@ export class LoyKrathongScene {
       wavingHand = femaleRig.wavingHand;
     }
 
-    // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) ไม่บดบังโมเดลคน =====
-    const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0);
-    badgeSprite.position.set(0, isMale ? 2.52 : 2.48, 0);
+    // ===== ป้ายชื่อ คะแนนโหวต พร้อมรูปถ่ายลอยเด่นเหนือป้าย (Billboard Sprite) =====
+    const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0, entry.photoUrl);
+    badgeSprite.position.set(0, isMale ? 2.85 : 2.80, 0);
     avatarGroup.add(badgeSprite);
 
     avatarGroup.userData = {
@@ -4997,213 +4997,161 @@ export class LoyKrathongScene {
     };
   }
 
-  // นำรูปภาพจริงของผู้สมัครมาตกแต่งและแมปลงบนแผ่นพอร์ตเทรตรูปไข่ด้านหน้าศีรษะ (Planar Oval Portrait Mapping)
-  applyCandidateFaceTexture(faceMat, photoUrl, name) {
+  // วาดโครงหน้าและเครื่องหน้าสไตล์ไทยประณีตลงบนแผ่นพอร์ตเทรต 3D ของโมเดล (ไม่ทับด้วยรูปถ่าย)
+  applyCandidateFaceTexture(faceMat) {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext("2d");
 
-    const drawDefaultFace = () => {
-      ctx.clearRect(0, 0, 512, 512);
+    ctx.clearRect(0, 0, 512, 512);
 
-      // โครงหน้ารูปไข่สีผิวธรรมชาติ
-      ctx.save();
+    // โครงหน้ารูปไข่สีผิวธรรมชาติ
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(256, 256, 215, 240, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#dfb088";
+    ctx.fill();
+
+    // นุ่มนวลด้วยเงาข้างแก้มและกรอบกราม (Ambient Occlusion)
+    const aoGrad = ctx.createRadialGradient(256, 256, 120, 256, 256, 235);
+    aoGrad.addColorStop(0, "rgba(180, 120, 85, 0)");
+    aoGrad.addColorStop(0.70, "rgba(180, 120, 85, 0.12)");
+    aoGrad.addColorStop(1, "rgba(150, 95, 65, 0.35)");
+    ctx.fillStyle = aoGrad;
+    ctx.beginPath();
+    ctx.ellipse(256, 256, 215, 240, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // คิ้วโก่งเรียวงามแบบไทย (Graceful Arched Eyebrows)
+    ctx.strokeStyle = "#27272a";
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(176, 202, 44, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(336, 202, 44, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+
+    // ดวงตารูปหางหงส์คมขำ (Almond Eyes with Iris & Pupil)
+    [176, 336].forEach((eyeX) => {
+      // ตาขาว
+      ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.ellipse(256, 256, 215, 240, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "#dfb088";
+      ctx.ellipse(eyeX, 238, 22, 14, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // นุ่มนวลด้วยเงาข้างแก้มและกรอบกราม (Ambient Occlusion)
-      const aoGrad = ctx.createRadialGradient(256, 256, 120, 256, 256, 235);
-      aoGrad.addColorStop(0, "rgba(180, 120, 85, 0)");
-      aoGrad.addColorStop(0.70, "rgba(180, 120, 85, 0.12)");
-      aoGrad.addColorStop(1, "rgba(150, 95, 65, 0.35)");
-      ctx.fillStyle = aoGrad;
+      // ม่านตาสีน้ำตาลประกาย
+      ctx.fillStyle = "#3e2723";
       ctx.beginPath();
-      ctx.ellipse(256, 256, 215, 240, 0, 0, Math.PI * 2);
+      ctx.arc(eyeX, 238, 11, 0, Math.PI * 2);
       ctx.fill();
 
-      // คิ้วโก่งเรียวงามแบบไทย (Graceful Arched Eyebrows)
-      ctx.strokeStyle = "#27272a";
-      ctx.lineWidth = 7;
-      ctx.lineCap = "round";
+      // รูม่านตาดำ
+      ctx.fillStyle = "#09090b";
       ctx.beginPath();
-      ctx.arc(176, 202, 44, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.arc(eyeX, 238, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // ประกายตาแวววาว (Specular Catchlight)
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(eyeX - 4, 234, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // เส้นขอบตาบนและขนตา
+      ctx.strokeStyle = "#18181b";
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(eyeX, 238, 22, Math.PI * 1.15, Math.PI * 1.85);
       ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(336, 202, 44, Math.PI * 1.15, Math.PI * 1.85);
-      ctx.stroke();
+    });
 
-      // ดวงตารูปหางหงส์คมขำ (Almond Eyes with Iris & Pupil)
-      [176, 336].forEach((eyeX) => {
-        // ตาขาว
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.ellipse(eyeX, 238, 22, 14, 0, 0, Math.PI * 2);
-        ctx.fill();
+    // สันจมูกและเงาปีกจมูก (Nose Shading)
+    ctx.fillStyle = "rgba(180, 110, 75, 0.25)";
+    ctx.beginPath();
+    ctx.ellipse(256, 266, 12, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-        // ม่านตาสีน้ำตาลประกาย
-        ctx.fillStyle = "#3e2723";
-        ctx.beginPath();
-        ctx.arc(eyeX, 238, 11, 0, Math.PI * 2);
-        ctx.fill();
+    // แก้มอมชมพูระเรื่อสุขภาพดี (Blushing Cheeks)
+    const blushGrad1 = ctx.createRadialGradient(144, 280, 5, 144, 280, 36);
+    blushGrad1.addColorStop(0, "rgba(244, 63, 94, 0.35)");
+    blushGrad1.addColorStop(1, "rgba(244, 63, 94, 0)");
+    ctx.fillStyle = blushGrad1;
+    ctx.beginPath();
+    ctx.arc(144, 280, 36, 0, Math.PI * 2);
+    ctx.fill();
 
-        // รูม่านตาดำ
-        ctx.fillStyle = "#09090b";
-        ctx.beginPath();
-        ctx.arc(eyeX, 238, 6, 0, Math.PI * 2);
-        ctx.fill();
+    const blushGrad2 = ctx.createRadialGradient(368, 280, 5, 368, 280, 36);
+    blushGrad2.addColorStop(0, "rgba(244, 63, 94, 0.35)");
+    blushGrad2.addColorStop(1, "rgba(244, 63, 94, 0)");
+    ctx.fillStyle = blushGrad2;
+    ctx.beginPath();
+    ctx.arc(368, 280, 36, 0, Math.PI * 2);
+    ctx.fill();
 
-        // ประกายตาแวววาว (Specular Catchlight)
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(eyeX - 4, 234, 3.5, 0, Math.PI * 2);
-        ctx.fill();
+    // รอยยิ้มพิมพ์ใจรูปกระจับ (Contoured Lips with Cupid's Bow)
+    ctx.fillStyle = "#be123c";
+    ctx.beginPath();
+    ctx.ellipse(256, 312, 28, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-        // เส้นขอบตาบนและขนตา
-        ctx.strokeStyle = "#18181b";
-        ctx.lineWidth = 3.5;
-        ctx.beginPath();
-        ctx.arc(eyeX, 238, 22, Math.PI * 1.15, Math.PI * 1.85);
-        ctx.stroke();
-      });
+    // ไฮไลต์ริมฝีปากล่างให้ดูอิ่มเอิบ
+    ctx.fillStyle = "rgba(255, 228, 230, 0.65)";
+    ctx.beginPath();
+    ctx.ellipse(256, 314, 14, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-      // สันจมูกและเงาปีกจมูก (Nose Shading)
-      ctx.fillStyle = "rgba(180, 110, 75, 0.25)";
-      ctx.beginPath();
-      ctx.ellipse(256, 266, 12, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
+    ctx.restore();
 
-      // แก้มอมชมพูระเรื่อสุขภาพดี (Blushing Cheeks)
-      const blushGrad1 = ctx.createRadialGradient(144, 280, 5, 144, 280, 36);
-      blushGrad1.addColorStop(0, "rgba(244, 63, 94, 0.35)");
-      blushGrad1.addColorStop(1, "rgba(244, 63, 94, 0)");
-      ctx.fillStyle = blushGrad1;
-      ctx.beginPath();
-      ctx.arc(144, 280, 36, 0, Math.PI * 2);
-      ctx.fill();
+    // ขอบฟุ้งไล่ระดับโปร่งแสง (Feathered Alpha Edge) เพื่อให้กลืนเข้ากับกะโหลกศีรษะ 3D 100%
+    ctx.globalCompositeOperation = "destination-in";
+    const featherGrad = ctx.createRadialGradient(256, 256, 185, 256, 256, 240);
+    featherGrad.addColorStop(0, "rgba(0, 0, 0, 1.0)");
+    featherGrad.addColorStop(0.75, "rgba(0, 0, 0, 0.85)");
+    featherGrad.addColorStop(1, "rgba(0, 0, 0, 0.0)");
+    ctx.fillStyle = featherGrad;
+    ctx.beginPath();
+    ctx.ellipse(256, 256, 240, 250, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
 
-      const blushGrad2 = ctx.createRadialGradient(368, 280, 5, 368, 280, 36);
-      blushGrad2.addColorStop(0, "rgba(244, 63, 94, 0.35)");
-      blushGrad2.addColorStop(1, "rgba(244, 63, 94, 0)");
-      ctx.fillStyle = blushGrad2;
-      ctx.beginPath();
-      ctx.arc(368, 280, 36, 0, Math.PI * 2);
-      ctx.fill();
-
-      // รอยยิ้มพิมพ์ใจรูปกระจับ (Contoured Lips with Cupid's Bow)
-      ctx.fillStyle = "#be123c";
-      ctx.beginPath();
-      ctx.ellipse(256, 312, 28, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // ไฮไลต์ริมฝีปากล่างให้ดูอิ่มเอิบ
-      ctx.fillStyle = "rgba(255, 228, 230, 0.65)";
-      ctx.beginPath();
-      ctx.ellipse(256, 314, 14, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-
-      // ขอบฟุ้งไล่ระดับโปร่งแสง (Feathered Alpha Edge) เพื่อให้กลืนเข้ากับกะโหลกศีรษะ 3D 100%
-      ctx.globalCompositeOperation = "destination-in";
-      const featherGrad = ctx.createRadialGradient(256, 256, 185, 256, 256, 240);
-      featherGrad.addColorStop(0, "rgba(0, 0, 0, 1.0)");
-      featherGrad.addColorStop(0.75, "rgba(0, 0, 0, 0.85)");
-      featherGrad.addColorStop(1, "rgba(0, 0, 0, 0.0)");
-      ctx.fillStyle = featherGrad;
-      ctx.beginPath();
-      ctx.ellipse(256, 256, 240, 250, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalCompositeOperation = "source-over";
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.needsUpdate = true;
-      faceMat.map = tex;
-      faceMat.needsUpdate = true;
-    };
-
-    drawDefaultFace();
-
-    if (!photoUrl) return;
-
-    const isDataOrBlob = photoUrl.startsWith("data:") || photoUrl.startsWith("blob:");
-    const getCorsUrl = (url) => {
-      if (!url || url.startsWith("data:") || url.startsWith("blob:")) return url;
-      if (url.includes("images.weserv.nl")) return url;
-      return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
-    };
-
-    const img = new Image();
-    if (!isDataOrBlob) img.crossOrigin = "anonymous";
-
-    img.onload = () => {
-      try {
-        ctx.clearRect(0, 0, 512, 512);
-
-        const iw = img.width || 512;
-        const ih = img.height || 512;
-        const cropW = Math.min(iw, ih * 0.82);
-        const cropH = cropW * 1.18;
-        const sx = (iw - cropW) / 2;
-        const sy = Math.max(0, ih * 0.04);
-
-        // วาดรูปถ่ายลงในรูปทรงไข่รับกับกรอบหน้า
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(256, 256, 230, 245, 0, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(img, sx, sy, cropW, Math.min(cropH, ih - sy), 16, 10, 480, 492);
-        ctx.restore();
-
-        // ขอบฟุ้งไล่ระดับโปร่งแสง (Feathered Alpha Edge) ปลายขอบโปร่งแสง 100% กลืนเข้ากับเนื้อผิว 3D
-        ctx.globalCompositeOperation = "destination-in";
-        const featherGrad = ctx.createRadialGradient(256, 256, 175, 256, 256, 242);
-        featherGrad.addColorStop(0, "rgba(0, 0, 0, 1.0)");
-        featherGrad.addColorStop(0.70, "rgba(0, 0, 0, 0.85)");
-        featherGrad.addColorStop(1, "rgba(0, 0, 0, 0.0)");
-        ctx.fillStyle = featherGrad;
-        ctx.beginPath();
-        ctx.ellipse(256, 256, 242, 250, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalCompositeOperation = "source-over";
-
-        const tex = new THREE.CanvasTexture(canvas);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.needsUpdate = true;
-        faceMat.map = tex;
-        faceMat.needsUpdate = true;
-      } catch (err) {
-        console.warn("Candidate face texture error:", err);
-      }
-    };
-
-    img.onerror = () => {
-      if (!isDataOrBlob && !img.src.includes("images.weserv.nl")) {
-        img.src = getCorsUrl(photoUrl);
-      }
-    };
-
-    if (!isDataOrBlob && (photoUrl.includes("firebasestorage.googleapis.com") || photoUrl.includes("unsplash.com"))) {
-      img.src = getCorsUrl(photoUrl);
-    } else {
-      img.src = photoUrl;
-    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    faceMat.map = tex;
+    faceMat.needsUpdate = true;
   }
 
-  // สร้างป้ายชื่อและคะแนนโหวตลายไทยสีทองเหนือศีรษะโมเดล
-  createCandidateBadgeSprite(name, votes) {
+  // สร้างป้ายชื่อและคะแนนโหวตลายไทยสีทอง พร้อมกรอบรูปถ่ายลอยเด่นเหนือป้าย
+  createCandidateBadgeSprite(name, votes, photoUrl) {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
-    canvas.height = 140;
+    canvas.height = 300;
     const ctx = canvas.getContext("2d");
 
-    const render = (n, v) => {
-      ctx.clearRect(0, 0, 512, 140);
+    let cachedImg = null;
 
-      const x = 10, y = 10, w = 492, h = 120, r = 32;
+    const render = (n, v) => {
+      ctx.clearRect(0, 0, 512, 300);
+
+      // ===== 1. สลักเชื่อมระหว่างกรอบรูปกับกล่องป้าย (Golden Connecting Joint) =====
+      const jointGrad = ctx.createLinearGradient(250, 126, 262, 126);
+      jointGrad.addColorStop(0, "#d97706");
+      jointGrad.addColorStop(0.5, "#fef08a");
+      jointGrad.addColorStop(1, "#d97706");
+      ctx.fillStyle = jointGrad;
+      ctx.fillRect(251, 120, 10, 28);
+
+      // หมุดประดับหัวเชื่อม
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath();
+      ctx.arc(256, 134, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // ===== 2. กล่องป้ายชื่อและคะแนนโหวต (Lower Badge Box) =====
+      const x = 16, y = 146, w = 480, h = 140, r = 28;
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + w - r, y);
@@ -5216,33 +5164,95 @@ export class LoyKrathongScene {
       ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
 
-      const grad = ctx.createLinearGradient(x, y, x, y + h);
-      grad.addColorStop(0, "rgba(15, 23, 42, 0.94)");
-      grad.addColorStop(1, "rgba(30, 41, 59, 0.98)");
-      ctx.fillStyle = grad;
+      // พื้นหลังไล่เฉดสีกรมท่าน้ำเงินเข้มหรูหรา
+      const boxGrad = ctx.createLinearGradient(x, y, x, y + h);
+      boxGrad.addColorStop(0, "rgba(15, 23, 42, 0.94)");
+      boxGrad.addColorStop(1, "rgba(30, 41, 59, 0.98)");
+      ctx.fillStyle = boxGrad;
       ctx.fill();
 
+      // ขอบทองนอก
       ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 5;
       ctx.stroke();
 
-      // เส้นขอบในสีทอง
+      // ขอบทองชั้นใน
       ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
       ctx.lineWidth = 2;
-      ctx.strokeRect(x + 8, y + 8, w - 16, h - 16);
+      ctx.strokeRect(x + 7, y + 7, w - 14, h - 14);
 
+      // ชื่อผู้สมัคร
       ctx.fillStyle = "#fef08a";
-      ctx.font = "bold 38px sans-serif";
+      ctx.font = "bold 34px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const displayName = (n || "ผู้ร่วมลอยกระทง").length > 15 
         ? (n || "ผู้ร่วมลอยกระทง").slice(0, 14) + "…" 
         : (n || "ผู้ร่วมลอยกระทง");
-      ctx.fillText(displayName, 256, 52);
+      ctx.fillText(displayName, 256, 192);
 
+      // คะแนนโหวต
       ctx.fillStyle = "#fb7185";
-      ctx.font = "bold 30px sans-serif";
-      ctx.fillText(`❤️ โหวต ${v || 0} คะแนน`, 256, 98);
+      ctx.font = "bold 28px sans-serif";
+      ctx.fillText(`❤️ โหวต ${v || 0} คะแนน`, 256, 244);
+
+      // ===== 3. กรอบรูปถ่ายทรงกลมสีทองลอยเด่นเหนือป้าย (Circular Portrait Frame Above Badge) =====
+      const cx = 256, cy = 68, radius = 54;
+
+      // เงารัศมีเรืองแสงสีทองด้านหลังกรอบรูป
+      const glowGrad = ctx.createRadialGradient(cx, cy, radius - 4, cx, cy, radius + 14);
+      glowGrad.addColorStop(0, "rgba(245, 158, 11, 0.4)");
+      glowGrad.addColorStop(1, "rgba(245, 158, 11, 0)");
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // พื้นหลังกรอบรูปกลม
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "#1e293b";
+      ctx.fill();
+      ctx.clip();
+
+      if (cachedImg) {
+        // ครอปและแสดงรูปภาพจริงให้เต็มวงกลมพอดี
+        const iw = cachedImg.width || 1;
+        const ih = cachedImg.height || 1;
+        const size = Math.min(iw, ih);
+        const sx = (iw - size) / 2;
+        const sy = (ih - size) / 2;
+        ctx.drawImage(cachedImg, sx, sy, size, size, cx - radius, cy - radius, radius * 2, radius * 2);
+      } else {
+        // ซิลูเอทรูปคนสีทองหรูหราขณะรอโหลดภาพ
+        ctx.fillStyle = "#d97706";
+        ctx.beginPath();
+        ctx.arc(cx, cy - 8, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy + 40, 32, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // ขอบทองหนาสง่างามรอบรูปถ่าย
+      const ringGrad = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+      ringGrad.addColorStop(0, "#fef08a");
+      ringGrad.addColorStop(0.5, "#f59e0b");
+      ringGrad.addColorStop(1, "#b45309");
+      ctx.strokeStyle = ringGrad;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // เส้นรัศมีทองชั้นในรอบรูป
+      ctx.strokeStyle = "rgba(254, 240, 138, 0.7)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius - 3, 0, Math.PI * 2);
+      ctx.stroke();
     };
 
     render(name, votes);
@@ -5256,8 +5266,40 @@ export class LoyKrathongScene {
       depthWrite: false,
     });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(2.4, 0.65, 1.0);
+    sprite.scale.set(2.4, 2.4 * (300 / 512), 1.0);
     sprite.userData = { canvas, ctx, renderTexture: render };
+
+    // ดาวน์โหลดรูปถ่ายของผู้สมัครพร้อมระบบ CORS Proxy Fallback
+    if (photoUrl) {
+      const isDataOrBlob = photoUrl.startsWith("data:") || photoUrl.startsWith("blob:");
+      const getCorsUrl = (url) => {
+        if (!url || url.startsWith("data:") || url.startsWith("blob:")) return url;
+        if (url.includes("images.weserv.nl")) return url;
+        return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+      };
+
+      const img = new Image();
+      if (!isDataOrBlob) img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        cachedImg = img;
+        render(name, votes);
+        tex.needsUpdate = true;
+      };
+
+      img.onerror = () => {
+        if (!isDataOrBlob && !img.src.includes("images.weserv.nl")) {
+          img.src = getCorsUrl(photoUrl);
+        }
+      };
+
+      if (!isDataOrBlob && (photoUrl.includes("firebasestorage.googleapis.com") || photoUrl.includes("unsplash.com") || photoUrl.includes("googleusercontent.com"))) {
+        img.src = getCorsUrl(photoUrl);
+      } else {
+        img.src = photoUrl;
+      }
+    }
+
     return sprite;
   }
 
