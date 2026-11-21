@@ -1423,10 +1423,10 @@ export class LoyKrathongScene {
       }
     });
 
-    // เสาหลักผูกเรือพร้อมโคมไฟประดับตามแนวริมท่าน้ำสีเขียว
+    // เสาหลักพร้อมโคมไฟประดับด้านหลังพื้นที่สีเขียวริมท่าน้ำ (ย้ายไปอยู่ด้านหลังเพื่อไม่ให้บังโมเดลคน)
     const pierLanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
     [-16.0, -8.0, 0, 8.0, 16.0].forEach((pz) => {
-      const px = pierWidthX / 2 - 0.4;
+      const px = -pierWidthX / 2 + 0.6; // ย้ายไปแนวหลังสุดของพื้นที่สีเขียวริมท่าน้ำ
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.2, 8), pierWoodMat);
       post.position.set(px, 1.35, pz);
       greenPierGroup.add(post);
