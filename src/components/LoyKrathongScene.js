@@ -4567,13 +4567,16 @@ export class LoyKrathongScene {
 
     // วัสดุใบหน้าพอร์ตเทรตคมชัดสูง (Planar Portrait Masking)
     const faceMat = new THREE.MeshStandardMaterial({
-      roughness: 0.58,
-      metalness: 0.04,
+      roughness: 0.52,
+      metalness: 0.02,
       transparent: true,
-      alphaTest: 0.02,
-      depthWrite: true,
+      alphaTest: 0.01,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+      depthWrite: false,
     });
-    this.applyCandidateFaceTexture(faceMat);
+    this.applyCandidateFaceTexture(faceMat, isMale);
 
     let wavingArm = null;
     let wavingHand = null;
@@ -4647,34 +4650,140 @@ export class LoyKrathongScene {
     return handGroup;
   }
 
-  // ปั้นศีรษะ โครงหน้า 3D ใบหู และทรงผมไทย พร้อมแผ่นพอร์ตเทรตรูปไข่คมชัดไร้การบิดเบี้ยว
+  // ปั้นศีรษะ โครงหน้า 3D (ตา จมูก ปาก คิ้ว คาง หู) พร้อมแผ่นพอร์ตเทรตรูปไข่คมชัดไร้การบิดเบี้ยว
   buildAnatomicalHead(isMale, skinMat, hairMat, goldMat, faceMat, rubyMat) {
     const headGroup = new THREE.Group();
 
     // 1. กะโหลกศีรษะ 3D เนื้อเนียนสีผิวธรรมชาติ (Smooth Anatomical Cranium)
     const headRadius = 0.125;
     const headGeo = new THREE.SphereGeometry(headRadius, 24, 20);
-    headGeo.scale(0.96, 1.12, 1.04);
+    headGeo.scale(0.96, 1.10, 1.02);
     const headMesh = new THREE.Mesh(headGeo, skinMat);
     headGroup.add(headMesh);
 
-    // 2. แผ่นพอร์ตเทรตใบหน้าด้านหน้า (Planar Oval Portrait Face - Zero Distortion)
-    // ระนาบรูปไข่แนบสนิทด้านหน้าศีรษะ ทำให้รูปถ่ายผู้โพสต์คมชัด 100% ตรงตามรูปจริง ไม่ยืดเบี้ยวเป็นเลนส์นูน
-    const facePlateGeo = new THREE.PlaneGeometry(0.18, 0.22);
-    const facePlate = new THREE.Mesh(facePlateGeo, faceMat);
-    facePlate.position.set(0, 0.01, 0.126);
-    headGroup.add(facePlate);
+    // 2. คางและแนวกราม 3D ปั้นรับรูปหน้าอย่างสง่างาม (3D Anatomical Chin & Jawline)
+    if (isMale) {
+      // คางบุรุษไทย: โครงหน้าคมคาย แข็งแกร่งสมชายชาตรี
+      const chinGeo = new THREE.SphereGeometry(0.046, 14, 12);
+      chinGeo.scale(1.06, 0.86, 0.96);
+      const chin = new THREE.Mesh(chinGeo, skinMat);
+      chin.position.set(0, -0.096, 0.076);
+      headGroup.add(chin);
 
-    // 3. ใบหูทั้งสองข้าง (3D Sculpted Ears)
-    [-0.120, 0.120].forEach((ex, idx) => {
-      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 8), skinMat);
-      ear.position.set(ex, 0.005, -0.01);
-      ear.scale.set(0.35, 1.15, 0.75);
-      ear.rotation.y = idx === 0 ? 0.15 : -0.15;
-      headGroup.add(ear);
+      // แนวกรามคมสันรับกับลำคอทั้งสองข้าง
+      [-0.068, 0.068].forEach((jx, idx) => {
+        const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.032, 0.065, 8), skinMat);
+        jaw.position.set(jx, -0.072, 0.038);
+        jaw.rotation.z = idx === 0 ? 0.36 : -0.36;
+        jaw.rotation.x = -0.24;
+        headGroup.add(jaw);
+      });
+    } else {
+      // คางสตรีไทย: คางเรียวรูปไข่ V-Line อ่อนช้อยละมุนตา
+      const chinGeo = new THREE.SphereGeometry(0.038, 14, 12);
+      chinGeo.scale(0.82, 0.92, 0.86);
+      const chin = new THREE.Mesh(chinGeo, skinMat);
+      chin.position.set(0, -0.096, 0.072);
+      headGroup.add(chin);
+
+      // แนวกรามเรียวระหงทั้งสองข้าง
+      [-0.060, 0.060].forEach((jx, idx) => {
+        const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.028, 0.060, 8), skinMat);
+        jaw.position.set(jx, -0.070, 0.035);
+        jaw.rotation.z = idx === 0 ? 0.30 : -0.30;
+        jaw.rotation.x = -0.22;
+        headGroup.add(jaw);
+      });
+    }
+
+    // 3. สันจมูกและปลายจมูก 3D (3D Sculpted Nose Bridge, Tip & Nostrils)
+    const noseGroup = new THREE.Group();
+    noseGroup.position.set(0, 0.008, 0.124);
+
+    // สันจมูกโด่งเรียวงาม
+    const bridgeGeo = new THREE.CylinderGeometry(isMale ? 0.0075 : 0.006, isMale ? 0.012 : 0.010, isMale ? 0.048 : 0.044, 8);
+    const bridge = new THREE.Mesh(bridgeGeo, skinMat);
+    bridge.position.set(0, 0.010, 0.008);
+    bridge.rotation.x = -0.24;
+    noseGroup.add(bridge);
+
+    // ปลายจมูกมนสวย/หยดน้ำ
+    const tipGeo = new THREE.SphereGeometry(isMale ? 0.0125 : 0.0105, 8, 8);
+    tipGeo.scale(1.0, 0.85, 1.15);
+    const tip = new THREE.Mesh(tipGeo, skinMat);
+    tip.position.set(0, -0.010, 0.018);
+    noseGroup.add(tip);
+
+    // ปีกจมูกสองข้าง
+    [-1, 1].forEach((nSide) => {
+      const wingGeo = new THREE.SphereGeometry(isMale ? 0.007 : 0.0055, 6, 6);
+      const wing = new THREE.Mesh(wingGeo, skinMat);
+      wing.position.set(nSide * (isMale ? 0.011 : 0.009), -0.012, 0.013);
+      wing.scale.set(0.9, 0.8, 0.9);
+      noseGroup.add(wing);
     });
 
-    // 4. ทรงผม 3D ปั้นตามแบบสุภาพบุรุษไทยและสตรีไทย
+    headGroup.add(noseGroup);
+
+    // 4. แผ่นพอร์ตเทรตใบหน้าด้านหน้า (Planar Oval Portrait Face - Zero Distortion & Zero Z-fighting)
+    // ระนาบรูปไข่แนบสนิทด้านหน้าศีรษะ ให้เครื่องหน้า ตา หู จมูก ปาก คิ้ว คาง คมชัดสูงสุด
+    const facePlateGeo = new THREE.PlaneGeometry(0.18, 0.22);
+    const facePlate = new THREE.Mesh(facePlateGeo, faceMat);
+    facePlate.position.set(0, 0.008, 0.130);
+    facePlate.renderOrder = 3;
+    headGroup.add(facePlate);
+
+    // 5. ใบหูทั้งสองข้างพร้อมเครื่องประดับต่างหูไทยโบราณ (3D Sculpted Ears & Earrings)
+    [-0.120, 0.120].forEach((ex, idx) => {
+      const earGroup = new THREE.Group();
+      earGroup.position.set(ex, 0.005, -0.008);
+      earGroup.rotation.y = idx === 0 ? 0.16 : -0.16;
+
+      // ใบหูด้านนอก (Pinna)
+      const earPinna = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), skinMat);
+      earPinna.scale.set(0.32, 1.18, 0.76);
+      earGroup.add(earPinna);
+
+      // ขอบใบหูด้านใน (Helix)
+      const helix = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.004, 6, 12), skinMat);
+      helix.position.set(idx === 0 ? 0.004 : -0.004, 0.004, 0);
+      helix.rotation.y = Math.PI / 2;
+      helix.scale.set(0.5, 1.0, 1.0);
+      earGroup.add(helix);
+
+      // ติ่งหู (Earlobe)
+      const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.010, 6, 6), skinMat);
+      lobe.position.set(0, -0.024, 0.002);
+      earGroup.add(lobe);
+
+      // เครื่องประดับต่างหูระย้าสำหรับสตรีไทย (Chandelier Ruby Earrings)
+      if (!isMale) {
+        // แป้นต่างหูดอกไม้ทองคำ
+        const stud = new THREE.Mesh(new THREE.SphereGeometry(0.0065, 6, 6), goldMat);
+        stud.position.set(idx === 0 ? 0.002 : -0.002, -0.025, 0.004);
+        earGroup.add(stud);
+
+        // ข้อต่อห้อยระย้าทองคำ
+        const link = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0018, 0.022, 4), goldMat);
+        link.position.set(idx === 0 ? 0.002 : -0.002, -0.040, 0.004);
+        earGroup.add(link);
+
+        // เม็ดทับทิมหยดน้ำห้อยระย้า (Teardrop Ruby Pendant)
+        const rubyDrop = new THREE.Mesh(new THREE.ConeGeometry(0.0065, 0.016, 6), rubyMat);
+        rubyDrop.position.set(idx === 0 ? 0.002 : -0.002, -0.054, 0.004);
+        rubyDrop.rotation.x = Math.PI; // คว่ำกรวยลงเป็นทรงหยดน้ำ
+        earGroup.add(rubyDrop);
+
+        // เม็ดทองคำห้อยปลายตุ้งติ้ง
+        const bead = new THREE.Mesh(new THREE.SphereGeometry(0.004, 6, 6), goldMat);
+        bead.position.set(idx === 0 ? 0.002 : -0.002, -0.063, 0.004);
+        earGroup.add(bead);
+      }
+
+      headGroup.add(earGroup);
+    });
+
+    // 6. ทรงผม 3D ปั้นตามแบบสุภาพบุรุษไทยและสตรีไทย
     if (isMale) {
       // ผมสุภาพบุรุษไทย: ทรงหวีเรียบสง่างาม ครอบรับกะโหลกศีรษะอย่างเป็นธรรมชาติ
       const maleHair = new THREE.Mesh(new THREE.SphereGeometry(0.129, 20, 16), hairMat);
@@ -5231,8 +5340,8 @@ export class LoyKrathongScene {
     };
   }
 
-  // วาดโครงหน้าและเครื่องหน้าสไตล์ไทยประณีตลงบนแผ่นพอร์ตเทรต 3D ของโมเดล (ไม่ทับด้วยรูปถ่าย)
-  applyCandidateFaceTexture(faceMat) {
+  // วาดโครงหน้าและเครื่องหน้าสไตล์ไทยประณีต (ตา หู จมูก ปาก คิ้ว คาง) คมชัดสมจริงสำหรับบุรุษและสตรีไทย
+  applyCandidateFaceTexture(faceMat, isMale = false) {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 512;
@@ -5240,106 +5349,305 @@ export class LoyKrathongScene {
 
     ctx.clearRect(0, 0, 512, 512);
 
-    // โครงหน้ารูปไข่สีผิวธรรมชาติ
     ctx.save();
+
+    // 1. โครงหน้ารูปไข่สีผิวนวลธรรมชาติ (Natural Golden-Honey Thai Skin)
     ctx.beginPath();
-    ctx.ellipse(256, 256, 215, 240, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#dfb088";
+    ctx.ellipse(256, 256, isMale ? 220 : 210, 242, 0, 0, Math.PI * 2);
+    ctx.fillStyle = isMale ? "#dca97e" : "#dfb28c";
     ctx.fill();
 
-    // นุ่มนวลด้วยเงาข้างแก้มและกรอบกราม (Ambient Occlusion)
-    const aoGrad = ctx.createRadialGradient(256, 256, 120, 256, 256, 235);
+    // 2. แสงเงาและมิติโครงหน้า (Ambient Occlusion & Contouring)
+    const aoGrad = ctx.createRadialGradient(256, 256, 110, 256, 256, 240);
     aoGrad.addColorStop(0, "rgba(180, 120, 85, 0)");
-    aoGrad.addColorStop(0.70, "rgba(180, 120, 85, 0.12)");
-    aoGrad.addColorStop(1, "rgba(150, 95, 65, 0.35)");
+    aoGrad.addColorStop(0.65, isMale ? "rgba(160, 100, 65, 0.16)" : "rgba(180, 120, 85, 0.12)");
+    aoGrad.addColorStop(1, isMale ? "rgba(135, 80, 48, 0.45)" : "rgba(150, 95, 65, 0.35)");
     ctx.fillStyle = aoGrad;
     ctx.beginPath();
-    ctx.ellipse(256, 256, 215, 240, 0, 0, Math.PI * 2);
+    ctx.ellipse(256, 256, isMale ? 220 : 210, 242, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // คิ้วโก่งเรียวงามแบบไทย (Graceful Arched Eyebrows)
-    ctx.strokeStyle = "#27272a";
-    ctx.lineWidth = 7;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.arc(176, 202, 44, Math.PI * 1.15, Math.PI * 1.85);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(336, 202, 44, Math.PI * 1.15, Math.PI * 1.85);
-    ctx.stroke();
+    if (isMale) {
+      // ===== ชาย: ใบหน้าสุภาพบุรุษไทย คมเข้ม สง่างาม =====
 
-    // ดวงตารูปหางหงส์คมขำ (Almond Eyes with Iris & Pupil)
-    [176, 336].forEach((eyeX) => {
-      // ตาขาว
-      ctx.fillStyle = "#ffffff";
+      // กรอบกรามคมสัน (Masculine Jawline Shading)
+      ctx.fillStyle = "rgba(140, 85, 52, 0.22)";
       ctx.beginPath();
-      ctx.ellipse(eyeX, 238, 22, 14, 0, 0, Math.PI * 2);
+      ctx.moveTo(100, 290);
+      ctx.quadraticCurveTo(150, 390, 256, 440);
+      ctx.quadraticCurveTo(362, 390, 412, 290);
+      ctx.quadraticCurveTo(256, 460, 100, 290);
       ctx.fill();
 
-      // ม่านตาสีน้ำตาลประกาย
-      ctx.fillStyle = "#3e2723";
+      // คิ้วเข้มคมสัน (Bold Masculine Eyebrows)
+      ctx.strokeStyle = "#18181b";
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // คิ้วซ้าย
       ctx.beginPath();
-      ctx.arc(eyeX, 238, 11, 0, Math.PI * 2);
+      ctx.moveTo(136, 196);
+      ctx.lineTo(190, 182);
+      ctx.lineTo(230, 190);
+      ctx.stroke();
+
+      // คิ้วขวา
+      ctx.beginPath();
+      ctx.moveTo(376, 196);
+      ctx.lineTo(322, 182);
+      ctx.lineTo(282, 190);
+      ctx.stroke();
+
+      // ดวงตาคมเข้มดั่งบุรุษไทย (Sharp Almond Eyes)
+      [176, 336].forEach((eyeX, idx) => {
+        const isLeftEye = idx === 0;
+
+        // ตาขาวพร้อมเงาเปลือกตาบน
+        ctx.fillStyle = "#f8fafc";
+        ctx.beginPath();
+        ctx.ellipse(eyeX, 235, 23, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ม่านตาสีน้ำตาลประกายอำพันคมเข้ม (Deep Amber-Brown Iris)
+        ctx.fillStyle = "#451a03";
+        ctx.beginPath();
+        ctx.arc(eyeX, 235, 11.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // วงม่านตาขอบเข้ม
+        ctx.strokeStyle = "#1c1917";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // รูม่านตาดำสนิท
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.arc(eyeX, 235, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ประกายตาแวววาว (Specular Catchlight)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(eyeX - 4, 231, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ขอบตาบนคมเข้ม
+        ctx.strokeStyle = "#09090b";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(eyeX, 235, 23, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+      });
+
+      // สันจมูกโด่งคมสัน (Sculpted Male Nose Shading)
+      ctx.fillStyle = "rgba(145, 88, 55, 0.28)";
+      ctx.beginPath();
+      ctx.moveTo(246, 215);
+      ctx.lineTo(244, 268);
+      ctx.lineTo(268, 268);
+      ctx.lineTo(266, 215);
+      ctx.closePath();
       ctx.fill();
 
-      // รูม่านตาดำ
-      ctx.fillStyle = "#09090b";
+      // รูจมูกและปีกจมูก
+      ctx.fillStyle = "rgba(100, 50, 25, 0.40)";
       ctx.beginPath();
-      ctx.arc(eyeX, 238, 6, 0, Math.PI * 2);
+      ctx.ellipse(244, 274, 5, 3.5, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(268, 274, 5, 3.5, -0.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // ประกายตาแวววาว (Specular Catchlight)
-      ctx.fillStyle = "#ffffff";
+      // ริมฝีปากสุภาพบุรุษไทย โทนอบอุ่นเป็นธรรมชาติ (Natural Masculine Contoured Lips)
+      ctx.fillStyle = "#a14828";
       ctx.beginPath();
-      ctx.arc(eyeX - 4, 234, 3.5, 0, Math.PI * 2);
+      ctx.ellipse(256, 318, 30, 9, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // เส้นขอบตาบนและขนตา
+      // เส้นแบ่งริมฝีปาก
+      ctx.strokeStyle = "#5a2010";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(228, 318);
+      ctx.lineTo(284, 318);
+      ctx.stroke();
+
+      // เงาใต้ริมฝีปากล่าง ขับเน้นคางบุรุษ (Chin Cleft Shadow)
+      ctx.fillStyle = "rgba(130, 75, 45, 0.32)";
+      ctx.beginPath();
+      ctx.ellipse(256, 335, 16, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // ไฮไลต์ปลายคาง
+      ctx.fillStyle = "rgba(255, 235, 215, 0.20)";
+      ctx.beginPath();
+      ctx.ellipse(256, 362, 22, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else {
+      // ===== หญิง: ใบหน้าสตรีไทย อ่อนช้อย งดงามดั่งนางในวรรณคดี =====
+
+      // แก้มอมชมพูระเรื่อสุขภาพดี (Blushing Rosy Cheeks)
+      const blushGrad1 = ctx.createRadialGradient(140, 282, 5, 140, 282, 42);
+      blushGrad1.addColorStop(0, "rgba(244, 63, 94, 0.38)");
+      blushGrad1.addColorStop(1, "rgba(244, 63, 94, 0)");
+      ctx.fillStyle = blushGrad1;
+      ctx.beginPath();
+      ctx.arc(140, 282, 42, 0, Math.PI * 2);
+      ctx.fill();
+
+      const blushGrad2 = ctx.createRadialGradient(372, 282, 5, 372, 282, 42);
+      blushGrad2.addColorStop(0, "rgba(244, 63, 94, 0.38)");
+      blushGrad2.addColorStop(1, "rgba(244, 63, 94, 0)");
+      ctx.fillStyle = blushGrad2;
+      ctx.beginPath();
+      ctx.arc(372, 282, 42, 0, Math.PI * 2);
+      ctx.fill();
+
+      // คิ้วโก่งดั่งคันศร (Graceful Arched Thai Swan Eyebrows)
+      ctx.strokeStyle = "#27272a";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(176, 204, 46, Math.PI * 1.14, Math.PI * 1.86);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(336, 204, 46, Math.PI * 1.14, Math.PI * 1.86);
+      ctx.stroke();
+
+      // เส้นซ้อนปลายคิ้วเรียวพริ้ว
       ctx.strokeStyle = "#18181b";
       ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.arc(eyeX, 238, 22, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.arc(176, 203, 47, Math.PI * 1.18, Math.PI * 1.82);
       ctx.stroke();
-    });
+      ctx.beginPath();
+      ctx.arc(336, 203, 47, Math.PI * 1.18, Math.PI * 1.82);
+      ctx.stroke();
 
-    // สันจมูกและเงาปีกจมูก (Nose Shading)
-    ctx.fillStyle = "rgba(180, 110, 75, 0.25)";
-    ctx.beginPath();
-    ctx.ellipse(256, 266, 12, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
+      // ดวงตารูปหางหงส์คมขำ (Graceful Swan Eyes with Rich Iris & Double Catchlights)
+      [176, 336].forEach((eyeX, idx) => {
+        const isLeftEye = idx === 0;
 
-    // แก้มอมชมพูระเรื่อสุขภาพดี (Blushing Cheeks)
-    const blushGrad1 = ctx.createRadialGradient(144, 280, 5, 144, 280, 36);
-    blushGrad1.addColorStop(0, "rgba(244, 63, 94, 0.35)");
-    blushGrad1.addColorStop(1, "rgba(244, 63, 94, 0)");
-    ctx.fillStyle = blushGrad1;
-    ctx.beginPath();
-    ctx.arc(144, 280, 36, 0, Math.PI * 2);
-    ctx.fill();
+        // ชั้นพับเปลือกตาบน (Double Eyelid Crease)
+        ctx.strokeStyle = "rgba(140, 75, 45, 0.40)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(eyeX, 236, 26, Math.PI * 1.20, Math.PI * 1.80);
+        ctx.stroke();
 
-    const blushGrad2 = ctx.createRadialGradient(368, 280, 5, 368, 280, 36);
-    blushGrad2.addColorStop(0, "rgba(244, 63, 94, 0.35)");
-    blushGrad2.addColorStop(1, "rgba(244, 63, 94, 0)");
-    ctx.fillStyle = blushGrad2;
-    ctx.beginPath();
-    ctx.arc(368, 280, 36, 0, Math.PI * 2);
-    ctx.fill();
+        // ตาขาวนวล
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.ellipse(eyeX, 238, 23, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-    // รอยยิ้มพิมพ์ใจรูปกระจับ (Contoured Lips with Cupid's Bow)
-    ctx.fillStyle = "#be123c";
-    ctx.beginPath();
-    ctx.ellipse(256, 312, 28, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+        // ม่านตาสีน้ำตาลประกายทอง (Hazel-Chestnut Iris)
+        ctx.fillStyle = "#3e2216";
+        ctx.beginPath();
+        ctx.arc(eyeX, 238, 11, 0, Math.PI * 2);
+        ctx.fill();
 
-    // ไฮไลต์ริมฝีปากล่างให้ดูอิ่มเอิบ
-    ctx.fillStyle = "rgba(255, 228, 230, 0.65)";
-    ctx.beginPath();
-    ctx.ellipse(256, 314, 14, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
+        // ประกายสีน้ำตาลทองรอบม่านตา
+        ctx.fillStyle = "rgba(180, 100, 40, 0.45)";
+        ctx.beginPath();
+        ctx.arc(eyeX, 239, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // รูม่านตาดำ
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.arc(eyeX, 238, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ประกายตาเอกแวววาว (Main Specular Catchlight)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(eyeX - 4, 234, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ประกายตารองระยิบระยับ (Secondary Catchlight)
+        ctx.beginPath();
+        ctx.arc(eyeX + 3.5, 241, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // อายไลเนอร์ขอบตาบนตวัดหางหงส์คมกริบ (Winged Eyeliner & Eyelashes)
+        ctx.strokeStyle = "#18181b";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(eyeX, 238, 23, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+
+        // หางตาตวัดขึ้นอย่างอ่อนช้อย
+        ctx.beginPath();
+        const wingDir = isLeftEye ? -1 : 1;
+        ctx.moveTo(eyeX + wingDir * 20, 236);
+        ctx.quadraticCurveTo(eyeX + wingDir * 26, 233, eyeX + wingDir * 28, 230);
+        ctx.stroke();
+      });
+
+      // สันจมูกและเงาปีกจมูกเรียวละมุน (Delicate Feminine Nose Shading)
+      ctx.fillStyle = "rgba(175, 105, 70, 0.22)";
+      ctx.beginPath();
+      ctx.ellipse(256, 268, 10, 5.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // รูจมูกเล็กรูปหยดน้ำ
+      ctx.fillStyle = "rgba(120, 60, 35, 0.35)";
+      ctx.beginPath();
+      ctx.ellipse(247, 272, 3.5, 2.2, 0.3, 0, Math.PI * 2);
+      ctx.ellipse(265, 272, 3.5, 2.2, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // ไฮไลต์สันจมูกหยดน้ำ
+      ctx.fillStyle = "rgba(255, 245, 235, 0.45)";
+      ctx.beginPath();
+      ctx.ellipse(256, 262, 4, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // รอยยิ้มพิมพ์ใจ ริมฝีปากกระจับอวบอิ่ม (Cupid's Bow Rosy Crimson Lips)
+      // ริมฝีปากบน: รูปกระจับมีหยักตรงกลางคมชัด
+      ctx.fillStyle = "#be123c";
+      ctx.beginPath();
+      ctx.moveTo(226, 312);
+      ctx.quadraticCurveTo(242, 303, 250, 306);
+      ctx.quadraticCurveTo(256, 310, 262, 306);
+      ctx.quadraticCurveTo(270, 303, 286, 312);
+      ctx.quadraticCurveTo(256, 318, 226, 312);
+      ctx.fill();
+
+      // ริมฝีปากล่าง: อิ่มเอิบมนสวย
+      ctx.fillStyle = "#e11d48";
+      ctx.beginPath();
+      ctx.ellipse(256, 317, 26, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // เคลือบกลอสแวววาวที่กึ่งกลางริมฝีปากล่าง (Lip Gloss Specular Sheen)
+      ctx.fillStyle = "rgba(255, 241, 242, 0.75)";
+      ctx.beginPath();
+      ctx.ellipse(256, 318, 14, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // รอยยิ้มมุมปากอ่อนหวาน
+      ctx.strokeStyle = "#881337";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(224, 311);
+      ctx.quadraticCurveTo(222, 309, 220, 308);
+      ctx.moveTo(288, 311);
+      ctx.quadraticCurveTo(290, 309, 292, 308);
+      ctx.stroke();
+
+      // ไฮไลต์คางเรียวรูปไข่ V-Line
+      ctx.fillStyle = "rgba(255, 240, 230, 0.35)";
+      ctx.beginPath();
+      ctx.ellipse(256, 360, 18, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
 
-    // ขอบฟุ้งไล่ระดับโปร่งแสง (Feathered Alpha Edge) เพื่อให้กลืนเข้ากับกะโหลกศีรษะ 3D 100%
+    // 3. ขอบฟุ้งไล่ระดับโปร่งแสง (Feathered Alpha Edge) เพื่อให้เนียนสนิทไปกับกะโหลกศีรษะ 3D 100%
     ctx.globalCompositeOperation = "destination-in";
     const featherGrad = ctx.createRadialGradient(256, 256, 185, 256, 256, 240);
     featherGrad.addColorStop(0, "rgba(0, 0, 0, 1.0)");
