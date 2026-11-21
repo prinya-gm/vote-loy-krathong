@@ -6653,7 +6653,7 @@ export class LoyKrathongScene {
   animate() {
     this.animId = requestAnimationFrame(this.animate.bind(this));
     const time = this.clock.getElapsedTime();
-    const dt = Math.min(time - (this.lastTime || time), 0.05) || 0.016;
+    const dt = Math.min(time - (this.lastTime || time), 0.1) || 0.016;
     this.lastTime = time;
 
     // 1. Controls
@@ -7446,6 +7446,11 @@ export class LoyKrathongScene {
     const trailPoints = new THREE.Points(trailGeo, trailMat);
     this.scene.add(trailPoints);
 
+    const history = [];
+    for (let h = 0; h < trailCount; h++) {
+      history.push({ x: startX, y: startY, z: startZ });
+    }
+
     this.activeFireworks.push({
       type: "rocket",
       pos: new THREE.Vector3(startX, startY, startZ),
@@ -7456,7 +7461,7 @@ export class LoyKrathongScene {
       trailPos,
       trailCol,
       trailCount,
-      history: [],
+      history,
       age: 0,
     });
 
@@ -7524,6 +7529,11 @@ export class LoyKrathongScene {
     const trailPoints = new THREE.Points(trailGeo, trailMat);
     this.scene.add(trailPoints);
 
+    const treeHistory = [];
+    for (let h = 0; h < trailCount; h++) {
+      treeHistory.push({ x: startX, y: startY, z: startZ });
+    }
+
     this.activeFireworks.push({
       type: "rocket",
       pos: new THREE.Vector3(startX, startY, startZ),
@@ -7534,7 +7544,7 @@ export class LoyKrathongScene {
       trailPos,
       trailCol,
       trailCount,
-      history: [],
+      history: treeHistory,
       age: 0,
     });
 
@@ -7681,13 +7691,22 @@ export class LoyKrathongScene {
         fw.pos.y += fw.velY * dt;
         fw.velY -= 9.8 * 0.45 * dt;
 
-        fw.history.unshift(new THREE.Vector3().copy(fw.pos));
-        if (fw.history.length > fw.trailCount) fw.history.pop();
+        // Shift pre-allocated history pool in-place (Zero Memory Allocation / Zero GC Lag)
+        if (fw.history && fw.history.length > 0) {
+          for (let h = fw.trailCount - 1; h > 0; h--) {
+            fw.history[h].x = fw.history[h - 1].x;
+            fw.history[h].y = fw.history[h - 1].y;
+            fw.history[h].z = fw.history[h - 1].z;
+          }
+          fw.history[0].x = fw.pos.x;
+          fw.history[0].y = fw.pos.y;
+          fw.history[0].z = fw.pos.z;
+        }
 
         for (let j = 0; j < fw.trailCount; j++) {
-          const pt = fw.history[j] || fw.pos;
-          const driftX = (Math.random() - 0.5) * 0.16;
-          const driftZ = (Math.random() - 0.5) * 0.16;
+          const pt = (fw.history && fw.history[j]) || fw.pos;
+          const driftX = Math.sin(fw.age * 22.0 + j * 0.8) * 0.08;
+          const driftZ = Math.cos(fw.age * 22.0 + j * 0.8) * 0.08;
           fw.trailPos[j * 3] = pt.x + driftX;
           fw.trailPos[j * 3 + 1] = pt.y - j * 0.12;
           fw.trailPos[j * 3 + 2] = pt.z + driftZ;
@@ -7711,10 +7730,12 @@ export class LoyKrathongScene {
         }
       } else if (fw.type === "burst") {
         fw.age += dt;
-        const progress = fw.age / fw.maxAge;
+        const progress = Math.min(1.0, fw.age / fw.maxAge);
 
-        // ฟิสิกส์แรงต้านอากาศและแรงโน้มถ่วง
-        const drag = fw.isWillow ? 0.985 : 0.965;
+        // ฟิสิกส์แรงต้านอากาศและแรงโน้มถ่วงแบบ Delta-Time Independent 100%
+        // ชดเชย Refresh Rate: หน้าจอ 60Hz, 120Hz, 144Hz จะเคลื่อนที่ด้วยความเร็วและความไกลเท่ากันเป๊ะ
+        const baseDrag = fw.isWillow ? 0.985 : 0.965;
+        const effectiveDrag = Math.pow(baseDrag, dt * 60.0);
         const gravity = fw.isWillow ? 3.4 : 6.8;
 
         // คำนวณค่าคงที่สำหรับเฟดล่วงหน้า 1 ครั้งนอกลูป (ประหยัด Math.pow หลายร้อยรอบต่อเฟรม)
@@ -7722,9 +7743,9 @@ export class LoyKrathongScene {
 
         for (let j = 0; j < fw.count; j++) {
           const v = fw.velocities[j];
-          v.x *= drag;
-          v.y = v.y * drag - gravity * dt;
-          v.z *= drag;
+          v.x *= effectiveDrag;
+          v.y = v.y * effectiveDrag - gravity * dt;
+          v.z *= effectiveDrag;
 
           fw.positions[j * 3] += v.x * dt;
           fw.positions[j * 3 + 1] += v.y * dt;
