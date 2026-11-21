@@ -290,8 +290,8 @@ export default function App() {
 
       {/* 3D Navigation & Firework Controls Widget (Responsive: Bottom-Right on mobile, Bottom-Left on tablet/desktop) */}
       <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col items-center gap-2">
-        {/* Firework Launch Buttons - วางอยู่เหนือปุ่ม Zoom In / Zoom Out */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Firework Launch Buttons - วางเรียงเป็นแนวตั้งเหนือปุ่ม Zoom */}
+        <div className="flex flex-col items-center gap-2">
           {/* 1. จุดดอกไม้ไฟกลางสายน้ำ (ความสูงลดลงเหลือ 70%) */}
           <button
             onClick={handleLaunchFirework}
