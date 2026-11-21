@@ -262,6 +262,45 @@ export class LoyKrathongScene {
     this.barkTexture.wrapS = THREE.RepeatWrapping;
     this.barkTexture.wrapT = THREE.RepeatWrapping;
 
+    // 4C. Lush Organic Bark Texture for Tree 1 (ตามรูปแนบที่ 2)
+    const lushBarkCanvas = document.createElement("canvas");
+    lushBarkCanvas.width = 256;
+    lushBarkCanvas.height = 512;
+    const lbCtx = lushBarkCanvas.getContext("2d");
+    lbCtx.fillStyle = "#633c23";
+    lbCtx.fillRect(0, 0, 256, 512);
+    for (let x = 0; x < 256; x += 2) {
+      lbCtx.strokeStyle = (x % 4 === 0) ? "#422312" : (x % 8 === 0 ? "#805030" : "#56331c");
+      lbCtx.lineWidth = 1.8 + Math.random() * 1.5;
+      lbCtx.beginPath();
+      lbCtx.moveTo(x, 0);
+      lbCtx.bezierCurveTo(x + (Math.random() - 0.5) * 6, 170, x + (Math.random() - 0.5) * 6, 340, x, 512);
+      lbCtx.stroke();
+    }
+    this.lushBarkTexture = new THREE.CanvasTexture(lushBarkCanvas);
+    this.lushBarkTexture.wrapS = THREE.RepeatWrapping;
+    this.lushBarkTexture.wrapT = THREE.RepeatWrapping;
+
+    // 4D. Spiral Twisted Bark Texture for Tree 3 (ตามรูปแนบที่ 6)
+    const spiralBarkCanvas = document.createElement("canvas");
+    spiralBarkCanvas.width = 512;
+    spiralBarkCanvas.height = 512;
+    const spCtx = spiralBarkCanvas.getContext("2d");
+    spCtx.fillStyle = "#9a5d2e";
+    spCtx.fillRect(0, 0, 512, 512);
+    for (let i = -512; i < 1024; i += 4) {
+      spCtx.strokeStyle = (i % 16 === 0) ? "#653716" : (i % 8 === 0 ? "#bc7c42" : "#804720");
+      spCtx.lineWidth = (i % 16 === 0) ? 3.5 : 2.0;
+      spCtx.beginPath();
+      spCtx.moveTo(i, 0);
+      spCtx.lineTo(i + 512, 512);
+      spCtx.stroke();
+    }
+    this.spiralBarkTexture = new THREE.CanvasTexture(spiralBarkCanvas);
+    this.spiralBarkTexture.wrapS = THREE.RepeatWrapping;
+    this.spiralBarkTexture.wrapT = THREE.RepeatWrapping;
+    this.spiralBarkTexture.repeat.set(2, 2);
+
     // 4B. Photorealistic Coconut Palm Bark with High-Contrast Ring Scars (ตามรูปแนบ 2 และ 3)
     const cBarkCanvas = document.createElement("canvas");
     cBarkCanvas.width = 256;
@@ -442,6 +481,30 @@ export class LoyKrathongScene {
       lCtx.restore();
     }
     this.leafFoliageTexture = new THREE.CanvasTexture(leafCanvas);
+
+    // 9B. Two-tone Emerald & Teal Foliage Leaves for Tree 3 (ตามรูปแนบที่ 6)
+    const tealLeafCanvas = document.createElement("canvas");
+    tealLeafCanvas.width = 256;
+    tealLeafCanvas.height = 256;
+    const tlCtx = tealLeafCanvas.getContext("2d");
+    tlCtx.clearRect(0, 0, 256, 256);
+    const tealPalette = ["#228547", "#1e8275", "#2aa392", "#359952", "#166a5e", "#44b868", "#1c7365"];
+    for (let i = 0; i < 90; i++) {
+      const lx = 25 + Math.random() * 206;
+      const ly = 25 + Math.random() * 206;
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 10 + Math.random() * 12;
+
+      tlCtx.save();
+      tlCtx.translate(lx, ly);
+      tlCtx.rotate(ang);
+      tlCtx.beginPath();
+      tlCtx.ellipse(0, 0, rad, rad * 0.45, 0, 0, Math.PI * 2);
+      tlCtx.fillStyle = tealPalette[i % tealPalette.length];
+      tlCtx.fill();
+      tlCtx.restore();
+    }
+    this.tealLeafFoliageTexture = new THREE.CanvasTexture(tealLeafCanvas);
 
     // 10. Night Market Plaza Stone Paver Texture (แผ่นหินปูพื้นลานตลาดนัดเทศกาล)
     const paverCanvas = document.createElement("canvas");
@@ -1363,76 +1426,224 @@ export class LoyKrathongScene {
     compound.add(rearGroup);
   }
 
-  // 8. Lush Tropical Shade Tree Behind House (ต้นไม้ใหญ่ร่มรื่นหลังเรือน ตามรูป 2 และ 3)
+  // 8. Lush Tropical Cloud-Puff Shade Tree (ต้นไม้ใหญ่ปั้นใหม่ทรงพุ่มก้อนเมฆตามรูปแนบที่ 2)
   buildCompoundShadeTree(compound, mats) {
     const treeGroup = new THREE.Group();
     treeGroup.position.set(0.5, 0.7, -13.5);
 
-    // Thick organic gnarled trunk
-    const baseTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.7, 5.5, 10), mats.bark);
-    baseTrunk.position.set(0, 2.75, 0);
-    baseTrunk.castShadow = true;
-    treeGroup.add(baseTrunk);
-
-    // Spreading organic boughs
-    const boughs = [
-      { rx: 0.35, rz: 0.45, len: 6.5, py: 5.2 },
-      { rx: -0.4, rz: -0.35, len: 6.2, py: 5.5 },
-      { rx: 0.2, rz: -0.55, len: 7.0, py: 5.0 },
-      { rx: -0.25, rz: 0.5, len: 6.8, py: 5.3 }
-    ];
-
-    boughs.forEach((bg) => {
-      const bMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.72, bg.len, 8), mats.bark);
-      bMesh.position.set(Math.sin(bg.rz) * 2.2, bg.py, Math.sin(bg.rx) * 2.2);
-      bMesh.rotation.x = bg.rx;
-      bMesh.rotation.z = bg.rz;
-      bMesh.castShadow = true;
-      treeGroup.add(bMesh);
+    const trunkBarkMat = new THREE.MeshStandardMaterial({
+      map: this.lushBarkTexture || this.barkTexture,
+      roughness: 0.82
+    });
+    const grassMoundMat = new THREE.MeshStandardMaterial({
+      color: 0x3d7a2f,
+      roughness: 0.85
+    });
+    const bushMat = new THREE.MeshStandardMaterial({
+      color: 0x327833,
+      roughness: 0.7
+    });
+    const darkBushMat = new THREE.MeshStandardMaterial({
+      color: 0x225824,
+      roughness: 0.75
     });
 
-    // Voluminous, dense leafy canopy towering above the rooflines
-    const foliageCrown = new THREE.Group();
-    foliageCrown.position.set(0, 8.5, 0);
+    // 1. Circular Grassy Earth Mound at Base (เนินดินหญ้ากลมตามรูปแนบที่ 2)
+    const mound = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.8, 0.45, 24), grassMoundMat);
+    mound.position.set(0, 0.22, 0);
+    mound.receiveShadow = true;
+    treeGroup.add(mound);
 
-    const clusterCoords = [
-      { x: 0, y: 3.5, z: 0, r: 4.8 },
-      { x: -3.2, y: 1.5, z: -1.2, r: 4.0 },
-      { x: 3.2, y: 1.8, z: -0.8, r: 4.2 },
-      { x: -1.5, y: 2.2, z: 2.6, r: 3.8 },
-      { x: 1.8, y: 2.0, z: 2.5, r: 3.9 },
-      { x: -2.0, y: 3.8, z: -2.0, r: 3.6 },
-      { x: 2.2, y: 4.0, z: -1.8, r: 3.7 },
-      { x: 0, y: 5.5, z: -0.5, r: 3.4 }
+    const moundRim = new THREE.Mesh(new THREE.CylinderGeometry(4.8, 5.0, 0.18, 24), grassMoundMat);
+    moundRim.position.set(0, 0.09, 0);
+    moundRim.receiveShadow = true;
+    treeGroup.add(moundRim);
+
+    // 2. Small Trimmed Decorative Shrub Mounds around Base (พุ่มไม้ประดับโคนต้นตามรูปแนบที่ 2)
+    const bushPositions = [
+      { x: -2.4, z: 1.4, r: 0.75, mat: bushMat },
+      { x: -1.7, z: 2.3, r: 0.58, mat: darkBushMat },
+      { x: 2.3, z: 1.1, r: 0.72, mat: bushMat },
+      { x: 2.0, z: -1.5, r: 0.65, mat: darkBushMat },
+      { x: -0.8, z: -2.6, r: 0.7, mat: bushMat }
+    ];
+    bushPositions.forEach((bp) => {
+      const bush = new THREE.Mesh(new THREE.SphereGeometry(bp.r, 8, 7), bp.mat);
+      bush.scale.set(1.3, 0.8, 1.15);
+      bush.position.set(bp.x, 0.4 + bp.r * 0.4, bp.z);
+      bush.castShadow = true;
+      treeGroup.add(bush);
+    });
+
+    // 3. Flared Buttress Roots (รากพูพอนแผ่ขยายจับผืนดินรอบโคนต้นตามรูปแนบที่ 2)
+    const rootAngles = [0.15, 1.15, 2.2, 3.25, 4.35, 5.4];
+    rootAngles.forEach((ang) => {
+      const rootLen = 2.4 + Math.sin(ang * 3) * 0.4;
+      const root = new THREE.Mesh(new THREE.ConeGeometry(0.55, rootLen, 7), trunkBarkMat);
+      root.position.set(Math.cos(ang) * 1.5, 0.65, Math.sin(ang) * 1.5);
+      root.rotation.z = Math.cos(ang) * 0.78;
+      root.rotation.x = Math.sin(ang) * 0.78;
+      root.scale.set(0.7, 1.0, 1.35);
+      root.castShadow = true;
+      treeGroup.add(root);
+    });
+
+    // 4. Main Organic Curved Trunk (ลำต้นหนาสง่างาม ผายโคน คอดกลาง แตกกิ่งธรรมชาติ)
+    const trunkGroup = new THREE.Group();
+    const lowerTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.95, 2.8, 14), trunkBarkMat);
+    lowerTrunk.position.set(0, 1.7, 0);
+    lowerTrunk.castShadow = true;
+    trunkGroup.add(lowerTrunk);
+
+    const midTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.3, 2.6, 12), trunkBarkMat);
+    midTrunk.position.set(0.08, 4.0, -0.05);
+    midTrunk.rotation.z = 0.05;
+    midTrunk.castShadow = true;
+    trunkGroup.add(midTrunk);
+
+    treeGroup.add(trunkGroup);
+
+    // 5. Spreading Organic Boughs & Sub-Branches (กิ่งหลักและกิ่งย่อยโค้งผายรองรับพุ่มใบ)
+    const branchMeshes = [];
+    const boughDefs = [
+      { rx: 0.38, rz: 0.52, len: 4.8, rTop: 0.28, rBot: 0.55, px: 0.6, py: 5.2, pz: 0.5 },
+      { rx: 0.32, rz: -0.56, len: 5.1, rTop: 0.3, rBot: 0.58, px: -0.6, py: 5.3, pz: 0.4 },
+      { rx: -0.42, rz: 0.48, len: 4.9, rTop: 0.26, rBot: 0.52, px: 0.5, py: 5.4, pz: -0.6 },
+      { rx: -0.36, rz: -0.5, len: 4.7, rTop: 0.28, rBot: 0.54, px: -0.5, py: 5.3, pz: -0.5 },
+      { rx: 0.1, rz: 0.12, len: 4.2, rTop: 0.32, rBot: 0.6, px: 0.05, py: 5.6, pz: 0.0 }
     ];
 
-    clusterCoords.forEach((cl, idx) => {
-      // Core volumetric mass
-      const core = new THREE.Mesh(
-        new THREE.SphereGeometry(cl.r, 10, 8),
-        idx % 2 === 0 ? mats.leafSolidMat : mats.leafDarkSolidMat
+    boughDefs.forEach((bCfg, bIdx) => {
+      const bough = new THREE.Mesh(
+        new THREE.CylinderGeometry(bCfg.rTop, bCfg.rBot, bCfg.len, 8),
+        trunkBarkMat
       );
-      core.scale.set(1.2, 0.85, 1.15);
-      core.position.set(cl.x, cl.y, cl.z);
-      core.castShadow = true;
-      foliageCrown.add(core);
+      bough.position.set(bCfg.px, bCfg.py, bCfg.pz);
+      bough.rotation.x = bCfg.rx;
+      bough.rotation.z = bCfg.rz;
+      bough.castShadow = true;
+      trunkGroup.add(bough);
 
-      // Textured leaf layer with alpha cutout for feathered silhouette
-      const leafLayer = new THREE.Mesh(
-        new THREE.SphereGeometry(cl.r * 1.08, 8, 7),
-        mats.leafMat
+      branchMeshes.push({
+        mesh: bough,
+        baseRotZ: bCfg.rz,
+        baseRotX: bCfg.rx,
+        speed: 1.5 + bIdx * 0.2,
+        phase: bIdx * 0.9,
+        ampZ: 0.045,
+        ampX: 0.035
+      });
+
+      // Smaller sub-branch fork reaching into foliage
+      const fork = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.28, 2.8, 6),
+        trunkBarkMat
       );
-      leafLayer.scale.set(1.22, 0.88, 1.18);
-      leafLayer.position.set(cl.x, cl.y, cl.z);
-      leafLayer.castShadow = true;
-      foliageCrown.add(leafLayer);
+      fork.position.set(
+        bCfg.px + Math.sin(bCfg.rz) * (bCfg.len * 0.45),
+        bCfg.py + (bCfg.len * 0.45) * 0.7,
+        bCfg.pz + Math.sin(bCfg.rx) * (bCfg.len * 0.45)
+      );
+      fork.rotation.x = bCfg.rx * 1.35;
+      fork.rotation.z = bCfg.rz * 1.35;
+      fork.castShadow = true;
+      trunkGroup.add(fork);
+    });
+
+    // 6. Tiered Cloud-Puff Canopy (พุ่มใบก้อนเมฆอัดแน่นแบบฉบับรูปแนบที่ 2)
+    const foliageCrown = new THREE.Group();
+    foliageCrown.position.set(0, 6.8, 0);
+
+    const leafPuffsList = [];
+
+    // Distinct cloud puff clusters in 3 tiers
+    const puffConfigs = [
+      // Lower Tier Outer Cloud Puffs (พุ่มก้อนเมฆชั้นล่าง แผ่กว้างตามปลายกิ่ง)
+      { x: 3.6, y: 0.8, z: 2.2, rx: 2.4, ry: 1.5, rz: 2.2, sp: 2.3, ph: 0.2 },
+      { x: -3.8, y: 1.0, z: 2.0, rx: 2.5, ry: 1.6, rz: 2.3, sp: 2.4, ph: 0.9 },
+      { x: 3.5, y: 1.2, z: -2.4, rx: 2.4, ry: 1.5, rz: 2.2, sp: 2.2, ph: 1.7 },
+      { x: -3.6, y: 0.9, z: -2.3, rx: 2.3, ry: 1.5, rz: 2.1, sp: 2.5, ph: 2.4 },
+      { x: 0.2, y: 0.6, z: 4.2, rx: 2.2, ry: 1.4, rz: 2.0, sp: 2.3, ph: 3.1 },
+      { x: -0.3, y: 0.7, z: -4.0, rx: 2.2, ry: 1.4, rz: 2.0, sp: 2.4, ph: 3.8 },
+
+      // Mid Tier Cloud Puffs (พุ่มก้อนเมฆชั้นกลาง อวบแน่นเชื่อมทรงพุ่ม)
+      { x: 2.4, y: 2.6, z: 1.2, rx: 2.3, ry: 1.6, rz: 2.1, sp: 2.5, ph: 0.5 },
+      { x: -2.5, y: 2.7, z: 1.0, rx: 2.3, ry: 1.6, rz: 2.1, sp: 2.6, ph: 1.3 },
+      { x: 2.2, y: 2.8, z: -1.4, rx: 2.2, ry: 1.5, rz: 2.0, sp: 2.4, ph: 2.1 },
+      { x: -2.3, y: 2.9, z: -1.3, rx: 2.2, ry: 1.5, rz: 2.0, sp: 2.5, ph: 2.9 },
+      { x: 0.0, y: 2.4, z: 2.4, rx: 2.2, ry: 1.5, rz: 2.0, sp: 2.7, ph: 3.6 },
+      { x: 0.0, y: 2.5, z: -2.2, rx: 2.1, ry: 1.4, rz: 1.9, sp: 2.6, ph: 4.4 },
+
+      // Upper Crown Tier (พุ่มก้อนเมฆยอดบนสุด ทรงโค้งมนสง่างาม)
+      { x: 1.3, y: 4.5, z: 0.8, rx: 2.1, ry: 1.5, rz: 2.0, sp: 2.8, ph: 0.7 },
+      { x: -1.4, y: 4.6, z: -0.7, rx: 2.0, ry: 1.5, rz: 1.9, sp: 2.9, ph: 1.9 },
+      { x: 0.0, y: 5.6, z: 0.0, rx: 2.4, ry: 1.7, rz: 2.3, sp: 3.0, ph: 2.8 }
+    ];
+
+    puffConfigs.forEach((pCfg, pIdx) => {
+      const puffGroup = new THREE.Group();
+      puffGroup.position.set(pCfg.x, pCfg.y, pCfg.z);
+
+      // Construct multi-lobed cauliflower cloud mass (3-4 sub-spheres per puff)
+      const subLobes = [
+        { ox: 0, oy: 0, oz: 0, sr: 1.0 },
+        { ox: pCfg.rx * 0.28, oy: pCfg.ry * 0.15, oz: pCfg.rz * 0.2, sr: 0.75 },
+        { ox: -pCfg.rx * 0.25, oy: pCfg.ry * 0.12, oz: -pCfg.rz * 0.18, sr: 0.72 },
+        { ox: pCfg.rx * 0.12, oy: pCfg.ry * 0.25, oz: -pCfg.rz * 0.22, sr: 0.68 }
+      ];
+
+      subLobes.forEach((sl, sIdx) => {
+        const coreMat = (pIdx + sIdx) % 2 === 0 ? mats.leafSolidMat : mats.leafDarkSolidMat;
+        const lobeMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(sl.sr * (pCfg.rx * 0.65), 8, 7),
+          coreMat
+        );
+        lobeMesh.scale.set(1.25, 0.82, 1.2);
+        lobeMesh.position.set(sl.ox, sl.oy, sl.oz);
+        lobeMesh.castShadow = true;
+        puffGroup.add(lobeMesh);
+
+        // Alpha-leaf texture overlay for realistic leaf silhouettes
+        if (mats.leafMat) {
+          const leafShell = new THREE.Mesh(
+            new THREE.SphereGeometry(sl.sr * (pCfg.rx * 0.7), 7, 6),
+            mats.leafMat
+          );
+          leafShell.scale.set(1.27, 0.84, 1.22);
+          leafShell.position.set(sl.ox, sl.oy, sl.oz);
+          leafShell.castShadow = true;
+          puffGroup.add(leafShell);
+        }
+      });
+
+      foliageCrown.add(puffGroup);
+
+      // Register puff for individual continuous wind flutter
+      leafPuffsList.push({
+        mesh: puffGroup,
+        basePosY: pCfg.y,
+        baseRotZ: 0,
+        baseRotX: 0,
+        speed: pCfg.sp,
+        phase: pCfg.ph,
+        amp: 0.07,
+        posAmp: 0.04
+      });
     });
 
     treeGroup.add(foliageCrown);
     compound.add(treeGroup);
 
-    // Register for gentle wind sway
-    this.swayingTrees.push({ group: foliageCrown, speed: 1.0, phase: 0.3 });
+    // Register Tree 1 for comprehensive dynamic wind swaying
+    this.swayingTrees.push({
+      group: foliageCrown,
+      branches: branchMeshes,
+      leafPuffs: leafPuffsList,
+      speed: 1.15,
+      phase: 0.35,
+      swayAmpZ: 0.065,
+      swayAmpX: 0.045
+    });
   }
 
   // Reusable Thai Gable / Hip-Gable Roof Builder (หลังคาทรงจั่วมนิลา/ปั้นหยา)
@@ -2183,79 +2394,265 @@ export class LoyKrathongScene {
     group.add(stageGroup);
   }
 
-  // 5. Grand Festival Tree (SINGLE Central PointLight for Whole Market)
+  // 5. Grand Festival Tree (ต้นไม้เกลียวทองพุ่มสองสีมรกต-เทอร์ควอยซ์ ปั้นใหม่ตามรูปแนบที่ 6)
   buildMarketFestivalTree(group, mats) {
     const treeGroup = new THREE.Group();
     treeGroup.position.set(-1.5, 0.52, 11.5);
 
-    // Circular Stone Planter Bench
+    const spiralBarkMat = new THREE.MeshStandardMaterial({
+      map: this.spiralBarkTexture || this.barkTexture,
+      color: 0xaa6938,
+      roughness: 0.78,
+    });
+    const branchBarkMat = new THREE.MeshStandardMaterial({
+      map: this.spiralBarkTexture || this.barkTexture,
+      color: 0x8a4e26,
+      roughness: 0.8,
+    });
+
+    // Two-tone foliage materials matching image_6.png (สีมรกตและสีเขียวเทอร์ควอยซ์/ครามอมเขียว)
+    const emeraldLeafMat = new THREE.MeshStandardMaterial({
+      color: 0x2e8f42,
+      roughness: 0.65,
+    });
+    const tealLeafMat = new THREE.MeshStandardMaterial({
+      color: 0x1f8877,
+      roughness: 0.62,
+    });
+    const darkEmeraldLeafMat = new THREE.MeshStandardMaterial({
+      color: 0x1d632c,
+      roughness: 0.7,
+    });
+    const darkTealLeafMat = new THREE.MeshStandardMaterial({
+      color: 0x145b50,
+      roughness: 0.7,
+    });
+    const tealLeafOverlayMat = new THREE.MeshStandardMaterial({
+      map: this.tealLeafFoliageTexture || this.leafFoliageTexture,
+      transparent: true,
+      alphaTest: 0.35,
+      roughness: 0.6,
+      side: THREE.DoubleSide,
+    });
+
+    // 1. Circular Stone Planter Bench & Soil (กระถางม้านั่งหินรอบต้นไม้ในตลาด)
     const benchOuter = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.4, 2.5, 0.45, 16),
+      new THREE.CylinderGeometry(2.4, 2.5, 0.45, 18),
       mats.stoneCurb
     );
     benchOuter.position.set(0, 0.225, 0);
+    benchOuter.receiveShadow = true;
     treeGroup.add(benchOuter);
 
-    const soil = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.44, 16), mats.darkWood);
+    const soil = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.44, 18), mats.darkWood);
     soil.position.set(0, 0.23, 0);
     treeGroup.add(soil);
 
-    // Main Trunk
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.78, 4.2, 8), mats.trunkBark);
-    trunk.position.set(0, 2.3, 0);
-    treeGroup.add(trunk);
+    // 2. Flared Ground Roots Spreading Into Soil (รากยึดผืนดินในกระถาง)
+    for (let r = 0; r < 5; r++) {
+      const ang = (r / 5) * Math.PI * 2 + 0.3;
+      const root = new THREE.Mesh(new THREE.ConeGeometry(0.48, 1.8, 7), branchBarkMat);
+      root.position.set(Math.cos(ang) * 0.95, 0.42, Math.sin(ang) * 0.95);
+      root.rotation.z = Math.cos(ang) * 0.7;
+      root.rotation.x = Math.sin(ang) * 0.7;
+      root.scale.set(0.8, 1.0, 1.3);
+      treeGroup.add(root);
+    }
 
-    // Foliage Canopy
+    // 3. Sculpted Twisted / Spiral Trunk (ลำต้นเกลียวบิดทรงโค้งสง่างามตามรูปแนบที่ 6)
+    const trunkGroup = new THREE.Group();
+
+    // Central S-curve core column
+    const trunkCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.2, 0),
+      new THREE.Vector3(0.12, 1.2, 0.08),
+      new THREE.Vector3(-0.15, 2.4, -0.06),
+      new THREE.Vector3(0.08, 3.6, 0.05),
+      new THREE.Vector3(0, 4.4, 0),
+    ]);
+    const trunkCoreGeo = new THREE.TubeGeometry(trunkCurve, 24, 0.62, 10, false);
+    const trunkCoreMesh = new THREE.Mesh(trunkCoreGeo, spiralBarkMat);
+    trunkCoreMesh.castShadow = true;
+    trunkGroup.add(trunkCoreMesh);
+
+    // 4 Helical 3D Spiral Bark Cords winding up the trunk (เส้นเกลียว 3 มิติพันรอบลำต้นตามรูปแนบที่ 6)
+    for (let c = 0; c < 4; c++) {
+      const startAngle = (c / 4) * Math.PI * 2;
+      const cordPoints = [];
+      const steps = 24;
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const h = 0.3 + t * 4.0;
+        const twistAngle = startAngle + t * Math.PI * 2.2;
+        const rad = 0.62 - t * 0.16;
+        // Apply slight S-curve translation matching central trunk
+        const curveOffset = trunkCurve.getPointAt(t);
+        const px = curveOffset.x + Math.cos(twistAngle) * rad;
+        const pz = curveOffset.z + Math.sin(twistAngle) * rad;
+        cordPoints.push(new THREE.Vector3(px, h, pz));
+      }
+      const cordCurve = new THREE.CatmullRomCurve3(cordPoints);
+      const cordGeo = new THREE.TubeGeometry(cordCurve, 24, 0.12, 6, false);
+      const cordMesh = new THREE.Mesh(cordGeo, spiralBarkMat);
+      cordMesh.castShadow = true;
+      trunkGroup.add(cordMesh);
+    }
+
+    treeGroup.add(trunkGroup);
+
+    // 4. Spreading Cantilevered Branches (กิ่งก้านทรงบอนไซผายออกรับแผ่นพุ่มใบ)
+    const marketBranches = [];
+    const boughConfigs = [
+      { rx: 0.38, rz: 0.65, len: 4.4, px: 0.6, py: 4.3, pz: 0.4, rTop: 0.22, rBot: 0.44 },
+      { rx: 0.32, rz: -0.68, len: 4.6, px: -0.6, py: 4.4, pz: 0.3, rTop: 0.24, rBot: 0.46 },
+      { rx: -0.45, rz: 0.58, len: 4.3, px: 0.5, py: 4.5, pz: -0.5, rTop: 0.22, rBot: 0.42 },
+      { rx: -0.4, rz: -0.6, len: 4.2, px: -0.5, py: 4.4, pz: -0.5, rTop: 0.22, rBot: 0.44 },
+      { rx: 0.12, rz: 0.15, len: 3.8, px: 0.05, py: 4.8, pz: 0.05, rTop: 0.25, rBot: 0.48 },
+    ];
+
+    boughConfigs.forEach((bCfg, bIdx) => {
+      const bMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(bCfg.rTop, bCfg.rBot, bCfg.len, 7),
+        branchBarkMat
+      );
+      bMesh.position.set(bCfg.px, bCfg.py, bCfg.pz);
+      bMesh.rotation.x = bCfg.rx;
+      bMesh.rotation.z = bCfg.rz;
+      bMesh.castShadow = true;
+      trunkGroup.add(bMesh);
+
+      marketBranches.push({
+        mesh: bMesh,
+        baseRotZ: bCfg.rz,
+        baseRotX: bCfg.rx,
+        speed: 1.5 + bIdx * 0.2,
+        phase: bIdx * 0.9,
+        ampZ: 0.045,
+        ampX: 0.035,
+      });
+    });
+
+    // 5. Distinct Two-Tone Emerald & Teal Cloud Pads (พุ่มใบสองสี มรกต-เทอร์ควอยซ์ ทรงก้อนเมฆแบนตามรูปแนบที่ 6)
     const canopyGroup = new THREE.Group();
     canopyGroup.position.set(0, 4.8, 0);
 
-    const canopyPositions = [
-      { x: 0, y: 0.6, z: 0, r: 2.8 },
-      { x: 1.8, y: 0.2, z: 0.8, r: 2.1 },
-      { x: -1.7, y: 0.3, z: -0.9, r: 2.2 },
-      { x: 0.9, y: 0.4, z: -1.8, r: 2.0 },
-      { x: -0.8, y: 0.3, z: 1.9, r: 2.1 },
-    ];
-    canopyPositions.forEach((cp, idx) => {
-      const cluster = new THREE.Mesh(
-        new THREE.SphereGeometry(cp.r, 8, 8),
-        idx % 2 === 0 ? mats.leafSolid : mats.leafDark
-      );
-      cluster.position.set(cp.x, cp.y, cp.z);
-      cluster.scale.set(1.15, 0.8, 1.15);
-      canopyGroup.add(cluster);
-    });
-    treeGroup.add(canopyGroup);
-    this.swayingTrees.push({ group: canopyGroup, speed: 0.95, phase: 0.7 });
+    const marketLeafPuffs = [];
 
-    // Golden Fairy Lights (5 glowing Torus rings instead of 84 separate spheres!)
+    // Distinct cloud-tier pads matching image_6.png
+    const padDefinitions = [
+      // Lateral Cantilevered Pads (พุ่มแผ่นเมฆแผ่ออกรอบข้าง)
+      { x: 3.2, y: 0.3, z: 1.5, rx: 2.4, ry: 1.0, rz: 1.9, sp: 2.3, ph: 0.2 },
+      { x: -3.4, y: 0.5, z: 1.4, rx: 2.5, ry: 1.1, rz: 2.0, sp: 2.4, ph: 1.0 },
+      { x: 3.0, y: 0.7, z: -2.0, rx: 2.3, ry: 1.0, rz: 1.8, sp: 2.2, ph: 1.8 },
+      { x: -3.1, y: 0.6, z: -1.9, rx: 2.3, ry: 1.0, rz: 1.8, sp: 2.5, ph: 2.6 },
+      { x: 0.3, y: 0.4, z: 3.2, rx: 2.2, ry: 0.95, rz: 1.8, sp: 2.3, ph: 3.3 },
+      { x: -0.2, y: 0.5, z: -3.1, rx: 2.2, ry: 0.95, rz: 1.8, sp: 2.4, ph: 4.0 },
+
+      // Mid Level Interlocking Cloud Pads (พุ่มเมฆชั้นกลาง)
+      { x: 1.8, y: 1.8, z: 0.8, rx: 2.2, ry: 1.1, rz: 1.8, sp: 2.6, ph: 0.7 },
+      { x: -1.9, y: 1.9, z: -0.8, rx: 2.2, ry: 1.1, rz: 1.8, sp: 2.7, ph: 1.6 },
+      { x: 0.0, y: 2.2, z: 1.6, rx: 2.1, ry: 1.0, rz: 1.7, sp: 2.8, ph: 2.5 },
+
+      // Upper Crown Cloud Pads (พุ่มเมฆยอดบนสุด ทรงแบนมนสองสีสง่างาม)
+      { x: 0.9, y: 3.2, z: 0.4, rx: 2.0, ry: 1.0, rz: 1.7, sp: 2.9, ph: 1.2 },
+      { x: -0.8, y: 3.3, z: -0.4, rx: 1.9, ry: 1.0, rz: 1.6, sp: 3.0, ph: 2.2 },
+      { x: 0.0, y: 4.2, z: 0.0, rx: 2.3, ry: 1.15, rz: 2.0, sp: 3.1, ph: 3.0 },
+    ];
+
+    padDefinitions.forEach((pd, pIdx) => {
+      const padGroup = new THREE.Group();
+      padGroup.position.set(pd.x, pd.y, pd.z);
+
+      // Sub-lobes inside each cloud pad combining emerald and teal colors
+      const subLobes = [
+        { ox: 0, oy: 0, oz: 0, sr: 1.0, isTeal: pIdx % 2 === 1 },
+        { ox: pd.rx * 0.28, oy: pd.ry * 0.12, oz: pd.rz * 0.2, sr: 0.75, isTeal: pIdx % 2 === 0 },
+        { ox: -pd.rx * 0.25, oy: pd.ry * 0.1, oz: -pd.rz * 0.18, sr: 0.72, isTeal: pIdx % 3 === 0 },
+        { ox: pd.rx * 0.1, oy: pd.ry * 0.2, oz: -pd.rz * 0.22, sr: 0.68, isTeal: pIdx % 2 === 1 },
+      ];
+
+      subLobes.forEach((sl, sIdx) => {
+        // Alternating emerald green and turquoise teal materials for the iconic two-tone aesthetic
+        const padMat = sl.isTeal
+          ? (sIdx % 2 === 0 ? tealLeafMat : darkTealLeafMat)
+          : (sIdx % 2 === 0 ? emeraldLeafMat : darkEmeraldLeafMat);
+
+        const lobeMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(sl.sr * (pd.rx * 0.65), 8, 7),
+          padMat
+        );
+        // Flattened cloud pad geometry
+        lobeMesh.scale.set(1.35, 0.65, 1.25);
+        lobeMesh.position.set(sl.ox, sl.oy, sl.oz);
+        lobeMesh.castShadow = true;
+        padGroup.add(lobeMesh);
+
+        // Foliage overlay
+        const leafShell = new THREE.Mesh(
+          new THREE.SphereGeometry(sl.sr * (pd.rx * 0.68), 7, 6),
+          tealLeafOverlayMat
+        );
+        leafShell.scale.set(1.38, 0.67, 1.28);
+        leafShell.position.set(sl.ox, sl.oy, sl.oz);
+        leafShell.castShadow = true;
+        padGroup.add(leafShell);
+      });
+
+      canopyGroup.add(padGroup);
+
+      marketLeafPuffs.push({
+        mesh: padGroup,
+        basePosY: pd.y,
+        baseRotZ: 0,
+        baseRotX: 0,
+        speed: pd.sp,
+        phase: pd.ph,
+        amp: 0.07,
+        posAmp: 0.04,
+      });
+    });
+
+    treeGroup.add(canopyGroup);
+
+    // 6. Golden Fairy Light Spiral / Accent Rings (วงแหวนไฟประดับเทศกาล)
     for (let r = 0; r < 5; r++) {
-      const ringY = 1.0 + r * 0.6;
+      const ringY = 1.0 + r * 0.65;
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.72 - r * 0.03, 0.035, 4, 16), mats.fairyGold);
       ring.rotation.x = Math.PI / 2;
       ring.position.set(0, ringY, 0);
       treeGroup.add(ring);
     }
 
-    // Hanging Thai Lanterns (8 colorful lanterns)
+    // 7. Hanging Thai Lanterns (โคมไฟล้านนาแขวนรอบต้นไม้เทศกาล)
     const lanternColors = [0xfbbf24, 0xef4444, 0x3b82f6, 0xec4899, 0x10b981];
     for (let l = 0; l < 8; l++) {
       const lAng = (l / 8) * Math.PI * 2;
-      const lDist = 1.8;
-      const lY = 3.5;
+      const lDist = 2.1;
+      const lY = 3.6;
       const lMat = new THREE.MeshBasicMaterial({ color: lanternColors[l % lanternColors.length] });
       const lMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.35, 6), lMat);
       lMesh.position.set(Math.cos(lAng) * lDist, lY, Math.sin(lAng) * lDist);
       treeGroup.add(lMesh);
     }
 
-    // SINGLE PointLight for the Entire Market Area (ไฟดวงหลัก 1 เดียวคุมทั้งตลาด)
+    // 8. Central PointLight for Market Area
     const marketCentralLight = new THREE.PointLight(0xf59e0b, 3.2, 24, 1.3);
     marketCentralLight.position.set(0, 3.8, 0);
     treeGroup.add(marketCentralLight);
     this.flickerLights.push({ light: marketCentralLight, baseIntensity: 3.2, speed: 2.8 });
 
     group.add(treeGroup);
+
+    // Register Tree 3 for continuous dynamic wind swaying
+    this.swayingTrees.push({
+      group: canopyGroup,
+      branches: marketBranches,
+      leafPuffs: marketLeafPuffs,
+      speed: 1.15,
+      phase: 0.75,
+      swayAmpZ: 0.065,
+      swayAmpX: 0.045,
+    });
   }
 
   // 6. Large Covered Pavilion Marquee (Zero PointLight, Fake Floor Glow, Proportional 3.0m Height)
@@ -2349,69 +2746,183 @@ export class LoyKrathongScene {
     const darkLeafMat = new THREE.MeshStandardMaterial({ color: 0x144018, roughness: 0.7 });
     const trunkMat = new THREE.MeshStandardMaterial({ map: this.barkTexture, roughness: 0.85 });
 
-    // --- A. Ancient Rain Tree / Banyan Tree (ต้นจามจุรีโบราณริมน้ำต้นเดิม ย้ายไปเป็นฉากหลังต้นน้ำ) ---
-    const banyan = new THREE.Group();
-    banyan.position.set(-30, 1.5, -42);
+    // --- A. Majestic Deciduous Canopy Shade Tree (ต้นไม้ใหญ่ร่มรื่นปั้นใหม่ตามรูปแนบที่ 4) ---
+    const canopyTree = new THREE.Group();
+    canopyTree.position.set(-30, 1.5, -42);
 
-    const baseTrunk = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.6, 6.0, 12), trunkMat);
-    baseTrunk.position.y = 3.0;
-    baseTrunk.castShadow = true;
-    banyan.add(baseTrunk);
-
-    for (let r = 0; r < 5; r++) {
-      const angle = (r / 5) * Math.PI * 2;
-      const root = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.5, 6), trunkMat);
-      root.position.set(Math.cos(angle) * 1.8, 1.2, Math.sin(angle) * 1.8);
-      root.rotation.z = Math.cos(angle) * 0.7;
-      root.rotation.x = Math.sin(angle) * 0.7;
-      banyan.add(root);
-    }
-
-    const boughConfigs = [
-      { rx: 0.45, rz: 0.35, len: 7.5, py: 5.5 },
-      { rx: -0.35, rz: -0.45, len: 7.0, py: 5.8 },
-      { rx: 0.2, rz: -0.6, len: 8.5, py: 5.2 },
-    ];
-
-    const foliageCanopy = new THREE.Group();
-    foliageCanopy.position.y = 9.0;
-
-    boughConfigs.forEach((cfg) => {
-      const bough = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.9, cfg.len, 8), trunkMat);
-      bough.position.set(Math.sin(cfg.rz) * 2.5, cfg.py, Math.sin(cfg.rx) * 2.5);
-      bough.rotation.x = cfg.rx;
-      bough.rotation.z = cfg.rz;
-      bough.castShadow = true;
-      banyan.add(bough);
-
-      for (let fc = 0; fc < 4; fc++) {
-        const fMesh = new THREE.Mesh(
-          new THREE.SphereGeometry(3.2 - fc * 0.4, 10, 8),
-          fc % 2 === 0 ? leafMat : darkLeafMat
-        );
-        fMesh.scale.set(1.6, 0.85, 1.4);
-        fMesh.position.set(
-          Math.sin(cfg.rz) * (4.0 + fc * 2.0) + (Math.random() - 0.5) * 2,
-          fc * 1.6 + 2.0,
-          Math.sin(cfg.rx) * (4.0 + fc * 2.0) + (Math.random() - 0.5) * 2
-        );
-        fMesh.castShadow = true;
-        foliageCanopy.add(fMesh);
-      }
+    const oakBarkMat = new THREE.MeshStandardMaterial({
+      map: this.barkTexture,
+      roughness: 0.84,
+    });
+    const oakLeafSolid = new THREE.MeshStandardMaterial({
+      color: 0x246227,
+      roughness: 0.68,
+    });
+    const oakLeafDark = new THREE.MeshStandardMaterial({
+      color: 0x18481a,
+      roughness: 0.72,
+    });
+    const oakLeafOverlay = new THREE.MeshStandardMaterial({
+      map: this.leafFoliageTexture,
+      transparent: true,
+      alphaTest: 0.35,
+      roughness: 0.65,
+      side: THREE.DoubleSide,
     });
 
-    banyan.add(foliageCanopy);
+    // 1. Organic Root Buttresses (รากฐานแผ่รับน้ำหนักตามแนวรูปแนบที่ 4)
+    for (let r = 0; r < 6; r++) {
+      const angle = (r / 6) * Math.PI * 2 + 0.2;
+      const root = new THREE.Mesh(new THREE.ConeGeometry(0.7, 3.2, 7), oakBarkMat);
+      root.position.set(Math.cos(angle) * 1.6, 0.9, Math.sin(angle) * 1.6);
+      root.rotation.z = Math.cos(angle) * 0.75;
+      root.rotation.x = Math.sin(angle) * 0.75;
+      root.scale.set(0.75, 1.0, 1.3);
+      canopyTree.add(root);
+    }
 
-    const treeUplight = new THREE.PointLight(0x22c55e, 4.0, 30, 1.3);
-    treeUplight.position.set(0, 1.5, 0);
-    banyan.add(treeUplight);
+    // 2. Tall Stately Trunk (ลำต้นตรงสง่างาม เรียวขึ้นสู่ยอดตามรูปแนบที่ 4)
+    const trunkColumn = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.8, 5.2, 14), oakBarkMat);
+    trunkColumn.position.y = 2.6;
+    trunkColumn.castShadow = true;
+    canopyTree.add(trunkColumn);
 
-    const treeGoldLight = new THREE.PointLight(0xf59e0b, 3.5, 25, 1.4);
-    treeGoldLight.position.set(2, 2.0, -2);
-    banyan.add(treeGoldLight);
+    const upperTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.05, 2.8, 12), oakBarkMat);
+    upperTrunk.position.set(0.04, 5.8, -0.02);
+    upperTrunk.castShadow = true;
+    canopyTree.add(upperTrunk);
 
-    this.scene.add(banyan);
-    this.swayingTrees.push({ group: foliageCanopy, speed: 1.1, phase: 0.5 });
+    // 3. Spreading Boughs & Sub-Branch Network (กิ่งก้านหลักแผ่รอบทิศทาง 360 องศา เห็นโครงกิ่งใต้พุ่มตามรูปแนบที่ 4)
+    const tree2Branches = [];
+    const mainBoughs = [
+      { rx: 0.42, rz: 0.55, len: 6.2, rTop: 0.28, rBot: 0.52, px: 0.7, py: 6.4, pz: 0.6 },
+      { rx: 0.35, rz: -0.62, len: 6.5, rTop: 0.3, rBot: 0.54, px: -0.8, py: 6.5, pz: 0.5 },
+      { rx: -0.48, rz: 0.5, len: 6.0, rTop: 0.26, rBot: 0.5, px: 0.6, py: 6.6, pz: -0.8 },
+      { rx: -0.4, rz: -0.56, len: 5.8, rTop: 0.28, rBot: 0.52, px: -0.7, py: 6.5, pz: -0.7 },
+      { rx: 0.55, rz: 0.05, len: 5.6, rTop: 0.25, rBot: 0.48, px: 0.1, py: 6.7, pz: 0.9 },
+      { rx: -0.52, rz: 0.02, len: 5.5, rTop: 0.25, rBot: 0.48, px: 0.0, py: 6.6, pz: -0.9 },
+      { rx: 0.12, rz: 0.18, len: 4.8, rTop: 0.3, rBot: 0.52, px: 0.05, py: 7.2, pz: 0.05 },
+    ];
+
+    mainBoughs.forEach((bCfg, bIdx) => {
+      const bMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(bCfg.rTop, bCfg.rBot, bCfg.len, 8),
+        oakBarkMat
+      );
+      bMesh.position.set(bCfg.px, bCfg.py, bCfg.pz);
+      bMesh.rotation.x = bCfg.rx;
+      bMesh.rotation.z = bCfg.rz;
+      bMesh.castShadow = true;
+      canopyTree.add(bMesh);
+
+      tree2Branches.push({
+        mesh: bMesh,
+        baseRotZ: bCfg.rz,
+        baseRotX: bCfg.rx,
+        speed: 1.4 + bIdx * 0.18,
+        phase: bIdx * 0.85,
+        ampZ: 0.04,
+        ampX: 0.03,
+      });
+
+      // Secondary branch forks extending upward into foliage
+      const fork = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.15, 0.25, 3.2, 6),
+        oakBarkMat
+      );
+      fork.position.set(
+        bCfg.px + Math.sin(bCfg.rz) * (bCfg.len * 0.48),
+        bCfg.py + (bCfg.len * 0.48) * 0.72,
+        bCfg.pz + Math.sin(bCfg.rx) * (bCfg.len * 0.48)
+      );
+      fork.rotation.x = bCfg.rx * 1.3;
+      fork.rotation.z = bCfg.rz * 1.3;
+      fork.castShadow = true;
+      canopyTree.add(fork);
+    });
+
+    // 4. Dense, Lush Umbrella Canopy (พุ่มใบไม้หนาทรงร่มธรรมชาติแบบรูปแนบที่ 4)
+    const foliageCrown = new THREE.Group();
+    foliageCrown.position.set(0, 8.2, 0);
+
+    const tree2LeafPuffs = [];
+
+    // Layered umbrella canopy clusters spanning wide dome
+    const canopyClusters = [
+      // Lower Hanging Clusters (ชายพุ่มด้านล่าง ทรงแผ่ออกกว้าง)
+      { x: 4.8, y: 0.4, z: 2.8, r: 2.8, sx: 1.4, sy: 0.82, sz: 1.3, sp: 2.2, ph: 0.3 },
+      { x: -5.0, y: 0.6, z: 2.6, r: 2.9, sx: 1.45, sy: 0.85, sz: 1.35, sp: 2.4, ph: 1.1 },
+      { x: 4.5, y: 0.8, z: -3.2, r: 2.7, sx: 1.38, sy: 0.8, sz: 1.3, sp: 2.1, ph: 2.0 },
+      { x: -4.8, y: 0.5, z: -3.0, r: 2.8, sx: 1.4, sy: 0.82, sz: 1.32, sp: 2.3, ph: 2.8 },
+      { x: 0.5, y: 0.3, z: 5.2, r: 2.6, sx: 1.35, sy: 0.8, sz: 1.3, sp: 2.5, ph: 3.5 },
+      { x: -0.4, y: 0.4, z: -5.0, r: 2.6, sx: 1.35, sy: 0.8, sz: 1.3, sp: 2.2, ph: 4.2 },
+
+      // Mid Volume Dense Canopy (เนื้อพุ่มชั้นกลาง อวบแน่นเชื่อมทรงพุ่มให้ทึบสง่า)
+      { x: 3.2, y: 2.5, z: 1.8, r: 3.1, sx: 1.35, sy: 0.9, sz: 1.3, sp: 2.6, ph: 0.6 },
+      { x: -3.4, y: 2.7, z: 1.6, r: 3.2, sx: 1.38, sy: 0.92, sz: 1.32, sp: 2.5, ph: 1.5 },
+      { x: 3.0, y: 2.9, z: -2.0, r: 3.0, sx: 1.32, sy: 0.88, sz: 1.28, sp: 2.4, ph: 2.3 },
+      { x: -3.1, y: 2.8, z: -1.9, r: 3.1, sx: 1.35, sy: 0.9, sz: 1.3, sp: 2.7, ph: 3.1 },
+      { x: 0.2, y: 2.6, z: 3.2, r: 2.9, sx: 1.3, sy: 0.88, sz: 1.28, sp: 2.8, ph: 3.9 },
+      { x: -0.3, y: 2.7, z: -3.0, r: 2.9, sx: 1.3, sy: 0.88, sz: 1.28, sp: 2.6, ph: 4.7 },
+
+      // Upper Crown Dome (ยอดโดมกลมมนด้านบน)
+      { x: 1.8, y: 4.8, z: 1.0, r: 2.8, sx: 1.3, sy: 0.92, sz: 1.25, sp: 2.9, ph: 0.9 },
+      { x: -1.9, y: 4.9, z: -0.9, r: 2.8, sx: 1.3, sy: 0.92, sz: 1.25, sp: 3.0, ph: 2.1 },
+      { x: 0.0, y: 6.2, z: 0.0, r: 3.2, sx: 1.35, sy: 0.95, sz: 1.3, sp: 3.1, ph: 3.0 },
+    ];
+
+    canopyClusters.forEach((cc, cIdx) => {
+      const clusterGroup = new THREE.Group();
+      clusterGroup.position.set(cc.x, cc.y, cc.z);
+
+      const solidMat = cIdx % 2 === 0 ? oakLeafSolid : oakLeafDark;
+      const core = new THREE.Mesh(new THREE.SphereGeometry(cc.r, 8, 7), solidMat);
+      core.scale.set(cc.sx, cc.sy, cc.sz);
+      core.castShadow = true;
+      clusterGroup.add(core);
+
+      const overlay = new THREE.Mesh(new THREE.SphereGeometry(cc.r * 1.07, 7, 6), oakLeafOverlay);
+      overlay.scale.set(cc.sx * 1.02, cc.sy * 1.02, cc.sz * 1.02);
+      overlay.castShadow = true;
+      clusterGroup.add(overlay);
+
+      foliageCrown.add(clusterGroup);
+
+      tree2LeafPuffs.push({
+        mesh: clusterGroup,
+        basePosY: cc.y,
+        baseRotZ: 0,
+        baseRotX: 0,
+        speed: cc.sp,
+        phase: cc.ph,
+        amp: 0.065,
+        posAmp: 0.035,
+      });
+    });
+
+    canopyTree.add(foliageCrown);
+
+    // Warm scenic night illumination
+    const treeUplight = new THREE.PointLight(0x22c55e, 3.8, 30, 1.3);
+    treeUplight.position.set(0, 1.8, 0);
+    canopyTree.add(treeUplight);
+
+    const treeGoldLight = new THREE.PointLight(0xf59e0b, 3.2, 25, 1.4);
+    treeGoldLight.position.set(2, 2.5, -2);
+    canopyTree.add(treeGoldLight);
+
+    this.scene.add(canopyTree);
+
+    // Register Tree 2 for continuous natural wind swaying
+    this.swayingTrees.push({
+      group: foliageCrown,
+      branches: tree2Branches,
+      leafPuffs: tree2LeafPuffs,
+      speed: 1.1,
+      phase: 0.55,
+      swayAmpZ: 0.06,
+      swayAmpX: 0.04,
+    });
 
     // --- B. PHOTOREALISTIC COCONUT PALM TREES (ต้นมะพร้าวริมน้ำเสมือนจริง 90%+ ตามรูป 2 และ 3) ---
     // ตำแหน่งริมฝั่งตลิ่ง โดยไม่ขวางทางเดินและไม่เกะกะสายตา
@@ -6460,11 +6971,41 @@ export class LoyKrathongScene {
       });
     }
 
-    // 7. Ancient Trees & Realistic Palms Swaying in Wind (กิ่งจามจุรีและยอดทางมะพร้าวพลิ้วไหวตามลม)
+    // 7. Dynamic Wind-Blown Trees & Realistic Palms Swaying in Wind (ต้นไม้ กิ่งก้าน และใบไม้พลิ้วไหวตามแรงลมธรรมชาติอย่างต่อเนื่องตลอดเวลา)
     if (this.swayingTrees) {
       this.swayingTrees.forEach((item) => {
-        item.group.rotation.z = Math.sin(time * item.speed + item.phase) * 0.05;
-        item.group.rotation.x = Math.cos(time * (item.speed * 0.7) + item.phase) * 0.035;
+        const t = time * (item.speed || 1.0);
+        const p = item.phase || 0;
+        // Natural continuous wind gust modulation (แรงลมพัดสม่ำเสมอมีระลอกพลิ้วไหว)
+        const gust = 1.0 + 0.3 * Math.sin(time * 0.6 + p * 1.5) + 0.15 * Math.sin(time * 1.7 + p * 3.0);
+
+        if (item.group) {
+          const ampZ = item.swayAmpZ || 0.055;
+          const ampX = item.swayAmpX || 0.038;
+          item.group.rotation.z = (item.baseRotZ || 0) + Math.sin(t + p) * ampZ * gust;
+          item.group.rotation.x = (item.baseRotX || 0) + Math.cos(t * 0.75 + p) * ampX * gust;
+        }
+
+        // Secondary branches swaying naturally in breeze
+        if (item.branches && Array.isArray(item.branches)) {
+          item.branches.forEach((br) => {
+            const bt = time * (br.speed || 1.6) + (br.phase || 0);
+            br.mesh.rotation.z = br.baseRotZ + Math.sin(bt) * (br.ampZ || 0.045) * gust;
+            br.mesh.rotation.x = br.baseRotX + Math.cos(bt * 0.8) * (br.ampX || 0.035) * gust;
+          });
+        }
+
+        // Tertiary leaf clusters & cloud puffs fluttering in continuous wind
+        if (item.leafPuffs && Array.isArray(item.leafPuffs)) {
+          item.leafPuffs.forEach((puff) => {
+            const pt = time * (puff.speed || 2.6) + (puff.phase || 0);
+            puff.mesh.rotation.z = (puff.baseRotZ || 0) + Math.sin(pt) * (puff.amp || 0.065) * gust;
+            puff.mesh.rotation.x = (puff.baseRotX || 0) + Math.cos(pt * 1.15) * (puff.amp || 0.05) * gust;
+            if (puff.basePosY !== undefined) {
+              puff.mesh.position.y = puff.basePosY + Math.sin(pt * 1.4) * (puff.posAmp || 0.04);
+            }
+          });
+        }
       });
     }
 
