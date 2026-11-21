@@ -33,6 +33,35 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
 
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setGender("female");
+    setTopStyle("female-top-1");
+    setBottomStyle("female-bottom-1");
+    setKrathongStyle("krathong-banana-leaf");
+    setFlowerStyle("flower-pink-lotus");
+    setPreviewImage(null);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    stopCamera();
+  };
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleGenderChange = (newGender) => {
@@ -93,15 +122,6 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
     }, "image/jpeg", 0.9);
   };
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setCameraActive(false);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -133,6 +153,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
         krathongStyle,
         flowerStyle,
       });
+      resetForm();
       onClose();
     } catch (err) {
       console.error(err);
@@ -140,6 +161,11 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   const activeTops = gender === "male" ? MALE_TOPS : FEMALE_TOPS;
@@ -162,10 +188,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
             </div>
           </div>
           <button
-            onClick={() => {
-              stopCamera();
-              onClose();
-            }}
+            onClick={handleClose}
             className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -211,6 +234,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                     onClick={() => {
                       setPreviewImage(null);
                       setFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
                     className="absolute top-2 right-2 p-1.5 bg-red-600/90 hover:bg-red-500 text-white rounded-full shadow-md transition cursor-pointer"
                     title="เปลี่ยนรูป"

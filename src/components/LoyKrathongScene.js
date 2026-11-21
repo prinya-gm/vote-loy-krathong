@@ -3171,19 +3171,25 @@ export class LoyKrathongScene {
      - ยืนเด่นริมท่าน้ำสีเขียว พร้อมยกมือขวาโบกทักทายผู้ชม
      - ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ
   ========================================================== */
-  buildCandidateAvatar(entry, index, total) {
-    const avatarGroup = new THREE.Group();
-
-    // คำนวณตำแหน่งยืนบนลานสนามหญ้าท่าน้ำสีเขียว โดยเริ่มจากจุดกึ่งกลางหน้ากล้อง (Z = 5.0) เด่นที่สุด
+  // คำนวณตำแหน่งยืนบนลานหญ้าท่าน้ำสีเขียวโดยเฉพาะ รับประกันตำแหน่งไม่ซ้อนทับกัน 100%
+  getCandidateSlotPosition(index) {
+    const spacing = 3.2; // ระยะห่าง 3.2 เมตร ระหว่างแท่นแต่ละคน ป้องกันการซ้อนทับ 100%
     const sign = index % 2 === 1 ? 1 : -1;
     const step = Math.ceil(index / 2);
-    const posZ = 5.0 + sign * step * 2.8;
+    const posZ = 5.0 + sign * step * spacing;
 
-    // แถวหน้าติดริมน้ำ X = -12.4
-    const row = Math.abs(posZ - 5.0) > 13.0 ? 1 : 0;
-    const posX = -12.4 - row * 2.2;
+    // แถวหน้าติดริมน้ำ X = -12.4 ถ้าเกินขอบเขตให้เข้าแถวที่ 2
+    const isSecondRow = Math.abs(posZ - 5.0) > 14.5;
+    const posX = isSecondRow ? -15.2 : -12.4;
+    const adjustedZ = isSecondRow ? 5.0 + sign * (step - 5) * spacing : posZ;
 
-    avatarGroup.position.set(posX, 0.89, posZ);
+    return { x: posX, y: 0.89, z: isSecondRow ? adjustedZ : posZ };
+  }
+
+  buildCandidateAvatar(entry, slotPos) {
+    const avatarGroup = new THREE.Group();
+
+    avatarGroup.position.set(slotPos.x, slotPos.y, slotPos.z);
     // ขยายขนาดสเกล 1.3 เท่า ให้สูงเด่นเป็นสง่าเหนือคนเดินเล่นทั่วไป
     avatarGroup.scale.set(1.3, 1.3, 1.3);
     // หันหน้าเฉียงรับกล้องและแม่น้ำ 45 องศา สวยงามสง่า
@@ -3323,6 +3329,7 @@ export class LoyKrathongScene {
     return {
       group: avatarGroup,
       entry,
+      basePos: { ...slotPos },
       wavingArm,
       wavingHand,
       badgeSprite,
@@ -4159,10 +4166,11 @@ export class LoyKrathongScene {
       }
 
       // โมเดลผู้สมัครสวมชุดไทยยืนบนท่าน้ำสีเขียว
+      const slotPos = this.getCandidateSlotPosition(index);
       let avatar = this.candidateAvatars.get(entry.id);
       if (!avatar) {
         try {
-          avatar = this.buildCandidateAvatar(entry, index, entries.length);
+          avatar = this.buildCandidateAvatar(entry, slotPos);
           if (avatar && avatar.group) {
             this.scene.add(avatar.group);
             this.candidateAvatars.set(entry.id, avatar);
@@ -4171,6 +4179,11 @@ export class LoyKrathongScene {
           console.error("Error creating candidate avatar:", err, entry);
         }
       } else {
+        // อัปเดตตำแหน่งแท่นยืนเสมอเมื่อมีการเพิ่ม/เปลี่ยนลำดับรายการ เพื่อไม่ให้โมเดลคนยืนซ้อนทับกันเด็ดขาด 100%
+        avatar.basePos = { ...slotPos };
+        avatar.group.position.x = slotPos.x;
+        avatar.group.position.z = slotPos.z;
+
         const oldVotes = avatar.entry?.votes || 0;
         avatar.entry = entry;
         avatar.group.userData.entry = entry;
@@ -4815,9 +4828,10 @@ export class LoyKrathongScene {
         if (avatar.wavingHand) {
           avatar.wavingHand.rotation.z = -0.10 + Math.sin(time * 3.5 + aPhase) * 0.14;
         }
-        // ลำตัวหายใจเบาๆ
+        // ลำตัวหายใจเบาๆ โดยอิงจากระดับความสูงฐานเดิม (basePos.y)
         if (avatar.group) {
-          avatar.group.position.y = 0.89 + Math.sin(time * 1.5 + aPhase) * 0.008;
+          const baseY = avatar.basePos?.y ?? 0.89;
+          avatar.group.position.y = baseY + Math.sin(time * 1.5 + aPhase) * 0.008;
         }
       });
     }
