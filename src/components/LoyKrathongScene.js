@@ -1410,16 +1410,8 @@ export class LoyKrathongScene {
     pierLawn.receiveShadow = true;
     greenPierGroup.add(pierLawn);
 
-    // เสาตอม่อค้ำใต้ถุนท่าน้ำในน้ำ (Under-pier Stilts)
+    // วัสดุไม้สักสำหรับบันไดท่าน้ำและเสาโคมไฟริมน้ำ (นำเสาตอม่อที่โผล่ขึ้นมาบนลานสนามหญ้าออกอย่างหมดจด)
     const pierWoodMat = new THREE.MeshStandardMaterial({ color: 0x481e0a, roughness: 0.72 });
-    const pileGeo = new THREE.CylinderGeometry(0.25, 0.25, 5.5, 8);
-    for (let pz = -pierLengthZ / 2 + 2.0; pz <= pierLengthZ / 2 - 2.0; pz += 5.5) {
-      [-pierWidthX / 2 + 0.8, 0, pierWidthX / 2 - 0.5].forEach((px) => {
-        const pile = new THREE.Mesh(pileGeo, pierWoodMat);
-        pile.position.set(px, -0.8, pz);
-        greenPierGroup.add(pile);
-      });
-    }
 
     // บันไดท่าน้ำไม้สักทอดลงสู่แม่น้ำสำหรับลอยกระทง 3 ช่วง (Z = -10, Z = 0, Z = 10)
     [-10, 0, 10].forEach((stepZ) => {
