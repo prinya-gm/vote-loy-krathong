@@ -4331,8 +4331,14 @@ export class LoyKrathongScene {
     avatarGroup.position.set(slotPos.x, slotPos.y, slotPos.z);
     // ขยายขนาดสเกล 1.3 เท่า ให้สูงเด่นเป็นสง่าเหนือคนเดินเล่นทั่วไป
     avatarGroup.scale.set(1.3, 1.3, 1.3);
-    // หันหน้าเฉียงรับกล้องและแม่น้ำ 45 องศา สวยงามสง่า
-    avatarGroup.rotation.y = 0.75;
+    // หันหน้าเข้าหากล้องตามแนวระนาบ Y
+    if (this.camera) {
+      const dx = this.camera.position.x - slotPos.x;
+      const dz = this.camera.position.z - slotPos.z;
+      avatarGroup.rotation.y = Math.atan2(dx, dz);
+    } else {
+      avatarGroup.rotation.y = 0.75;
+    }
 
     const isMale = entry.gender === "male";
     const primaryColorHex = entry.costumeColor || entry.color || "#f59e0b";
@@ -5979,10 +5985,17 @@ export class LoyKrathongScene {
         if (avatar.wavingHand) {
           avatar.wavingHand.rotation.z = -0.10 + Math.sin(time * 3.5 + aPhase) * 0.14;
         }
-        // ลำตัวหายใจเบาๆ โดยอิงจากระดับความสูงฐานเดิม (basePos.y)
+        // ลำตัวหายใจเบาๆ โดยอิงจากระดับความสูงฐานเดิม (basePos.y) และหันหน้าเข้าหากล้องตลอดเวลา (Cylindrical Billboard LookAt)
         if (avatar.group) {
           const baseY = avatar.basePos?.y ?? 0.89;
           avatar.group.position.y = baseY + Math.sin(time * 1.5 + aPhase) * 0.008;
+
+          // หันหน้าเข้าหากล้องตลอดเวลาตามแกน Y เพื่อให้เห็นใบหน้าและชุดไทยสง่างามเสมอ
+          if (this.camera) {
+            const dx = this.camera.position.x - avatar.group.position.x;
+            const dz = this.camera.position.z - avatar.group.position.z;
+            avatar.group.rotation.y = Math.atan2(dx, dz);
+          }
         }
       });
     }
