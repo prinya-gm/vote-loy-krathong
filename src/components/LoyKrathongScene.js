@@ -59,7 +59,7 @@ export class LoyKrathongScene {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.38;
+    this.renderer.toneMappingExposure = 1.0;
     this.container.appendChild(this.renderer.domElement);
 
     // 4. OrbitControls
@@ -517,11 +517,12 @@ export class LoyKrathongScene {
      LIGHTING
   ========================================================== */
   setupLighting() {
-    // 1. Hemisphere Light: แสงบรรยากาศสมจริง ท้องฟ้าราตรีสีกรมท่าเข้ม + แสงสะท้อนผิวน้ำด้านล่าง
-    const hemiLight = new THREE.HemisphereLight(0x283e68, 0x0a1e38, 1.25);
+    // 1. Hemisphere Light: แสงบรรยากาศราตรีสลัวนุ่มนวล ไม่มืดเกินไป และไม่สว่างจ้าเหมือนกลางวัน
+    const hemiLight = new THREE.HemisphereLight(0x1a2c4e, 0x071120, 0.45);
     this.scene.add(hemiLight);
 
-    const ambientLight = new THREE.AmbientLight(0x38527a, 0.85);
+    // 2. Ambient Light: แสงแอมเบียนต์รอบทิศทางพอเหมาะ มองเห็นรายละเอียดชัดเจนโดยคงบรรยากาศกลางคืน
+    const ambientLight = new THREE.AmbientLight(0x223554, 0.35);
     this.scene.add(ambientLight);
 
     // Single Pre-allocated Firework Flash Light (Zero Runtime Shader Recompilations)
@@ -529,8 +530,8 @@ export class LoyKrathongScene {
     this.fireworkFlashLight.position.set(0, 30, 0);
     this.scene.add(this.fireworkFlashLight);
 
-    // ลำแสงจันทราสีทองสาดส่องผิวน้ำ (Moon Light with Specular Highlight Path)
-    const moonLight = new THREE.DirectionalLight(0xfff2b2, 2.8);
+    // 3. ลำแสงจันทราวันเพ็ญ (Full Moon Light): ทอดประกายแสงสะท้อนบนผิวน้ำอย่างงดงาม
+    const moonLight = new THREE.DirectionalLight(0xfff3c4, 1.25);
     moonLight.position.set(24, 60, -45);
     moonLight.castShadow = true;
     moonLight.shadow.mapSize.width = 2048;
@@ -545,19 +546,22 @@ export class LoyKrathongScene {
     moonLight.shadow.normalBias = 0.04;
     this.scene.add(moonLight);
 
-    const riverGlowLight = new THREE.DirectionalLight(0xff9e24, 1.2);
+    // แสงประกายผิวน้ำอ่อนละมุน
+    const riverGlowLight = new THREE.DirectionalLight(0xffa834, 0.40);
     riverGlowLight.position.set(-15, 20, 20);
     this.scene.add(riverGlowLight);
 
-    const templeFlood = new THREE.PointLight(0xffd56b, 5.5, 80, 1.2);
+    // แสงสปอตไลต์ส่องพระเจดีย์สีทองอร่ามในคืนเพ็ญ
+    const templeFlood = new THREE.PointLight(0xffd56b, 2.8, 80, 1.2);
     templeFlood.position.set(16, 20, -42);
     this.scene.add(templeFlood);
     this.templeLight = templeFlood;
 
-    const pierLight = new THREE.PointLight(0xff8811, 4.2, 36, 1.3);
+    // แสงคบเพลิงริมท่าน้ำ อบอุ่นสมจริง
+    const pierLight = new THREE.PointLight(0xff8811, 2.6, 36, 1.3);
     pierLight.position.set(-15, 6, 8);
     this.scene.add(pierLight);
-    this.flickerLights.push({ light: pierLight, baseIntensity: 4.2, speed: 4.5 });
+    this.flickerLights.push({ light: pierLight, baseIntensity: 2.6, speed: 4.5 });
   }
 
   /* ==========================================================
@@ -570,13 +574,11 @@ export class LoyKrathongScene {
     const ctx = canvas.getContext("2d");
 
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0.0, "#081b3c");
-    grad.addColorStop(0.3, "#102c5e");
-    grad.addColorStop(0.55, "#341d58");
-    grad.addColorStop(0.72, "#742458");
-    grad.addColorStop(0.85, "#bd4925");
-    grad.addColorStop(0.94, "#e57c1d");
-    grad.addColorStop(1.0, "#fde047");
+    grad.addColorStop(0.0, "#030712"); // ยอดฟ้ามืดมิดประดับดวงดาว (Deep Night Zenith)
+    grad.addColorStop(0.35, "#06132b"); // ท้องฟ้าราตรีกรมท่าเข้ม
+    grad.addColorStop(0.65, "#0b1e42"); // สีครามราตรีลึก (Midnight Indigo)
+    grad.addColorStop(0.85, "#102854"); // สีกรมท่าอบอุ่นเหนือขอบฟ้า
+    grad.addColorStop(1.0, "#163266"); // ขอบฟ้าราตรีเรืองแสงจันทร์นวลตา
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
@@ -743,15 +745,15 @@ export class LoyKrathongScene {
     const riverGeo = new THREE.PlaneGeometry(180, 180, 40, 40);
     riverGeo.rotateX(-Math.PI / 2);
 
-    // สีครามเข้ม แบบสีน้ำทะเลลึก (Deep Ocean Indigo / Navy Marine Blue)
+    // สีครามเข้ม แบบสีน้ำทะเลลึกยามค่ำคืน (Deep Ocean Marine Navy at Night)
     this.waterMat = new THREE.MeshStandardMaterial({
-      color: 0x0c4477, // สีครามเข้มน้ำทะเลสดใส
-      emissive: 0x052646, // แสงเรืองครามลึกใต้ผิวน้ำ ป้องกันน้ำกลายเป็นสีดำมืดเวลากลางคืน
-      emissiveIntensity: 0.90,
+      color: 0x092b4c, // สีครามเข้มน้ำทะเลลึก
+      emissive: 0x03162a, // แสงเรืองครามลึกใต้ผิวน้ำพอเหมาะ ไม่สว่างจ้าเกินไป
+      emissiveIntensity: 0.35,
       normalMap: this.waterNormalTexture,
-      normalScale: new THREE.Vector2(0.55, 0.55),
+      normalScale: new THREE.Vector2(0.50, 0.50),
       metalness: 0.12,
-      roughness: 0.18,
+      roughness: 0.16,
       flatShading: false,
     });
 
@@ -764,7 +766,7 @@ export class LoyKrathongScene {
     const bedGeo = new THREE.PlaneGeometry(190, 190);
     bedGeo.rotateX(-Math.PI / 2);
     const bedMat = new THREE.MeshStandardMaterial({
-      color: 0x031c36,
+      color: 0x021224,
       roughness: 0.90,
       metalness: 0.05,
     });
