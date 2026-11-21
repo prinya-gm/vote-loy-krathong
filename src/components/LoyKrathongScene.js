@@ -3308,7 +3308,7 @@ export class LoyKrathongScene {
 
     // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) =====
     const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0);
-    badgeSprite.position.set(0, isMale ? 2.12 : 2.08, 0);
+    badgeSprite.position.set(0, isMale ? 1.80 : 1.76, 0);
     avatarGroup.add(badgeSprite);
 
     avatarGroup.userData = {
@@ -3331,66 +3331,47 @@ export class LoyKrathongScene {
   // ANATOMICAL SCULPTING HELPERS (ปั้นโครงสร้างสรีระมนุษย์สมจริง)
   // ==========================================================
 
-  // ปั้นมือมนุษย์ที่มีฝ่ามือ นิ้วหัวแม่มือ และนิ้วทั้งสี่เรียงอย่างอ่อนช้อย
+  // ปั้นมือมนุษย์ที่เรียวงาม ได้สัดส่วนสมจริง (Graceful Anatomical Hand)
   buildAnatomicalHand(skinMat, isLeft, isWaving) {
     const handGroup = new THREE.Group();
 
     // 1. ฝ่ามือ (Palm) รูปทรงโค้งรับสรีระ
-    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.062, 0.022), skinMat);
-    palm.position.y = -0.031;
+    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.052, 0.020), skinMat);
+    palm.position.y = -0.026;
     handGroup.add(palm);
 
-    // 2. นิ้วหัวแม่มือ (Thumb) กางออกทำมุมเป็นธรรมชาติ
-    const thumbGroup = new THREE.Group();
+    // 2. นิ้วหัวแม่มือ (Thumb) แนบข้างฝ่ามืออย่างเป็นธรรมชาติ
     const thumbSign = isLeft ? -1 : 1;
-    thumbGroup.position.set(thumbSign * 0.026, -0.018, 0.005);
-    thumbGroup.rotation.z = thumbSign * (isWaving ? -0.55 : -0.35);
-    thumbGroup.rotation.y = thumbSign * 0.25;
+    const thumb = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.007, 0.036, 8), skinMat);
+    thumb.position.set(thumbSign * 0.024, -0.022, 0.004);
+    thumb.rotation.z = thumbSign * (isWaving ? -0.42 : -0.25);
+    thumb.rotation.x = isWaving ? -0.15 : 0.20;
+    handGroup.add(thumb);
 
-    const thumbPhalanx = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0075, 0.032, 6), skinMat);
-    thumbPhalanx.position.y = -0.016;
-    thumbGroup.add(thumbPhalanx);
+    // 3. ปลายนิ้ว 4 นิ้วรวมกลุ่มโค้งรับรูปมืออย่างสง่างาม ไม่แยกเป็นกิ่งก้านแข็ง
+    const fingers = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.038, 0.016), skinMat);
+    fingers.position.set(0, -0.062, isWaving ? -0.002 : 0.005);
+    if (!isWaving) fingers.rotation.x = 0.22; // โค้งงอเล็กน้อยในท่ายืนพักมือ
+    handGroup.add(fingers);
 
-    const thumbTip = new THREE.Mesh(new THREE.SphereGeometry(0.0075, 6, 6), skinMat);
-    thumbTip.position.y = -0.032;
-    thumbGroup.add(thumbTip);
-    handGroup.add(thumbGroup);
-
-    // 3. นิ้วทั้งสี่ (Index, Middle, Ring, Pinky) เรียวยาวอ่อนช้อย
-    const fingerSpecs = [
-      { x: -0.018, len: 0.040, r: 0.0068, bend: isWaving ? -0.22 : 0.26 }, // นิ้วชี้
-      { x: -0.006, len: 0.046, r: 0.0072, bend: isWaving ? -0.26 : 0.32 }, // นิ้วกลาง (ยาวที่สุด)
-      { x: 0.006, len: 0.042, r: 0.0068, bend: isWaving ? -0.24 : 0.30 },  // นิ้วนาง
-      { x: 0.018, len: 0.034, r: 0.0060, bend: isWaving ? -0.18 : 0.24 },  // นิ้วก้อย
-    ];
-
-    fingerSpecs.forEach((f) => {
-      const fGroup = new THREE.Group();
-      fGroup.position.set(f.x, -0.062, 0);
-      fGroup.rotation.x = f.bend; // โค้งรับท่าทาง
-
-      const phalanx = new THREE.Mesh(new THREE.CylinderGeometry(f.r, f.r * 0.85, f.len, 6), skinMat);
-      phalanx.position.y = -f.len * 0.5;
-      fGroup.add(phalanx);
-
-      const tip = new THREE.Mesh(new THREE.SphereGeometry(f.r * 0.85, 6, 6), skinMat);
-      tip.position.y = -f.len;
-      fGroup.add(tip);
-
-      handGroup.add(fGroup);
+    // ปลายนิ้วมน 4 จุด
+    [-0.015, -0.005, 0.005, 0.015].forEach((fx, idx) => {
+      const fTip = new THREE.Mesh(new THREE.SphereGeometry(0.0075, 6, 6), skinMat);
+      fTip.position.set(fx, -0.081 + (idx === 1 ? -0.003 : 0), isWaving ? -0.002 : 0.008);
+      handGroup.add(fTip);
     });
 
     return handGroup;
   }
 
-  // ปั้นศีรษะ โครงหน้า 3D จมูกโด่ง ใบหู คางมน และทรงผมไทย
+  // ปั้นศีรษะ โครงหน้า 3D ใบหู คางมน และทรงผมไทย
   buildAnatomicalHead(isMale, skinMat, hairMat, goldMat, faceMat, rubyMat) {
     const headGroup = new THREE.Group();
 
-    // 1. กะโหลกศีรษะและใบหน้า (รูปทรงไข่มนสมส่วน ไม่ใช่ทรงกลมลูกบอล)
-    const headRadius = 0.138;
+    // 1. กะโหลกศีรษะและใบหน้า (รูปทรงไข่มนสมส่วน)
+    const headRadius = 0.132;
     const headGeo = new THREE.SphereGeometry(headRadius, 32, 24);
-    headGeo.scale(0.96, 1.20, 1.08); // รูปทรงศีรษะรูปไข่
+    headGeo.scale(0.96, 1.15, 1.05);
 
     // Planar UV Mapping ด้านหน้าให้เข้ากับรูปถ่ายหรือใบหน้าวาด
     const posAttr = headGeo.attributes.position;
@@ -3401,7 +3382,7 @@ export class LoyKrathongScene {
       const z = posAttr.getZ(i);
       if (z > -0.015) {
         const u = 0.5 + x / (2.0 * headRadius);
-        const v = 0.5 + y / (2.4 * headRadius);
+        const v = 0.5 + y / (2.3 * headRadius);
         uvAttr.setXY(i, Math.max(0.01, Math.min(0.99, u)), Math.max(0.01, Math.min(0.99, v)));
       } else {
         uvAttr.setXY(i, 0.05, 0.05); // ด้านหลังศีรษะ
@@ -3412,81 +3393,61 @@ export class LoyKrathongScene {
     const headMesh = new THREE.Mesh(headGeo, faceMat);
     headGroup.add(headMesh);
 
-    // 2. คางมนและกรอบกราม (Defined Chin & Jawline)
-    const chin = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), skinMat);
-    chin.position.set(0, -0.115, 0.058);
-    chin.scale.set(1.0, 0.80, 1.15);
-    headGroup.add(chin);
-
-    // 3. จมูกโด่งสันงาม 3D (3D Sculpted Nose)
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.017, 0.052, 6), skinMat);
-    nose.position.set(0, 0.005, 0.144);
-    nose.rotation.x = -0.32;
-    headGroup.add(nose);
-
-    // 4. ใบหูทั้งสองข้าง (3D Sculpted Ears)
-    [-0.132, 0.132].forEach((ex, idx) => {
-      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8), skinMat);
-      ear.position.set(ex, 0.012, -0.01);
+    // 2. ใบหูทั้งสองข้าง (3D Sculpted Ears)
+    [-0.128, 0.128].forEach((ex, idx) => {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), skinMat);
+      ear.position.set(ex, 0.008, -0.01);
       ear.scale.set(0.35, 1.15, 0.75);
       ear.rotation.y = idx === 0 ? 0.16 : -0.16;
       headGroup.add(ear);
     });
 
-    // 5. ทรงผม 3D ปั้นตามแบบสุภาพบุรุษไทยและสตรีไทย
+    // 3. ทรงผม 3D ปั้นตามแบบสุภาพบุรุษไทยและสตรีไทย
     if (isMale) {
-      // ผมสุภาพบุรุษไทย: หวีแสกข้างเรียบร้อย มีวอลลุ่มด้านบนและท้ายทอยรับกับลำคอ
-      const maleHair = new THREE.Mesh(new THREE.SphereGeometry(0.144, 20, 16), hairMat);
-      maleHair.position.set(0, 0.045, -0.022);
-      maleHair.scale.set(1.02, 0.96, 1.10);
+      // ผมสุภาพบุรุษไทย: ทรงหวีเรียบสง่างาม ครอบรับกะโหลกศีรษะอย่างเป็นธรรมชาติ ไม่มีบล็อกเหลี่ยมยื่น
+      const maleHair = new THREE.Mesh(new THREE.SphereGeometry(0.136, 20, 16), hairMat);
+      maleHair.position.set(0, 0.025, -0.020);
+      maleHair.scale.set(1.02, 0.98, 1.08);
       headGroup.add(maleHair);
 
       // จอนผมข้างหู
-      [-0.130, 0.130].forEach((sx) => {
-        const sideburn = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.055, 0.030), hairMat);
-        sideburn.position.set(sx, -0.028, 0.022);
+      [-0.125, 0.125].forEach((sx) => {
+        const sideburn = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.045, 0.025), hairMat);
+        sideburn.position.set(sx, -0.024, 0.015);
         headGroup.add(sideburn);
       });
-
-      // ปอยผมปัดข้างด้านหน้า
-      const maleFringe = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.035, 0.045), hairMat);
-      maleFringe.position.set(0.015, 0.108, 0.092);
-      maleFringe.rotation.z = -0.14;
-      maleFringe.rotation.x = 0.10;
-      headGroup.add(maleFringe);
-
     } else {
       // ผมสตรีไทย: เกล้ามวยผมสูงด้านหลัง (Royal Thai High Chignon) พร้อมเกี้ยวทองคำและปิ่นปักผมดอกไม้ไหว
-      const femaleHair = new THREE.Mesh(new THREE.SphereGeometry(0.142, 20, 16), hairMat);
-      femaleHair.position.set(0, 0.032, -0.018);
-      femaleHair.scale.set(1.02, 0.98, 1.07);
+      const femaleHair = new THREE.Mesh(new THREE.SphereGeometry(0.136, 20, 16), hairMat);
+      femaleHair.position.set(0, 0.025, -0.018);
+      femaleHair.scale.set(1.02, 0.98, 1.06);
       headGroup.add(femaleHair);
 
       // มวยผมเกล้าสูงด้านหลัง
-      const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.078, 16, 12), hairMat);
-      chignon.position.set(0, 0.125, -0.096);
+      const chignon = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), hairMat);
+      chignon.position.set(0, 0.115, -0.092);
       chignon.scale.set(1.10, 0.95, 0.92);
       headGroup.add(chignon);
 
       // เกี้ยวทองรัดมวยผม (Golden Filigree Coronet)
-      const coronet = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.016, 8, 20), goldMat);
-      coronet.position.set(0, 0.10, -0.096);
+      const coronet = new THREE.Mesh(new THREE.TorusGeometry(0.065, 0.015, 8, 20), goldMat);
+      coronet.position.set(0, 0.095, -0.092);
       coronet.rotation.x = Math.PI / 2;
       headGroup.add(coronet);
 
       // ปิ่นปักผมทองคำประดับอุบะดอกจำปาทอง (Golden Lotus Hairpin with Ruby Gem)
       const pinShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.002, 0.14, 6), goldMat);
-      pinShaft.position.set(0.065, 0.175, -0.082);
+      pinShaft.position.set(0.065, 0.165, -0.080);
       pinShaft.rotation.z = -0.65;
       pinShaft.rotation.x = -0.22;
       headGroup.add(pinShaft);
 
       const pinFlower = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 8), goldMat);
-      pinFlower.position.set(0.11, 0.22, -0.07);
+      pinFlower.position.set(0.11, 0.21, -0.068);
       headGroup.add(pinFlower);
 
       const pinRuby = new THREE.Mesh(new THREE.SphereGeometry(0.010, 6, 6), rubyMat);
-      pinRuby.position.set(0.11, 0.22, -0.06);
+      pinRuby.position.set(0.11, 0.21, -0.058);
       headGroup.add(pinRuby);
     }
 
@@ -3598,121 +3559,136 @@ export class LoyKrathongScene {
     bodyGroup.add(jacketHem);
 
     // ลำตัวเสื้อราชปะแตน (V-Tapered Torso)
-    const jacketTorso = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.32, 0.21), jacketMat);
-    jacketTorso.position.y = 1.08;
+    const jacketTorso = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.28, 0.20), jacketMat);
+    jacketTorso.position.y = 1.04;
     bodyGroup.add(jacketTorso);
 
     // คอปกเสื้อราชปะแตนคอตั้ง (Mandarin Collar)
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.076, 0.05, 16), jacketMat);
-    collar.position.y = 1.28;
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.072, 0.045, 16), jacketMat);
+    collar.position.y = 1.20;
     bodyGroup.add(collar);
 
-    const collarPiping = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.010, 6, 16), goldMat);
-    collarPiping.position.y = 1.30;
+    const collarPiping = new THREE.Mesh(new THREE.TorusGeometry(0.071, 0.008, 6, 16), goldMat);
+    collarPiping.position.y = 1.22;
     collarPiping.rotation.x = Math.PI / 2;
     bodyGroup.add(collarPiping);
 
     // กระดุมทอง 5 เม็ดเรียงสวยงาม
     for (let b = 0; b < 5; b++) {
-      const btn = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), goldMat);
-      btn.position.set(0, 1.23 - b * 0.08, 0.112);
+      const btn = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), goldMat);
+      btn.position.set(0, 1.16 - b * 0.065, 0.106);
       bodyGroup.add(btn);
     }
 
     // กระเป๋าเสื้อที่อกซ้ายพร้อมผ้าเช็ดหน้าไหมพับสามเหลี่ยม
-    const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.042, 0.018), jacketMat);
-    pocket.position.set(-0.09, 1.15, 0.112);
+    const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.060, 0.038, 0.016), jacketMat);
+    pocket.position.set(-0.085, 1.10, 0.104);
     bodyGroup.add(pocket);
 
-    const hanky = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.022, 0.012), goldMat);
-    hanky.position.set(-0.09, 1.18, 0.118);
+    const hanky = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.020, 0.010), goldMat);
+    hanky.position.set(-0.085, 1.13, 0.108);
     hanky.rotation.z = 0.20;
     bodyGroup.add(hanky);
 
     // สายสะพายเฉียงเครื่องราชย์สีไหมมงคล (Royal Silk Sash)
-    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.46, 0.018), bottomMat);
-    sash.position.set(-0.02, 1.08, 0.114);
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.42, 0.016), bottomMat);
+    sash.position.set(-0.02, 1.04, 0.105);
     sash.rotation.z = -0.55;
     bodyGroup.add(sash);
 
-    const medalStar = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), goldMat);
-    medalStar.position.set(0.07, 0.94, 0.125);
+    const medalStar = new THREE.Mesh(new THREE.SphereGeometry(0.020, 6, 6), goldMat);
+    medalStar.position.set(0.065, 0.90, 0.115);
     bodyGroup.add(medalStar);
 
-    // 6. ลำคอสง่างาม
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.068, 0.12, 16), skinMat);
-    neck.position.y = 1.34;
+    // 6. ลำคอสง่างาม (เชื่อมต่อระหว่างปกเสื้อกับศีรษะอย่างสมส่วน ไม่ยื่นยาว)
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.058, 0.06, 16), skinMat);
+    neck.position.y = 1.25;
     bodyGroup.add(neck);
 
-    // 7. ศีรษะและใบหน้า 3D
+    // 7. ศีรษะและใบหน้า 3D (คางอยู่เหนือปกเสื้อพอดี ไม่ยื่นยาว)
     const head = this.buildAnatomicalHead(true, skinMat, hairMat, goldMat, faceMat, rubyMat);
-    head.position.y = 1.52;
+    head.position.y = 1.38;
     bodyGroup.add(head);
 
-    // 8. แขนซ้าย (แนบลำตัวอย่างสง่างาม พร้อมข้อมือและฝ่ามือ 5 นิ้วสมบูรณ์)
+    // 8. แขนซ้าย (แนบลำตัวอย่างสง่างาม ทอดลงอย่างเป็นธรรมชาติ)
     const lShoulder = new THREE.Group();
-    lShoulder.position.set(-0.24, 1.24, 0);
+    lShoulder.position.set(-0.175, 1.16, 0);
 
-    const lDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.056, 10, 8), jacketMat);
+    const lDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.050, 10, 8), jacketMat);
     lShoulder.add(lDeltoid);
 
-    const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.040, 0.28, 12), jacketMat);
-    lUpperArm.position.set(0, -0.14, 0);
+    // ต้นแขนซ้าย
+    const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.038, 0.22, 12), jacketMat);
+    lUpperArm.position.set(0, -0.11, 0);
     lShoulder.add(lUpperArm);
 
-    const lElbow = new THREE.Mesh(new THREE.SphereGeometry(0.040, 8, 8), jacketMat);
-    lElbow.position.set(0, -0.28, 0);
+    // ข้อศอกซ้าย
+    const lElbow = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), jacketMat);
+    lElbow.position.set(0, -0.22, 0);
     lShoulder.add(lElbow);
 
-    const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.040, 0.034, 0.24, 12), jacketMat);
-    lForearm.position.set(0, -0.40, 0);
+    // แขนท่อนปลายซ้าย (สวมแขนเสื้อสีเดียวกับชุด)
+    const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.034, 0.20, 12), jacketMat);
+    lForearm.position.set(0, -0.32, 0);
     lShoulder.add(lForearm);
 
-    const lCuff = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.008, 6, 12), goldMat);
-    lCuff.position.set(0, -0.51, 0);
+    // ปลายข้อมือขลิบทอง
+    const lCuff = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.007, 6, 12), goldMat);
+    lCuff.position.set(0, -0.42, 0);
     lCuff.rotation.x = Math.PI / 2;
     lShoulder.add(lCuff);
 
-    // ฝ่ามือซ้าย 5 นิ้วแนบข้างลำตัว
+    // ฝ่ามือซ้ายในท่าพักมือแนบลำตัว
     const lHand = this.buildAnatomicalHand(skinMat, true, false);
-    lHand.position.set(0, -0.52, 0);
+    lHand.position.set(0, -0.43, 0);
     lShoulder.add(lHand);
 
+    // ปรับองศาแขนซ้ายให้ทอดลงข้างลำตัวอย่างเป็นธรรมชาติ
+    lShoulder.rotation.z = 0.08;
+    lShoulder.rotation.x = -0.06;
     bodyGroup.add(lShoulder);
 
-    // 9. แขนขวา (ยกขึ้นโบกมือทักทายผู้ชม พร้อมข้อศอกและมือ 5 นิ้วสมจริง)
+    // 9. แขนขวา (ยกขึ้นโบกมือทักทายผู้ชมด้านหน้าอย่างสง่างาม เชื่อมต่อสมบูรณ์ 100%)
     const rShoulder = new THREE.Group();
-    rShoulder.position.set(0.24, 1.24, 0);
-    rShoulder.rotation.z = -0.85;
-    rShoulder.rotation.x = 0.22;
+    rShoulder.position.set(0.175, 1.16, 0);
 
-    const rDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.056, 10, 8), jacketMat);
+    const rDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.050, 10, 8), jacketMat);
     rShoulder.add(rDeltoid);
 
-    const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.040, 0.26, 12), jacketMat);
-    rUpperArm.position.y = -0.13;
+    // ต้นแขนขวา (กางออกเล็กน้อย 18 องศา และเอียงมาข้างหน้า 12 องศา)
+    const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.038, 0.22, 12), jacketMat);
+    rUpperArm.position.y = -0.11;
     rShoulder.add(rUpperArm);
 
-    // กลุ่มข้อศอกและแขนท่อนปลาย (Waving Arm Rig)
-    const rForearmGroup = new THREE.Group();
-    rForearmGroup.position.set(0, -0.26, 0);
-    rForearmGroup.rotation.z = 1.35; // งอข้อศอกยกขึ้น
+    rShoulder.rotation.z = -0.32; // กางออกด้านข้าง
+    rShoulder.rotation.x = -0.20; // โน้มมาด้านหน้าเล็กน้อย
 
-    const rElbow = new THREE.Mesh(new THREE.SphereGeometry(0.040, 8, 8), jacketMat);
+    // ข้อศอกขวาและแขนท่อนปลาย (พับขึ้นด้านหน้าอย่างถูกต้องตามกายวิภาค)
+    const rForearmGroup = new THREE.Group();
+    rForearmGroup.position.set(0, -0.22, 0); // อยู่ตรงปลายต้นแขนพอดี
+    // พับข้อศอกขึ้นด้านหน้า ~105 องศา (หงายขึ้นหาระดับอก/ไหล่ด้านหน้า)
+    rForearmGroup.rotation.x = -1.85;
+    rForearmGroup.rotation.y = 0.20;
+    rForearmGroup.rotation.z = -0.10;
+
+    const rElbow = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), jacketMat);
     rForearmGroup.add(rElbow);
 
-    const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.040, 0.034, 0.24, 12), skinMat);
-    rForearmMesh.position.y = -0.12;
+    // แขนเสื้อท่อนปลาย (สวมแขนเสื้อ jacketMat สีเดียวกับเสื้อ ไม่ใช่ผิวเปลือย!)
+    const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.034, 0.20, 12), jacketMat);
+    rForearmMesh.position.y = -0.10;
     rForearmGroup.add(rForearmMesh);
 
-    const rCuff = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.008, 6, 12), goldMat);
-    rCuff.position.set(0, -0.23, 0);
+    // ปลายข้อมือขลิบทอง
+    const rCuff = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.007, 6, 12), goldMat);
+    rCuff.position.set(0, -0.20, 0);
     rCuff.rotation.x = Math.PI / 2;
     rForearmGroup.add(rCuff);
 
-    // ฝ่ามือขวา 5 นิ้วโบกทักทาย
+    // ฝ่ามือขวาหงายออกด้านหน้ารับกล้อง โบกทักทายอย่างสุภาพ
     const rHand = this.buildAnatomicalHand(skinMat, false, true);
-    rHand.position.set(0, -0.24, 0);
+    rHand.position.set(0, -0.21, 0);
+    rHand.rotation.y = Math.PI; // หันฝ่ามือออกหาผู้ชมด้านหน้า
     rForearmGroup.add(rHand);
 
     rShoulder.add(rForearmGroup);
@@ -3853,78 +3829,94 @@ export class LoyKrathongScene {
     necklace.rotation.x = Math.PI / 2;
     bodyGroup.add(necklace);
 
-    // 6. ลำคอระหงอ่อนช้อย
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.058, 0.13, 16), skinMat);
-    neck.position.y = 1.30;
+    // 6. ลำคอระหงอ่อนช้อย (เชื่อมต่อกับศีรษะอย่างสมส่วน)
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.052, 0.055, 16), skinMat);
+    neck.position.y = 1.22;
     bodyGroup.add(neck);
 
-    // 7. ศีรษะและใบหน้า 3D
+    // 7. ศีรษะและใบหน้า 3D (คางอยู่เหนือสร้อยคอพอดี ไม่ยื่นยาว)
     const head = this.buildAnatomicalHead(false, skinMat, hairMat, goldMat, faceMat, rubyMat);
-    head.position.y = 1.48;
+    head.position.y = 1.35;
     bodyGroup.add(head);
 
-    // 8. แขนซ้าย (ประคองข้างเอวอย่างอ่อนช้อย พร้อมกำไลทองและมือ 5 นิ้ว)
+    // 8. แขนซ้าย (ประคองข้างเอวอย่างอ่อนช้อย ทอดลงอย่างเป็นธรรมชาติ)
     const lShoulder = new THREE.Group();
-    lShoulder.position.set(-0.21, 1.20, 0);
+    lShoulder.position.set(-0.165, 1.14, 0);
 
-    const lDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.046, 8, 8), sleeveMat);
+    const lDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.044, 8, 8), sleeveMat);
     lShoulder.add(lDeltoid);
 
-    const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.034, 0.26, 12), sleeveMat);
-    lUpperArm.position.y = -0.13;
+    // ต้นแขนซ้าย
+    const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.032, 0.22, 12), sleeveMat);
+    lUpperArm.position.y = -0.11;
     lShoulder.add(lUpperArm);
 
-    const lElbow = new THREE.Mesh(new THREE.SphereGeometry(0.034, 8, 8), sleeveMat);
-    lElbow.position.y = -0.26;
+    // ข้อศอกซ้าย
+    const lElbow = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8), sleeveMat);
+    lElbow.position.y = -0.22;
     lShoulder.add(lElbow);
 
-    const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.028, 0.24, 12), sleeveMat);
-    lForearm.position.y = -0.38;
+    // แขนท่อนปลายซ้าย
+    const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.026, 0.20, 12), sleeveMat);
+    lForearm.position.y = -0.32;
     lShoulder.add(lForearm);
 
     // กำไลข้อมือทองคำ
-    const lBangle = new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.009, 6, 12), goldMat);
-    lBangle.position.y = -0.49;
+    const lBangle = new THREE.Mesh(new THREE.TorusGeometry(0.030, 0.007, 6, 12), goldMat);
+    lBangle.position.y = -0.42;
     lBangle.rotation.x = Math.PI / 2;
     lShoulder.add(lBangle);
 
+    // ฝ่ามือซ้ายในท่าพักมือแนบลำตัว
     const lHand = this.buildAnatomicalHand(skinMat, true, false);
-    lHand.position.set(0, -0.50, 0);
+    lHand.position.set(0, -0.43, 0);
     lShoulder.add(lHand);
 
+    // องศาแขนซ้ายทอดลงข้างลำตัวอย่างเป็นธรรมชาติ
+    lShoulder.rotation.z = 0.08;
+    lShoulder.rotation.x = -0.06;
     bodyGroup.add(lShoulder);
 
-    // 9. แขนขวา (ยกขึ้นโบกมือทักทายอย่างอ่อนช้อย พร้อมกำไลทองและมือ 5 นิ้ว)
+    // 9. แขนขวา (ยกขึ้นโบกมือทักทายอย่างอ่อนช้อย เชื่อมต่อสมบูรณ์ 100%)
     const rShoulder = new THREE.Group();
-    rShoulder.position.set(0.21, 1.20, 0);
-    rShoulder.rotation.z = -0.85;
-    rShoulder.rotation.x = 0.22;
+    rShoulder.position.set(0.165, 1.14, 0);
 
-    const rDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.046, 8, 8), sleeveMat);
+    const rDeltoid = new THREE.Mesh(new THREE.SphereGeometry(0.044, 8, 8), sleeveMat);
     rShoulder.add(rDeltoid);
 
-    const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.034, 0.25, 12), sleeveMat);
-    rUpperArm.position.y = -0.125;
+    // ต้นแขนขวา (กางออกด้านข้าง 18 องศา และเอียงมาข้างหน้า 12 องศา)
+    const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.032, 0.22, 12), sleeveMat);
+    rUpperArm.position.y = -0.11;
     rShoulder.add(rUpperArm);
 
-    const rForearmGroup = new THREE.Group();
-    rForearmGroup.position.set(0, -0.25, 0);
-    rForearmGroup.rotation.z = 1.35; // งอข้อศอกขึ้นโบกมือ
+    rShoulder.rotation.z = -0.32;
+    rShoulder.rotation.x = -0.20;
 
-    const rElbow = new THREE.Mesh(new THREE.SphereGeometry(0.034, 8, 8), sleeveMat);
+    // ข้อศอกขวาและแขนท่อนปลาย (พับขึ้นด้านหน้าอย่างถูกต้องตามกายวิภาค)
+    const rForearmGroup = new THREE.Group();
+    rForearmGroup.position.set(0, -0.22, 0); // อยู่ตรงปลายต้นแขนพอดี
+    // พับข้อศอกขึ้นด้านหน้า ~105 องศา (หงายขึ้นหาระดับอก/ไหล่ด้านหน้า)
+    rForearmGroup.rotation.x = -1.85;
+    rForearmGroup.rotation.y = 0.20;
+    rForearmGroup.rotation.z = -0.10;
+
+    const rElbow = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8), sleeveMat);
     rForearmGroup.add(rElbow);
 
-    const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.028, 0.22, 12), sleeveMat);
-    rForearmMesh.position.y = -0.11;
+    const rForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.026, 0.20, 12), sleeveMat);
+    rForearmMesh.position.y = -0.10;
     rForearmGroup.add(rForearmMesh);
 
-    const rBangle = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.009, 6, 12), goldMat);
-    rBangle.position.y = -0.21;
+    // กำไลข้อมือทองคำ
+    const rBangle = new THREE.Mesh(new THREE.TorusGeometry(0.030, 0.007, 6, 12), goldMat);
+    rBangle.position.y = -0.20;
     rBangle.rotation.x = Math.PI / 2;
     rForearmGroup.add(rBangle);
 
+    // ฝ่ามือขวาหงายออกด้านหน้ารับกล้อง โบกทักทายอย่างสุภาพ
     const rHand = this.buildAnatomicalHand(skinMat, false, true);
-    rHand.position.set(0, -0.22, 0);
+    rHand.position.set(0, -0.21, 0);
+    rHand.rotation.y = Math.PI; // หันฝ่ามือออกหาผู้ชมด้านหน้า
     rForearmGroup.add(rHand);
 
     rShoulder.add(rForearmGroup);
@@ -4903,17 +4895,16 @@ export class LoyKrathongScene {
     if (this.candidateAvatars) {
       this.candidateAvatars.forEach((avatar) => {
         const aPhase = avatar.phase || 0;
-        // แขนขวาโบกมือทักทายอย่างนุ่มนวล
+        // แขนขวาโบกมือทักทายอย่างนุ่มนวลและเป็นธรรมชาติ
         if (avatar.wavingArm) {
-          avatar.wavingArm.rotation.z = -0.85 + Math.sin(time * 3.2 + aPhase) * 0.18;
-          avatar.wavingArm.rotation.x = 0.22 + Math.cos(time * 2.0 + aPhase) * 0.08;
+          avatar.wavingArm.rotation.z = -0.32 + Math.sin(time * 1.5 + aPhase) * 0.02;
         }
         if (avatar.wavingHand) {
-          avatar.wavingHand.rotation.z = 1.35 + Math.sin(time * 3.5 + aPhase) * 0.24;
+          avatar.wavingHand.rotation.z = -0.10 + Math.sin(time * 3.5 + aPhase) * 0.14;
         }
         // ลำตัวหายใจเบาๆ
         if (avatar.group) {
-          avatar.group.position.y = 0.89 + Math.sin(time * 1.5 + aPhase) * 0.012;
+          avatar.group.position.y = 0.89 + Math.sin(time * 1.5 + aPhase) * 0.008;
         }
       });
     }
