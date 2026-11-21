@@ -917,15 +917,16 @@ export class LoyKrathongScene {
     this.createRiverbankPromenade();
   }
 
-  // 1. Raised Ground Plot & Concrete Retaining Curb (ฐานสนามหญ้าและคันกั้นดิน ขนานกับแนวแม่น้ำ 100%)
+  // 1. Raised Ground Plot & Concrete Retaining Curb (จำกัดขอบเขตแปลงดินเรือนไทยไม่ให้ล้ำเกินแนวทางเดิน X <= -22.8)
   buildCompoundGroundPlot(compound, mats) {
-    const retainingWall = new THREE.Mesh(new THREE.BoxGeometry(24.0, 0.7, 30.0), mats.concrete);
-    retainingWall.position.set(0, 0.35, 0);
+    // ฐานแปลงที่ดินกว้าง 19.2 หน่วย (X ใน compound: -10.0 ถึง +9.2, ใน world: -42.0 ถึง -22.8 เว้นระยะห่างจากถนน X = -22.0 ถึง 1 เมตรเต็ม)
+    const retainingWall = new THREE.Mesh(new THREE.BoxGeometry(19.2, 0.7, 30.0), mats.concrete);
+    retainingWall.position.set(-0.4, 0.35, 0);
     retainingWall.receiveShadow = true;
     compound.add(retainingWall);
 
-    const lawn = new THREE.Mesh(new THREE.BoxGeometry(23.6, 0.25, 29.6), mats.grass);
-    lawn.position.set(0, 0.72, 0);
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(18.8, 0.25, 29.6), mats.grass);
+    lawn.position.set(-0.4, 0.72, 0);
     lawn.receiveShadow = true;
     compound.add(lawn);
 
@@ -1423,12 +1424,12 @@ export class LoyKrathongScene {
     bank.receiveShadow = true;
     this.scene.add(bank);
 
-    // ทางเดินหินปูเลียบแม่น้ำกว้าง 4 หน่วย (X: -22 ถึง -18) ยกสูงกว่าแนวหญ้า 5mm (Y = 1.505) ป้องกันการแย่งชิงระนาบลึก (Z-Buffer Fighting) 100%
+    // ทางเดินหินปูเลียบแม่น้ำกว้าง 4.2 หน่วย (X: -22.0 ถึง -17.8) ยกสูงกว่าแนวหญ้า 8mm (Y = 1.508) ขอบชัดเจน ป้องกันพื้นเขียวแลบเกินมาบนถนนเด็ดขาด
     const stoneEdge = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 2, 180),
+      new THREE.BoxGeometry(4.2, 2, 180),
       new THREE.MeshStandardMaterial({ color: 0x5a6369, roughness: 0.7 })
     );
-    stoneEdge.position.set(-20, 0.505, 0);
+    stoneEdge.position.set(-19.9, 0.508, 0);
     stoneEdge.receiveShadow = true;
     this.scene.add(stoneEdge);
 
