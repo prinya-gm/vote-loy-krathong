@@ -518,7 +518,7 @@ export class LoyKrathongScene {
   ========================================================== */
   setupLighting() {
     // 1. Hemisphere Light: แสงบรรยากาศราตรีสลัวนุ่มนวล ไม่มืดเกินไป และไม่สว่างจ้าเหมือนกลางวัน
-    const hemiLight = new THREE.HemisphereLight(0x1a2c4e, 0x071120, 0.45);
+    const hemiLight = new THREE.HemisphereLight(0x1a2c4e, 0x092648, 0.45);
     this.scene.add(hemiLight);
 
     // 2. Ambient Light: แสงแอมเบียนต์รอบทิศทางพอเหมาะ มองเห็นรายละเอียดชัดเจนโดยคงบรรยากาศกลางคืน
@@ -745,15 +745,15 @@ export class LoyKrathongScene {
     const riverGeo = new THREE.PlaneGeometry(180, 180, 40, 40);
     riverGeo.rotateX(-Math.PI / 2);
 
-    // สีครามเข้ม แบบสีน้ำทะเลลึกยามค่ำคืน (Deep Ocean Marine Navy at Night)
+    // สีครามเข้มลึก แบบสีน้ำทะเลลึก (Vibrant Deep Indigo / Rich Ocean Navy)
     this.waterMat = new THREE.MeshStandardMaterial({
-      color: 0x092b4c, // สีครามเข้มน้ำทะเลลึก
-      emissive: 0x03162a, // แสงเรืองครามลึกใต้ผิวน้ำพอเหมาะ ไม่สว่างจ้าเกินไป
-      emissiveIntensity: 0.35,
+      color: 0x0e4a82, // สีครามเข้มสดชัด (Deep Indigo)
+      emissive: 0x093660, // แสงเรืองเนื้อน้ำสีครามลึก เห็นเป็นสีครามเข้มชัดเจนแม้อยู่ในเวลากลางคืน
+      emissiveIntensity: 0.70,
       normalMap: this.waterNormalTexture,
-      normalScale: new THREE.Vector2(0.50, 0.50),
-      metalness: 0.12,
-      roughness: 0.16,
+      normalScale: new THREE.Vector2(0.40, 0.40),
+      metalness: 0.08,
+      roughness: 0.14,
       flatShading: false,
     });
 
@@ -762,12 +762,12 @@ export class LoyKrathongScene {
     this.waterMesh.receiveShadow = true;
     this.scene.add(this.waterMesh);
 
-    // ท้องน้ำลึกก้นแม่น้ำสีครามลึก (Deep Ocean Riverbed) ป้องกันมองทะลุเป็นความว่างเปล่าสีดำ
+    // ท้องน้ำลึกก้นแม่น้ำสีครามลึก (Deep Indigo Riverbed)
     const bedGeo = new THREE.PlaneGeometry(190, 190);
     bedGeo.rotateX(-Math.PI / 2);
     const bedMat = new THREE.MeshStandardMaterial({
-      color: 0x021224,
-      roughness: 0.90,
+      color: 0x041b36,
+      roughness: 0.85,
       metalness: 0.05,
     });
     const riverBed = new THREE.Mesh(bedGeo, bedMat);
