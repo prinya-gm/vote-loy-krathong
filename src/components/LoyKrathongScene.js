@@ -3,6 +3,79 @@ import { OrbitControls } from "three-stdlib";
 import femaleFaceTextureUrl from "../assets/textures/face_female.png";
 import maleFaceTextureUrl from "../assets/textures/face_male.png";
 
+// คลังข้อความสั้นกระชับสำหรับป้าย Dynamic Ticker เรียกร้องความสนใจเหนือศีรษะโมเดล (Option C)
+// 1. ภาษาไทย 20 ข้อความ (สั้น กระชับ ไม่ล้นป้าย 480px)
+const CANDIDATE_CALLOUT_THAI = [
+  "โหวตให้หนูทีน้า 🥺🙏",
+  "ขอหัวใจคนละดวง ❤️✨",
+  "โหวตหนูหน่อยค้าบ 🌸",
+  "ช่วยดันหนูทีน้า 💖🚀",
+  "ขอคะแนนหน่อยน้า 🥺✨",
+  "แวะโหวตหนูก่อนจ้า 🙏",
+  "กดหัวใจให้เค้าที 🥰",
+  "รักหนู โหวตเลย! 👑💕",
+  "1 โหวต ชื่นใจจัง 💖",
+  "ขอคะแนนคนสวยน้า 🌸✨",
+  "โหวตหนู มีโชคลาภ! 💸🙏",
+  "จิ้มโหวตหนูทีน้า 🥺👉",
+  "ขอเป็นที่หนึ่งนะ 🏆✨",
+  "โหวตหนู ไม่ผิดหวัง 😉",
+  "ขอแต้มหน่อยค้าบ 🌟",
+  "ฝากโหวตหนูด้วยน้า 🙏💖",
+  "เชียร์หนู กดโหวต! 📣✨",
+  "แวะให้กำลังใจทีน้า 🫶",
+  "โหวตกระทงหนูหน่อย 🍃",
+  "ขอบคุณที่โหวตนะค้าบ 😘🙏"
+];
+
+// 2. ภาษาอังกฤษ 20 ข้อความ (สั้น กระชับ)
+const CANDIDATE_CALLOUT_EN = [
+  "Vote for me! 🥺💖",
+  "Please vote! 🙏✨",
+  "Drop a vote! 💕",
+  "Need your love! ❤️",
+  "Tap to vote! 👉✨",
+  "Be my #1! 🏆",
+  "Love me? Vote! 🥰",
+  "Best Krathong! 🌸",
+  "Give me a heart! 💖",
+  "Support me! 👑✨",
+  "Vote please! 🥺🙏",
+  "Make my day! 🌟",
+  "Send some love! 💕",
+  "Vote for luck! 🍀✨",
+  "Cheer for me! 📣💖",
+  "Top 1 dream! 🥇🔥",
+  "Help me win! 🏆✨",
+  "One vote please! 🙏",
+  "Show your love! 🫶",
+  "Thank you! 😘💖"
+];
+
+// 3. ชุดอีโมจิเรียกร้องความสนใจ 20 ชุด
+const CANDIDATE_CALLOUT_EMOJI = [
+  "🥺 🙏 💖",
+  "💖 🥰 👑",
+  "🌸 🪷 ✨",
+  "🫶 ❤️ 🫶",
+  "🏆 🥇 🌟",
+  "🥺 👉 👈",
+  "🙏 💖 🙏",
+  "🎆 ✨ 🎉",
+  "🌙 🕯️ 🪷",
+  "😘 💕 💐",
+  "💃 🕺 ✨",
+  "🍀 💸 🧧",
+  "😻 ✨ 💖",
+  "👑 💎 ✨",
+  "🪷 🌊 🕯️",
+  "🔥 🚀 🏆",
+  "🥳 🎉 💖",
+  "😇 🙏 ✨",
+  "🙋‍♀️ ❤️ 🙋‍♂️",
+  "💖 💫 🌸"
+];
+
 export class LoyKrathongScene {
   constructor(container, onSelectKrathong) {
     this.container = container;
@@ -5132,6 +5205,11 @@ export class LoyKrathongScene {
       faceMat,
       isMale,
       phase: Math.random() * Math.PI * 2,
+      ticker: {
+        mode: 0, // 0 = คะแนนโหวต, 1 = ข้อความอ้อนขอคะแนน / อีโมจิ
+        nextSwitch: 2.0 + Math.random() * 4.0, // กระจายเวลาเริ่มต้นไม่ให้เปลี่ยนพร้อมกัน
+        currentSubText: null,
+      },
     };
   }
 
@@ -6263,6 +6341,7 @@ export class LoyKrathongScene {
     ctx.globalCompositeOperation = "source-over";
   }
 
+
   // สร้างป้ายชื่อและคะแนนโหวตลายไทยสีทอง พร้อมกรอบรูปถ่ายลอยเด่นเหนือป้าย
   createCandidateBadgeSprite(name, votes, photoUrl) {
     const canvas = document.createElement("canvas");
@@ -6271,8 +6350,15 @@ export class LoyKrathongScene {
     const ctx = canvas.getContext("2d");
 
     let cachedImg = null;
+    let curName = name;
+    let curVotes = votes;
+    let curSubText = null;
 
-    const render = (n, v) => {
+    const render = (n, v, subText) => {
+      if (n !== undefined) curName = n;
+      if (v !== undefined) curVotes = v;
+      if (subText !== undefined) curSubText = subText;
+
       ctx.clearRect(0, 0, 512, 300);
 
       // ===== 1. สลักเชื่อมระหว่างกรอบรูปกับกล่องป้าย (Golden Connecting Joint) =====
@@ -6325,15 +6411,21 @@ export class LoyKrathongScene {
       ctx.font = "bold 34px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const displayName = (n || "ผู้ร่วมลอยกระทง").length > 15 
-        ? (n || "ผู้ร่วมลอยกระทง").slice(0, 14) + "…" 
-        : (n || "ผู้ร่วมลอยกระทง");
+      const displayName = (curName || "ผู้ร่วมลอยกระทง").length > 15 
+        ? (curName || "ผู้ร่วมลอยกระทง").slice(0, 14) + "…" 
+        : (curName || "ผู้ร่วมลอยกระทง");
       ctx.fillText(displayName, 256, 192);
 
-      // คะแนนโหวต
-      ctx.fillStyle = "#fb7185";
-      ctx.font = "bold 28px sans-serif";
-      ctx.fillText(`❤️ โหวต ${v || 0} คะแนน`, 256, 244);
+      // แถวล่าง: สลับระหว่างคะแนนโหวต (สีชมพู) กับข้อความอ้อนขอคะแนน/อีโมจิ (สีทองอำพันสดใส สะดุดตา)
+      if (curSubText) {
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 26px sans-serif";
+        ctx.fillText(curSubText, 256, 244);
+      } else {
+        ctx.fillStyle = "#fb7185";
+        ctx.font = "bold 28px sans-serif";
+        ctx.fillText(`❤️ โหวต ${curVotes || 0} คะแนน`, 256, 244);
+      }
 
       // ===== 3. กรอบรูปถ่ายทรงกลมสีทองลอยเด่นเหนือป้าย (Circular Portrait Frame Above Badge) =====
       const cx = 256, cy = 68, radius = 54;
@@ -6422,7 +6514,7 @@ export class LoyKrathongScene {
 
       img.onload = () => {
         cachedImg = img;
-        render(name, votes);
+        render(curName, curVotes, curSubText);
         tex.needsUpdate = true;
       };
 
@@ -6445,7 +6537,8 @@ export class LoyKrathongScene {
   updateCandidateAvatarBadge(avatar, entry) {
     if (avatar.badgeSprite?.userData?.renderTexture) {
       const { renderTexture } = avatar.badgeSprite.userData;
-      renderTexture(entry.name, entry.votes || 0);
+      const curSubText = avatar.ticker?.currentSubText ?? null;
+      renderTexture(entry.name, entry.votes || 0, curSubText);
       if (avatar.badgeSprite.material.map) {
         avatar.badgeSprite.material.map.needsUpdate = true;
       }
@@ -7216,17 +7309,22 @@ export class LoyKrathongScene {
       });
     }
 
-    // 11.5 อัปเดตแอนิเมชันโมเดลผู้สมัครสวมชุดไทยบนท่าน้ำ (Waving Hand & Breathing)
+    // 11.5 อัปเดตแอนิเมชันโมเดลผู้สมัครสวมชุดไทยบนท่าน้ำ (Waving Hand, Breathing & Attention-grabbing Ticker)
     if (this.candidateAvatars) {
       this.candidateAvatars.forEach((avatar) => {
         const aPhase = avatar.phase || 0;
-        // แขนขวาโบกมือทักทายอย่างนุ่มนวลและเป็นธรรมชาติ
+        const isPleading = avatar.ticker?.mode === 1;
+
+        // แขนขวาโบกมือทักทายอย่างนุ่มนวลและเป็นธรรมชาติ (โบกกระตือรือร้นขึ้นเล็กน้อยขณะส่งข้อความอ้อน)
+        const waveSpeed = isPleading ? 4.8 : 3.5;
+        const waveAmp = isPleading ? 0.20 : 0.14;
         if (avatar.wavingArm) {
-          avatar.wavingArm.rotation.z = -0.32 + Math.sin(time * 1.5 + aPhase) * 0.02;
+          avatar.wavingArm.rotation.z = -0.32 + Math.sin(time * (isPleading ? 2.0 : 1.5) + aPhase) * (isPleading ? 0.035 : 0.02);
         }
         if (avatar.wavingHand) {
-          avatar.wavingHand.rotation.z = -0.10 + Math.sin(time * 3.5 + aPhase) * 0.14;
+          avatar.wavingHand.rotation.z = -0.10 + Math.sin(time * waveSpeed + aPhase) * waveAmp;
         }
+
         // ลำตัวหายใจเบาๆ โดยอิงจากระดับความสูงฐานเดิม (basePos.y) และหันหน้าเข้าหากล้องตลอดเวลา (Cylindrical Billboard LookAt)
         if (avatar.group) {
           const baseY = avatar.basePos?.y ?? 0.89;
@@ -7237,6 +7335,41 @@ export class LoyKrathongScene {
             const dx = this.camera.position.x - avatar.group.position.x;
             const dz = this.camera.position.z - avatar.group.position.z;
             avatar.group.rotation.y = Math.atan2(dx, dz);
+          }
+        }
+
+        // Dynamic Ticker เหนือศีรษะ: สลับข้อความเรียกร้องความสนใจสุ่มภาษาไทย/อังกฤษ/อีโมจิ กับคะแนนโหวต (Option C)
+        if (avatar.ticker && time >= avatar.ticker.nextSwitch) {
+          if (avatar.ticker.mode === 0) {
+            // สลับเป็นข้อความเรียกร้องความสนใจ (สุ่ม ไทย 40%, อังกฤษ 30%, อีโมจิ 30%)
+            avatar.ticker.mode = 1;
+            const r = Math.random();
+            let msg = "";
+            if (r < 0.40) {
+              msg = CANDIDATE_CALLOUT_THAI[Math.floor(Math.random() * CANDIDATE_CALLOUT_THAI.length)];
+            } else if (r < 0.70) {
+              msg = CANDIDATE_CALLOUT_EN[Math.floor(Math.random() * CANDIDATE_CALLOUT_EN.length)];
+            } else {
+              msg = CANDIDATE_CALLOUT_EMOJI[Math.floor(Math.random() * CANDIDATE_CALLOUT_EMOJI.length)];
+            }
+            avatar.ticker.currentSubText = msg;
+            avatar.ticker.nextSwitch = time + 3.2 + Math.random() * 0.8; // แสดงข้อความ 3.2 - 4.0 วินาที
+          } else {
+            // สลับกลับมาแสดงคะแนนโหวตปกติ
+            avatar.ticker.mode = 0;
+            avatar.ticker.currentSubText = null;
+            avatar.ticker.nextSwitch = time + 3.8 + Math.random() * 1.0; // แสดงคะแนนโหวต 3.8 - 4.8 วินาที
+          }
+
+          if (avatar.badgeSprite?.userData?.renderTexture) {
+            avatar.badgeSprite.userData.renderTexture(
+              avatar.entry?.name,
+              avatar.entry?.votes || 0,
+              avatar.ticker.currentSubText
+            );
+            if (avatar.badgeSprite.material.map) {
+              avatar.badgeSprite.material.map.needsUpdate = true;
+            }
           }
         }
       });
