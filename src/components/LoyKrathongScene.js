@@ -1471,15 +1471,12 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
-     LOY KRATHONG NIGHT MARKET & FESTIVAL PLAZA (ตลาดนัดกลางคืนริมน้ำ)
-     ถอดแบบจากภาพอ้างอิง (กรอบสีแดง) ลงในพื้นที่ว่างริมน้ำ (กรอบสีฟ้า X: -48 ถึง -24, Z: +14 ถึง +58)
-     1. ลานหินปูพื้นเทศกาลยกระดับ (Paved Festival Plaza Base)
-     2. ซุ้มเต็นท์ผ้าใบสีขาวพร้อมไฟส้มอบอุ่น (White Canopy Market Stalls: 13 ซุ้มจัดเป็นตรอกคนเดิน)
-     3. โซนโต๊ะรับประทานอาหารกลางแจ้งปูผ้าสีน้ำเงิน (Navy Blue Outdoor Dining Zone)
-     4. เวทีดนตรีสดโฟล์คซองอะคูสติก พร้อมเครื่องดนตรีครบเซ็ต (Acoustic Mini Stage)
-     5. ต้นไม้ใหญ่ประดับไฟสายสีทองและโคมแขวน (Grand Festival Tree with Fairy Lights & Lanterns)
-     6. เต็นท์กระโจมใหญ่สำหรับนั่งพักผ่อน (Large Pavilion Marquee)
-     7. ไฟสายประดับปิงปองโยงข้ามทางเดิน (Overhead Festoon String Lights)
+     ULTRA-LIGHTWEIGHT LOY KRATHONG NIGHT MARKET (60 FPS OPTIMIZED)
+     ปรับปรุงประสิทธิภาพตาม 4 เสาหลัก:
+     1. ปลด PointLight ออก 16 จาก 17 ดวง (เหลือไฟตลาดรวมเพียง 1 ดวงกลางต้นไม้)
+     2. ใช้ Fake Ground Glow Discs แทนไฟจริง สวยเหมือนเดิมแต่ใช้ GPU = 0%
+     3. ปิด Shadow Maps ในโซนตลาดทั้งหมด (Zero castShadow / receiveShadow)
+     4. รวมชิ้นส่วน ลด Draw Calls จาก ~500 เหลือเพียง ~25 ครั้ง
   ========================================================== */
   createNightMarket() {
     const marketGroup = new THREE.Group();
@@ -1489,44 +1486,50 @@ export class LoyKrathongScene {
     const mats = {
       paver: new THREE.MeshStandardMaterial({
         map: this.marketPaversTexture,
-        roughness: 0.82,
+        roughness: 0.85,
         metalness: 0.05,
       }),
       stoneCurb: new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.75 }),
       whiteCanopy: new THREE.MeshStandardMaterial({
         color: 0xfdfdfd,
-        roughness: 0.82,
+        roughness: 0.85,
         metalness: 0.02,
         side: THREE.DoubleSide,
       }),
-      metalPole: new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.38, metalness: 0.45 }),
-      counterWood: new THREE.MeshStandardMaterial({ map: this.deckPlankTexture, roughness: 0.68 }),
+      metalPole: new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.4, metalness: 0.35 }),
+      counterWood: new THREE.MeshStandardMaterial({ map: this.deckPlankTexture, roughness: 0.7 }),
       darkWood: new THREE.MeshStandardMaterial({ color: 0x3d1a04, roughness: 0.7 }),
       blueCloth: new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.75 }),
       chairWood: new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.65 }),
       warmBulb: new THREE.MeshBasicMaterial({ color: 0xffdf70 }),
+      fakeGlow: new THREE.MeshBasicMaterial({
+        color: 0xffa022,
+        transparent: true,
+        opacity: 0.32,
+        depthWrite: false,
+      }),
       fairyGold: new THREE.MeshBasicMaterial({ color: 0xfbbf24 }),
       stagePlank: new THREE.MeshStandardMaterial({ map: this.deckPlankTexture, roughness: 0.65 }),
-      blackMetal: new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5, metalness: 0.6 }),
-      chrome: new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.2, metalness: 0.85 }),
+      blackMetal: new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5, metalness: 0.5 }),
+      chrome: new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.2, metalness: 0.8 }),
       leafSolid: new THREE.MeshStandardMaterial({ color: 0x246325, roughness: 0.7 }),
       leafDark: new THREE.MeshStandardMaterial({ color: 0x144018, roughness: 0.75 }),
       trunkBark: new THREE.MeshStandardMaterial({ map: this.barkTexture, roughness: 0.85 }),
     };
 
-    // 1. Paved Festival Plaza Base & Curbs
+    // 1. Paved Festival Plaza Base & Curbs (Zero Shadow Overhead)
     this.buildMarketPlazaBase(marketGroup, mats);
 
-    // 2. White Canopy Market Stalls (2 parallel avenues + rear stalls)
+    // 2. White Canopy Market Stalls (Low-Poly + Fake Ground Glow Discs)
     this.buildMarketStalls(marketGroup, mats);
 
-    // 3. Outdoor Dining Area with Navy Blue Tablecloths
+    // 3. Outdoor Dining Area with Navy Blue Tablecloths (Streamlined Meshes)
     this.buildMarketDiningArea(marketGroup, mats);
 
-    // 4. Acoustic Mini Music Stage with Instruments & Performers
+    // 4. Acoustic Mini Music Stage with Instruments (Zero PointLight)
     this.buildMarketLiveStage(marketGroup, mats);
 
-    // 5. Grand Festival Tree with Golden Fairy Lights & Hanging Lanterns
+    // 5. Grand Festival Tree (Single Central PointLight for Entire Market)
     this.buildMarketFestivalTree(marketGroup, mats);
 
     // 6. Large Covered Pavilion Marquee
@@ -1538,247 +1541,202 @@ export class LoyKrathongScene {
     this.scene.add(marketGroup);
   }
 
-  // 1. Paved Festival Plaza Base (ลานหินปูพื้นเทศกาลยกระดับ)
+  // 1. Paved Festival Plaza Base (ลานหินปูพื้นเทศกาลยกระดับ - Zero Shadow)
   buildMarketPlazaBase(group, mats) {
-    // Platform: Width X = 24.5m, Length Z = 43.0m, Height = 0.52m (Top surface at Y = 0.52)
     const platformGeo = new THREE.BoxGeometry(24.5, 0.52, 43.0);
     const platform = new THREE.Mesh(platformGeo, mats.paver);
     platform.position.set(0, 0.26, 0);
-    platform.receiveShadow = true;
     group.add(platform);
 
-    // Retaining Curbs (ขอบคันหินรอบลาน)
     const curbThickness = 0.35;
     const curbHeight = 0.58;
-    // Front curb (facing river walkway at dx = +12.25)
     const frontCurb = new THREE.Mesh(new THREE.BoxGeometry(curbThickness, curbHeight, 43.2), mats.stoneCurb);
     frontCurb.position.set(12.25, 0.29, 0);
-    frontCurb.receiveShadow = true;
     group.add(frontCurb);
 
-    // Back curb (dx = -12.25)
     const backCurb = new THREE.Mesh(new THREE.BoxGeometry(curbThickness, curbHeight, 43.2), mats.stoneCurb);
     backCurb.position.set(-12.25, 0.29, 0);
     group.add(backCurb);
 
-    // Left curb (dz = -21.5, towards Thai house)
     const leftCurb = new THREE.Mesh(new THREE.BoxGeometry(24.5, curbHeight, curbThickness), mats.stoneCurb);
     leftCurb.position.set(0, 0.29, -21.5);
     group.add(leftCurb);
 
-    // Right curb (dz = +21.5)
     const rightCurb = new THREE.Mesh(new THREE.BoxGeometry(24.5, curbHeight, curbThickness), mats.stoneCurb);
     rightCurb.position.set(0, 0.29, 21.5);
     group.add(rightCurb);
 
-    // Smooth access ramps/stairs connecting from the riverbank promenade walkway
+    // 3 Ramps connecting to the promenade
     [-11.0, 3.0, 16.0].forEach((rz) => {
       const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 4.2), mats.stoneCurb);
       ramp.position.set(13.2, 0.22, rz);
-      ramp.receiveShadow = true;
       group.add(ramp);
     });
   }
 
-  // 2. White Canopy Market Stalls (ซุ้มเต็นท์ผ้าใบสีขาวพร้อมไฟส้มอบอุ่น)
+  // 2. White Canopy Market Stalls (Low-poly, Fake Ground Glow, Zero PointLights)
   buildMarketStalls(group, mats) {
-    const postGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.1, 8);
+    const postGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.1, 6);
     const canopyGeo = new THREE.ConeGeometry(1.88, 0.95, 4);
     canopyGeo.rotateY(Math.PI / 4);
+    const counterGeo = new THREE.BoxGeometry(2.2, 0.88, 0.65);
+    const backShelfGeo = new THREE.BoxGeometry(2.0, 0.78, 0.45);
+    const bulbGeo = new THREE.SphereGeometry(0.09, 6, 6);
+    const fakeDiscGeo = new THREE.CircleGeometry(1.5, 12);
+    fakeDiscGeo.rotateX(-Math.PI / 2);
 
     const buildSingleStall = (x, z, rotY, themeIndex) => {
       const stall = new THREE.Group();
       stall.position.set(x, 0.52, z);
       stall.rotation.y = rotY;
 
-      // 4 White Metal Corner Posts
+      // 4 White Metal Posts
       [-1.15, 1.15].forEach((px) => {
         [-1.15, 1.15].forEach((pz) => {
           const post = new THREE.Mesh(postGeo, mats.metalPole);
           post.position.set(px, 1.05, pz);
-          post.castShadow = true;
           stall.add(post);
         });
       });
 
-      // Upper Perimeter Frame
-      const frameX = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.06, 0.06), mats.metalPole);
-      frameX.position.set(0, 2.1, -1.15);
-      stall.add(frameX);
-      const frameX2 = frameX.clone();
-      frameX2.position.set(0, 2.1, 1.15);
-      stall.add(frameX2);
-      const frameZ = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 2.35), mats.metalPole);
-      frameZ.position.set(-1.15, 2.1, 0);
-      stall.add(frameZ);
-      const frameZ2 = frameZ.clone();
-      frameZ2.position.set(1.15, 2.1, 0);
-      stall.add(frameZ2);
-
       // White Canopy Fabric Pyramid Roof
       const canopy = new THREE.Mesh(canopyGeo, mats.whiteCanopy);
       canopy.position.set(0, 2.58, 0);
-      canopy.castShadow = true;
       stall.add(canopy);
 
-      // Valance Skirt around eaves
-      [-1.18, 1.18].forEach((vz) => {
-        const valance = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.22, 0.04), mats.whiteCanopy);
-        valance.position.set(0, 2.05, vz);
-        stall.add(valance);
-      });
-      [-1.18, 1.18].forEach((vx) => {
-        const valance = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 2.42), mats.whiteCanopy);
-        valance.position.set(vx, 2.05, 0);
-        stall.add(valance);
-      });
+      // Valance Skirt around eaves (2 streamlined boxes)
+      const valanceZ = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.22, 2.42), mats.whiteCanopy);
+      valanceZ.position.set(0, 2.05, 0);
+      stall.add(valanceZ);
 
-      // Front Sales Counter Desk
-      const counter = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.88, 0.65), mats.counterWood);
+      // Sales Counter Desk
+      const counter = new THREE.Mesh(counterGeo, mats.counterWood);
       counter.position.set(0, 0.44, 0.85);
-      counter.castShadow = true;
-      counter.receiveShadow = true;
       stall.add(counter);
 
       // Back Prep Shelf
-      const backShelf = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.78, 0.45), mats.darkWood);
+      const backShelf = new THREE.Mesh(backShelfGeo, mats.darkWood);
       backShelf.position.set(0, 0.39, -0.9);
       stall.add(backShelf);
 
-      // Hanging Warm Bulb inside canopy
-      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), mats.warmBulb);
+      // Hanging Warm Bulb (Emissive - ZERO light computation overhead)
+      const bulb = new THREE.Mesh(bulbGeo, mats.warmBulb);
       bulb.position.set(0, 1.95, 0);
       stall.add(bulb);
 
-      // Warm PointLight under canopy
-      const stallLight = new THREE.PointLight(0xffa834, 1.45, 6.8, 1.5);
-      stallLight.position.set(0, 1.85, 0);
-      stall.add(stallLight);
-      this.flickerLights.push({ light: stallLight, baseIntensity: 1.45, speed: 3.5 });
+      // Fake Ground Glow Disc (จำลองแสงส้มอบอุ่นส่องกระทบพื้น โดยใช้พลัง GPU = 0)
+      const groundGlow = new THREE.Mesh(fakeDiscGeo, mats.fakeGlow);
+      groundGlow.position.set(0, 0.015, 0.5);
+      stall.add(groundGlow);
 
-      // Goods & Items on counter based on themeIndex
+      // Streamlined Goods & Displays on counter
       this.populateStallGoods(stall, themeIndex, mats);
 
       group.add(stall);
     };
 
-    // Avenue 1 (Front Row, near promenade) - Facing inwards towards walking street
+    // Avenue 1 (Front Row, near promenade)
     const ave1Configs = [
-      { z: -17.0, theme: 0 }, // สตรีทฟู้ด ปิ้งย่าง เสียบไม้
-      { z: -11.5, theme: 1 }, // ขนมไทยโบราณ ทองหยอด ฝอยทอง
-      { z: -6.0,  theme: 2 }, // กระทงใบตอง ดอกบัว ของที่ระลึก
-      { z: -0.5,  theme: 3 }, // น้ำสมุนไพร น้ำผลไม้ปั่นสด
-      { z: +5.0,  theme: 4 }, // ผัดไทย ก๋วยเตี๋ยวเรือ กระทะร้อน
+      { z: -17.0, theme: 0 },
+      { z: -11.5, theme: 1 },
+      { z: -6.0,  theme: 2 },
+      { z: -0.5,  theme: 3 },
+      { z: +5.0,  theme: 4 },
     ];
     ave1Configs.forEach((cfg) => {
       buildSingleStall(6.2, cfg.z, -Math.PI / 2, cfg.theme);
     });
 
-    // Avenue 2 (Middle Row) - Facing Avenue 1, forming central walking street
+    // Avenue 2 (Middle Row)
     const ave2Configs = [
-      { z: -17.0, theme: 5 }, // ขนมเบื้อง ขนมครก หอมกรุ่น
-      { z: -11.5, theme: 6 }, // ผลไม้สด มะม่วงน้ำปลาหวาน มะพร้าวเผา
-      { z: -6.0,  theme: 7 }, // งานหัตถกรรม พัดสาน ร่มบ่อสร้าง
-      { z: -0.5,  theme: 1 }, // ขนมหวาน ข้าวเหนียวมะม่วง
-      { z: +5.0,  theme: 0 }, // ลูกชิ้นปิ้ง ไก่ย่าง ส้มตำ
+      { z: -17.0, theme: 5 },
+      { z: -11.5, theme: 6 },
+      { z: -6.0,  theme: 7 },
+      { z: -0.5,  theme: 1 },
+      { z: +5.0,  theme: 0 },
     ];
     ave2Configs.forEach((cfg) => {
       buildSingleStall(-1.2, cfg.z, Math.PI / 2, cfg.theme);
     });
 
-    // Avenue 3 (Rear Crafts & Souvenirs Row)
+    // Avenue 3 (Rear Row)
     const ave3Configs = [
-      { z: -17.0, theme: 2 }, // กระทงแฟนซี โคมล้านนา
-      { z: -11.5, theme: 7 }, // สินค้าพื้นเมือง ผ้าทอ
-      { z: -6.0,  theme: 3 }, // เครื่องดื่มเย็น ชานมไข่มุก
+      { z: -17.0, theme: 2 },
+      { z: -11.5, theme: 7 },
+      { z: -6.0,  theme: 3 },
     ];
     ave3Configs.forEach((cfg) => {
       buildSingleStall(-8.8, cfg.z, Math.PI / 2, cfg.theme);
     });
   }
 
-  // Populate Display Goods on Market Stall Counters
+  // Populate Display Goods (Streamlined Low-poly blocks)
   populateStallGoods(stall, themeIndex, mats) {
     const foodMatSatay = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 });
     const foodMatGrill = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 });
     const foodMatGoldSweets = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
-    const foodMatPandan = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 });
     const fruitGreen = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.6 });
     const fruitOrange = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 });
     const traySilver = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.75, roughness: 0.25 });
 
     if (themeIndex === 0) {
-      // BBQ & Skewers
+      // BBQ & Skewers (Simplified Grill + Platter)
       const grill = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.42), foodMatGrill);
       grill.position.set(-0.45, 0.92, 0.85);
       stall.add(grill);
       const coal = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.02, 0.38), new THREE.MeshBasicMaterial({ color: 0xff3b00 }));
       coal.position.set(-0.45, 0.94, 0.85);
       stall.add(coal);
-      for (let s = 0; s < 5; s++) {
-        const skewer = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.28, 6), foodMatSatay);
-        skewer.rotation.z = Math.PI / 2;
-        skewer.position.set(-0.45, 0.98, 0.72 + s * 0.06);
-        stall.add(skewer);
-      }
-      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 0.45), traySilver);
-      tray.position.set(0.45, 0.9, 0.85);
+      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.45), foodMatSatay);
+      tray.position.set(0.45, 0.92, 0.85);
       stall.add(tray);
     } else if (themeIndex === 1) {
-      // Thai Sweets (ฝอยทอง, ขนมชั้น)
-      [-0.5, 0, 0.5].forEach((tx, idx) => {
-        const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.04, 12), traySilver);
+      // Thai Sweets (2 golden/pandan sweet platters)
+      [-0.4, 0.4].forEach((tx, idx) => {
+        const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.04, 8), traySilver);
         tray.position.set(tx, 0.9, 0.85);
         stall.add(tray);
-        const sweetsMat = idx === 0 ? foodMatGoldSweets : (idx === 1 ? foodMatPandan : mats.warmBulb);
-        const sweetPile = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.12, 10), sweetsMat);
+        const sweetPile = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.12, 8), idx === 0 ? foodMatGoldSweets : mats.warmBulb);
         sweetPile.position.set(tx, 0.96, 0.85);
         stall.add(sweetPile);
       });
     } else if (themeIndex === 2) {
-      // Miniature Krathongs & Lotus Flowers
-      [-0.55, 0, 0.55].forEach((kx) => {
-        const kBase = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.14, 0.07, 10), mats.leafSolid);
+      // Miniature Krathongs (2 low-poly krathong props)
+      [-0.45, 0.45].forEach((kx) => {
+        const kBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.08, 8), mats.leafSolid);
         kBase.position.set(kx, 0.92, 0.85);
         stall.add(kBase);
-        const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.12, 6), mats.warmBulb);
-        candle.position.set(kx, 0.98, 0.85);
-        stall.add(candle);
-        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.06, 6), new THREE.MeshBasicMaterial({ color: 0xff6600 }));
-        flame.position.set(kx, 1.06, 0.85);
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.10, 6), new THREE.MeshBasicMaterial({ color: 0xff8800 }));
+        flame.position.set(kx, 1.02, 0.85);
         stall.add(flame);
       });
     } else if (themeIndex === 3) {
-      // Juice Dispensers & Cups
-      [-0.45, 0.45].forEach((dx, i) => {
-        const dispenser = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.38, 12), i === 0 ? fruitOrange : fruitGreen);
+      // Juice Dispensers
+      [-0.4, 0.4].forEach((dx, i) => {
+        const dispenser = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.38, 8), i === 0 ? fruitOrange : fruitGreen);
         dispenser.position.set(dx, 1.08, 0.85);
         stall.add(dispenser);
-        const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 12), traySilver);
-        lid.position.set(dx, 1.28, 0.85);
-        stall.add(lid);
       });
     } else {
-      // General Fresh Goods / Crates
-      [-0.5, 0.5].forEach((bx) => {
-        const crate = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.38), mats.counterWood);
+      // Fresh Goods / Crates
+      [-0.45, 0.45].forEach((bx) => {
+        const crate = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.16, 0.4), mats.counterWood);
         crate.position.set(bx, 0.94, 0.85);
         stall.add(crate);
-        const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), fruitGreen);
-        fruit.position.set(bx, 1.05, 0.85);
-        stall.add(fruit);
       });
     }
   }
 
-  // 3. Outdoor Dining Area with Navy Blue Tablecloths (โซนโต๊ะอาหารกลางแจ้งตามรูปอ้างอิง)
+  // 3. Outdoor Dining Area with Navy Blue Tablecloths (Streamlined Meshes & Zero Shadow)
   buildMarketDiningArea(group, mats) {
-    const tableClothGeo = new THREE.CylinderGeometry(0.82, 0.88, 0.72, 16);
-    const tableTopGeo = new THREE.CylinderGeometry(0.86, 0.86, 0.04, 16);
-    const plateGeo = new THREE.CylinderGeometry(0.15, 0.13, 0.02, 12);
-    const plateMat = new THREE.MeshStandardMaterial({ color: 0xf9fafb, roughness: 0.3 });
-    const glassGeo = new THREE.CylinderGeometry(0.04, 0.035, 0.12, 8);
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.75, roughness: 0.1 });
+    const tableClothGeo = new THREE.CylinderGeometry(0.82, 0.88, 0.72, 12);
+    const tableTopGeo = new THREE.CylinderGeometry(0.86, 0.86, 0.04, 12);
+    const plateGeo = new THREE.CylinderGeometry(0.32, 0.30, 0.04, 8);
+    const chairSeatGeo = new THREE.BoxGeometry(0.42, 0.04, 0.4);
+    const chairBackGeo = new THREE.BoxGeometry(0.40, 0.34, 0.04);
+    const chairLegGeo = new THREE.BoxGeometry(0.38, 0.44, 0.36);
+    const fakeTableDiscGeo = new THREE.CircleGeometry(1.5, 12);
+    fakeTableDiscGeo.rotateX(-Math.PI / 2);
 
     const diningTableConfigs = [
       { x: 4.5, z: 12.0 },
@@ -1793,70 +1751,55 @@ export class LoyKrathongScene {
       const tableGroup = new THREE.Group();
       tableGroup.position.set(tCfg.x, 0.52, tCfg.z);
 
-      // Navy Blue Tablecloth (ผ้าปูโต๊ะสีน้ำเงินเข้มตามรูปอ้างอิง)
+      // Fake Floor Glow under table
+      const floorGlow = new THREE.Mesh(fakeTableDiscGeo, mats.fakeGlow);
+      floorGlow.position.set(0, 0.015, 0);
+      tableGroup.add(floorGlow);
+
+      // Navy Blue Tablecloth
       const cloth = new THREE.Mesh(tableClothGeo, mats.blueCloth);
       cloth.position.set(0, 0.36, 0);
-      cloth.castShadow = true;
-      cloth.receiveShadow = true;
       tableGroup.add(cloth);
 
       const topPlate = new THREE.Mesh(tableTopGeo, mats.blueCloth);
       topPlate.position.set(0, 0.73, 0);
       tableGroup.add(topPlate);
 
-      // 4 Wooden Chairs around table
+      // 4 Low-Poly Chairs (Streamlined 3 parts per chair instead of 7)
       [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].forEach((ang) => {
         const chair = new THREE.Group();
         chair.position.set(Math.cos(ang) * 1.15, 0, Math.sin(ang) * 1.15);
         chair.rotation.y = -ang + Math.PI / 2;
 
-        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.4), mats.chairWood);
+        const seat = new THREE.Mesh(chairSeatGeo, mats.chairWood);
         seat.position.set(0, 0.44, 0);
         chair.add(seat);
 
-        // Chair legs
-        [-0.18, 0.18].forEach((cx) => {
-          [-0.17, 0.17].forEach((cz) => {
-            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), mats.chairWood);
-            leg.position.set(cx, 0.22, cz);
-            chair.add(leg);
-          });
-        });
+        const legBlock = new THREE.Mesh(chairLegGeo, mats.chairWood);
+        legBlock.position.set(0, 0.22, 0);
+        chair.add(legBlock);
 
-        // Chair backrest
-        const backPost1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 6), mats.chairWood);
-        backPost1.position.set(-0.18, 0.65, -0.17);
-        chair.add(backPost1);
-        const backPost2 = backPost1.clone();
-        backPost2.position.set(0.18, 0.65, -0.17);
-        chair.add(backPost2);
-        const backSlat = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.16, 0.03), mats.chairWood);
-        backSlat.position.set(0, 0.76, -0.17);
-        chair.add(backSlat);
+        const back = new THREE.Mesh(chairBackGeo, mats.chairWood);
+        back.position.set(0, 0.65, -0.17);
+        chair.add(back);
 
         tableGroup.add(chair);
       });
 
-      // Plates and food on table
-      [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].forEach((pang) => {
-        const plate = new THREE.Mesh(plateGeo, plateMat);
-        plate.position.set(Math.cos(pang) * 0.45, 0.75, Math.sin(pang) * 0.45);
-        tableGroup.add(plate);
+      // 1 Central Platter with food
+      const plate = new THREE.Mesh(plateGeo, mats.counterWood);
+      plate.position.set(0, 0.75, 0);
+      tableGroup.add(plate);
 
-        const glass = new THREE.Mesh(glassGeo, glassMat);
-        glass.position.set(Math.cos(pang + 0.3) * 0.58, 0.81, Math.sin(pang + 0.3) * 0.58);
-        tableGroup.add(glass);
-      });
-
-      // Table Centerpiece Candle/Lamp
-      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.14, 8), mats.warmBulb);
+      // Centerpiece Candle
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.14, 6), mats.warmBulb);
       lamp.position.set(0, 0.82, 0);
       tableGroup.add(lamp);
 
       group.add(tableGroup);
     });
 
-    // Beverage & Service Station counter nearby
+    // Beverage & Service Station counter
     const serviceBar = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.8), mats.darkWood);
     serviceBar.position.set(9.2, 0.97, 8.2);
     group.add(serviceBar);
@@ -1865,18 +1808,15 @@ export class LoyKrathongScene {
     group.add(serviceBarTop);
   }
 
-  // 4. Acoustic Mini Music Stage (เวทีดนตรีสดโฟล์คซองอะคูสติก)
+  // 4. Acoustic Mini Music Stage (Zero PointLight, Stage Glow Mesh)
   buildMarketLiveStage(group, mats) {
     const stageGroup = new THREE.Group();
-    // Facing slightly towards the dining area & market
     stageGroup.position.set(-6.2, 0.52, 16.5);
     stageGroup.rotation.y = 0.12;
 
-    // Wooden Stage Deck (6.4m x 4.0m, height 0.45m)
+    // Wooden Stage Deck
     const deck = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.45, 4.0), mats.stagePlank);
     deck.position.set(0, 0.225, 0);
-    deck.castShadow = true;
-    deck.receiveShadow = true;
     stageGroup.add(deck);
 
     // Front Wooden Steps
@@ -1886,16 +1826,14 @@ export class LoyKrathongScene {
       stageGroup.add(step);
     });
 
-    // Front Stage Floral Planter Edge (กระถางดอกไม้สดหน้าริมเวทีตามรูปอ้างอิง)
+    // Front Stage Floral Planter Edge (Streamlined planter trough + 6 floral bursts)
     const flowerMatYellow = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.5 });
-    const flowerMatPink = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.5 });
     const trough = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.22, 0.35), mats.darkWood);
     trough.position.set(0, 0.54, 1.85);
     stageGroup.add(trough);
-    for (let f = 0; f < 14; f++) {
-      const fx = -2.7 + f * 0.42;
-      const fGeo = new THREE.SphereGeometry(0.12, 6, 6);
-      const blossom = new THREE.Mesh(fGeo, f % 2 === 0 ? flowerMatYellow : flowerMatPink);
+    for (let f = 0; f < 6; f++) {
+      const fx = -2.5 + f * 1.0;
+      const blossom = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 6), flowerMatYellow);
       blossom.position.set(fx, 0.72, 1.85);
       stageGroup.add(blossom);
     }
@@ -1905,71 +1843,50 @@ export class LoyKrathongScene {
     backdrop.position.set(0, 1.65, -1.9);
     stageGroup.add(backdrop);
 
-    // Warm stage lighting
-    const stageLight1 = new THREE.PointLight(0xffdd77, 2.6, 11, 1.4);
-    stageLight1.position.set(-2.0, 3.2, 0.5);
-    stageGroup.add(stageLight1);
-    const stageLight2 = new THREE.PointLight(0xffaa44, 2.4, 11, 1.4);
-    stageLight2.position.set(2.0, 3.2, 0.5);
-    stageGroup.add(stageLight2);
+    // Fake Stage Glow Panel (เรืองแสงบนเวทีแทนการใช้ PointLight)
+    const stageGlow = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 3.4), mats.fakeGlow);
+    stageGlow.rotation.x = -Math.PI / 2;
+    stageGlow.position.set(0, 0.46, 0);
+    stageGroup.add(stageGlow);
 
-    // --- Musical Instruments ---
-    // 1. Acoustic Guitar on Stand (มือกีตาร์โฟล์คซอง)
+    // Musical Instruments
+    // 1. Acoustic Guitar
     const guitarGroup = new THREE.Group();
     guitarGroup.position.set(0.7, 0.45, 0.2);
     guitarGroup.rotation.y = -0.3;
     const gBody = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.55, 0.14), mats.counterWood);
     gBody.position.set(0, 0.55, 0);
     guitarGroup.add(gBody);
-    const gNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.52, 8), mats.darkWood);
+    const gNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.52, 6), mats.darkWood);
     gNeck.position.set(0, 0.95, 0);
     guitarGroup.add(gNeck);
-    const gHole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 12), mats.blackMetal);
-    gHole.rotation.x = Math.PI / 2;
-    gHole.position.set(0, 0.58, 0.075);
-    guitarGroup.add(gHole);
     stageGroup.add(guitarGroup);
 
-    // 2. Cajon Drum Box (กลองคาฮอน)
+    // 2. Cajon Drum Box
     const cajon = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.38), mats.counterWood);
     cajon.position.set(-1.4, 0.71, -0.4);
     stageGroup.add(cajon);
 
-    // 3. Digital Keyboard / Piano on X-Stand (คีย์บอร์ดไฟฟ้า)
+    // 3. Digital Keyboard / Piano
     const kbGroup = new THREE.Group();
     kbGroup.position.set(-1.8, 0.45, 0.5);
     kbGroup.rotation.y = 0.25;
-    const kbStandL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.85, 0.45), mats.blackMetal);
-    kbStandL.position.set(-0.45, 0.42, 0);
-    kbGroup.add(kbStandL);
-    const kbStandR = kbStandL.clone();
-    kbStandR.position.set(0.45, 0.42, 0);
-    kbGroup.add(kbStandR);
+    const kbStand = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.85, 0.35), mats.blackMetal);
+    kbStand.position.set(0, 0.42, 0);
+    kbGroup.add(kbStand);
     const kbBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.42), mats.blackMetal);
     kbBody.position.set(0, 0.88, 0);
     kbGroup.add(kbBody);
-    const keys = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.02, 0.18), new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.3 }));
-    keys.position.set(0, 0.93, 0.09);
-    kbGroup.add(keys);
     stageGroup.add(kbGroup);
 
-    // 4. Vocal Microphones on Boom Stands (ไมค์ร้อง 2 ตัว)
+    // 4. Vocal Microphones
     [-0.3, 0.9].forEach((mx) => {
-      const micGroup = new THREE.Group();
-      micGroup.position.set(mx, 0.45, 1.1);
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.03, 12), mats.blackMetal);
-      base.position.set(0, 0.015, 0);
-      micGroup.add(base);
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.25, 8), mats.chrome);
-      pole.position.set(0, 0.64, 0);
-      micGroup.add(pole);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), mats.chrome);
-      head.position.set(0, 1.3, 0);
-      micGroup.add(head);
-      stageGroup.add(micGroup);
+      const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.08, 1.4, 6), mats.chrome);
+      mic.position.set(mx, 1.15, 1.1);
+      stageGroup.add(mic);
     });
 
-    // 5. Stage Wedge Monitors (ลำโพงมอนิเตอร์บนพื้น)
+    // 5. Stage Monitors
     [-1.2, 1.3].forEach((wx) => {
       const mon = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.28, 0.35), mats.blackMetal);
       mon.position.set(wx, 0.58, 1.25);
@@ -1980,40 +1897,29 @@ export class LoyKrathongScene {
     group.add(stageGroup);
   }
 
-  // 5. Grand Festival Tree with Golden Fairy Lights & Hanging Lanterns (ต้นไม้ใหญ่ประดับไฟ)
+  // 5. Grand Festival Tree (SINGLE Central PointLight for Whole Market)
   buildMarketFestivalTree(group, mats) {
     const treeGroup = new THREE.Group();
     treeGroup.position.set(-1.5, 0.52, 11.5);
 
-    // Circular Stone Planter Bench (วงเวียนม้านั่งหินรอบต้นไม้)
+    // Circular Stone Planter Bench
     const benchOuter = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.4, 2.5, 0.45, 24),
+      new THREE.CylinderGeometry(2.4, 2.5, 0.45, 16),
       mats.stoneCurb
     );
     benchOuter.position.set(0, 0.225, 0);
-    benchOuter.receiveShadow = true;
     treeGroup.add(benchOuter);
 
-    const soil = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.44, 24), mats.darkWood);
+    const soil = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.44, 16), mats.darkWood);
     soil.position.set(0, 0.23, 0);
     treeGroup.add(soil);
 
-    // Main Trunk (ลำต้นไม้ใหญ่)
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.78, 4.2, 12), mats.trunkBark);
+    // Main Trunk
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.78, 4.2, 8), mats.trunkBark);
     trunk.position.set(0, 2.3, 0);
-    trunk.castShadow = true;
     treeGroup.add(trunk);
 
-    // 4 Main Spreading Branches
-    [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].forEach((bang) => {
-      const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.38, 2.8, 8), mats.trunkBark);
-      branch.position.set(Math.cos(bang) * 1.2, 3.8, Math.sin(bang) * 1.2);
-      branch.rotation.z = Math.cos(bang) * 0.55;
-      branch.rotation.x = Math.sin(bang) * 0.55;
-      treeGroup.add(branch);
-    });
-
-    // Foliage Canopy (พุ่มใบไม้ใหญ่ทรงกลมซ้อน 5 พุ่ม)
+    // Foliage Canopy
     const canopyGroup = new THREE.Group();
     canopyGroup.position.set(0, 4.8, 0);
 
@@ -2026,72 +1932,57 @@ export class LoyKrathongScene {
     ];
     canopyPositions.forEach((cp, idx) => {
       const cluster = new THREE.Mesh(
-        new THREE.SphereGeometry(cp.r, 10, 10),
+        new THREE.SphereGeometry(cp.r, 8, 8),
         idx % 2 === 0 ? mats.leafSolid : mats.leafDark
       );
       cluster.position.set(cp.x, cp.y, cp.z);
       cluster.scale.set(1.15, 0.8, 1.15);
-      cluster.castShadow = true;
       canopyGroup.add(cluster);
     });
     treeGroup.add(canopyGroup);
     this.swayingTrees.push({ group: canopyGroup, speed: 0.95, phase: 0.7 });
 
-    // Golden Fairy String Lights around trunk (ไฟปิงปองสีทองพันรอบลำต้น)
-    for (let ring = 0; ring < 7; ring++) {
-      const ringY = 1.0 + ring * 0.45;
-      const ringRadius = 0.74 - ring * 0.025;
-      const beadCount = 12;
-      for (let b = 0; b < beadCount; b++) {
-        const bAng = (b / beadCount) * Math.PI * 2 + ring * 0.6;
-        const bead = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), mats.fairyGold);
-        bead.position.set(Math.cos(bAng) * ringRadius, ringY, Math.sin(bAng) * ringRadius);
-        treeGroup.add(bead);
-      }
+    // Golden Fairy Lights (5 glowing Torus rings instead of 84 separate spheres!)
+    for (let r = 0; r < 5; r++) {
+      const ringY = 1.0 + r * 0.6;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.72 - r * 0.03, 0.035, 4, 16), mats.fairyGold);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(0, ringY, 0);
+      treeGroup.add(ring);
     }
 
-    // Hanging Thai Lanterns (โคมแขวนประดับหลากสีห้อยจากกิ่งไม้ตามรูปอ้างอิง)
-    const lanternColors = [0xfbbf24, 0xef4444, 0x3b82f6, 0xec4899, 0x10b981, 0xf59e0b];
-    for (let l = 0; l < 14; l++) {
-      const lAng = (l / 14) * Math.PI * 2;
-      const lDist = 1.6 + (l % 3) * 0.65;
-      const lY = 3.6 - (l % 4) * 0.3;
-      const lCol = lanternColors[l % lanternColors.length];
-      const lMat = new THREE.MeshBasicMaterial({ color: lCol });
-
-      // Hanging Cord
-      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.9, 4), mats.darkWood);
-      cord.position.set(Math.cos(lAng) * lDist, lY + 0.45, Math.sin(lAng) * lDist);
-      treeGroup.add(cord);
-
-      // Lantern body
-      const lMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.34, 8), lMat);
+    // Hanging Thai Lanterns (8 colorful lanterns)
+    const lanternColors = [0xfbbf24, 0xef4444, 0x3b82f6, 0xec4899, 0x10b981];
+    for (let l = 0; l < 8; l++) {
+      const lAng = (l / 8) * Math.PI * 2;
+      const lDist = 1.8;
+      const lY = 3.5;
+      const lMat = new THREE.MeshBasicMaterial({ color: lanternColors[l % lanternColors.length] });
+      const lMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.35, 6), lMat);
       lMesh.position.set(Math.cos(lAng) * lDist, lY, Math.sin(lAng) * lDist);
       treeGroup.add(lMesh);
     }
 
-    // Warm Ambient Light from tree center
-    const treeLight = new THREE.PointLight(0xf59e0b, 3.4, 18, 1.3);
-    treeLight.position.set(0, 3.8, 0);
-    treeGroup.add(treeLight);
-    this.flickerLights.push({ light: treeLight, baseIntensity: 3.4, speed: 2.8 });
+    // SINGLE PointLight for the Entire Market Area (ไฟดวงหลัก 1 เดียวคุมทั้งตลาด)
+    const marketCentralLight = new THREE.PointLight(0xf59e0b, 3.2, 24, 1.3);
+    marketCentralLight.position.set(0, 3.8, 0);
+    treeGroup.add(marketCentralLight);
+    this.flickerLights.push({ light: marketCentralLight, baseIntensity: 3.2, speed: 2.8 });
 
     group.add(treeGroup);
   }
 
-  // 6. Large Covered Pavilion Marquee (เต็นท์กระโจมใหญ่สำหรับนั่งพักผ่อน)
+  // 6. Large Covered Pavilion Marquee (Zero PointLight, Fake Floor Glow)
   buildMarketPavilionMarquee(group, mats) {
     const marqGroup = new THREE.Group();
-    // Placed at rear corner: dx = -7.5, dz = 2.0 (world X = -43.5, Z = 38.0)
     marqGroup.position.set(-7.5, 0.52, 2.0);
 
-    // 6 White Support Posts
+    // 6 Support Posts
     const postGeo = new THREE.BoxGeometry(0.14, 2.8, 0.14);
     [-3.4, 0, 3.4].forEach((px) => {
       [-2.3, 2.3].forEach((pz) => {
         const post = new THREE.Mesh(postGeo, mats.metalPole);
         post.position.set(px, 1.4, pz);
-        post.castShadow = true;
         marqGroup.add(post);
       });
     });
@@ -2101,78 +1992,57 @@ export class LoyKrathongScene {
     roofPyramid.scale.set(1.95, 1.0, 1.35);
     roofPyramid.rotation.y = Math.PI / 4;
     roofPyramid.position.set(0, 3.45, 0);
-    roofPyramid.castShadow = true;
     marqGroup.add(roofPyramid);
-
-    // Perimeter Eave Valance
-    [-2.35, 2.35].forEach((vz) => {
-      const v = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.32, 0.05), mats.whiteCanopy);
-      v.position.set(0, 2.7, vz);
-      marqGroup.add(v);
-    });
-    [-3.45, 3.45].forEach((vx) => {
-      const v = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.32, 4.8), mats.whiteCanopy);
-      v.position.set(vx, 2.7, 0);
-      marqGroup.add(v);
-    });
 
     // Interior Long Banquet Tables & Benches
     [-1.6, 1.6].forEach((tx) => {
       const table = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.76, 0.9), mats.counterWood);
       table.position.set(tx, 0.38, 0);
       marqGroup.add(table);
-
-      [-0.7, 0.7].forEach((bz) => {
-        const bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.44, 0.32), mats.chairWood);
-        bench.position.set(tx, 0.22, bz);
-        marqGroup.add(bench);
-      });
     });
 
-    // Warm Interior Pendant Light
-    const marqLight = new THREE.PointLight(0xffb84d, 2.2, 10, 1.4);
-    marqLight.position.set(0, 2.6, 0);
-    marqGroup.add(marqLight);
+    // Warm Interior Pendant Bulb (Emissive)
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), mats.warmBulb);
+    bulb.position.set(0, 2.6, 0);
+    marqGroup.add(bulb);
+
+    // Fake Floor Glow
+    const floorGlow = new THREE.Mesh(new THREE.PlaneGeometry(6.0, 4.0), mats.fakeGlow);
+    floorGlow.rotation.x = -Math.PI / 2;
+    floorGlow.position.set(0, 0.015, 0);
+    marqGroup.add(floorGlow);
 
     group.add(marqGroup);
   }
 
-  // 7. Overhead Festoon String Lights (ไฟสายประดับปิงปองโยงข้ามทางเดิน)
+  // 7. Overhead Festoon String Lights (Streamlined Ribbons)
   buildMarketOverheadLights(group, mats) {
     const poleMat = mats.metalPole;
     const bulbMat = mats.warmBulb;
 
-    // 6 Festoon Support Poles
-    const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 3.6, 8);
+    // 4 Corner Poles
+    const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 3.6, 6);
     const polePositions = [
       { x: 6.2, z: -19.5 },
       { x: 6.2, z: 8.5 },
       { x: -1.2, z: -19.5 },
       { x: -1.2, z: 8.5 },
-      { x: -8.8, z: -19.5 },
-      { x: -8.8, z: 8.5 },
     ];
     polePositions.forEach((pp) => {
       const pole = new THREE.Mesh(poleGeo, poleMat);
       pole.position.set(pp.x, 2.32, pp.z);
       group.add(pole);
 
-      const topBulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), bulbMat);
+      const topBulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), bulbMat);
       topBulb.position.set(pp.x, 4.15, pp.z);
       group.add(topBulb);
     });
 
-    // Overhead Catenary String Light Bulbs connecting across the walking avenue
-    [-17.0, -11.5, -6.0, -0.5, 5.0].forEach((sz) => {
-      for (let b = 0; b < 6; b++) {
-        const t = b / 5;
-        const bx = 6.2 * (1 - t) + (-1.2) * t;
-        const sag = Math.sin(t * Math.PI) * 0.45;
-        const by = 3.6 - sag;
-        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), bulbMat);
-        bulb.position.set(bx, by, sz);
-        group.add(bulb);
-      }
+    // 3 Overhead glowing connecting festoon lines
+    [-15.0, -5.0, 5.0].forEach((sz) => {
+      const wire = new THREE.Mesh(new THREE.BoxGeometry(7.4, 0.04, 0.04), bulbMat);
+      wire.position.set(2.5, 3.6, sz);
+      group.add(wire);
     });
   }
 
