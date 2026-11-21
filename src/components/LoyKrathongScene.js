@@ -518,7 +518,7 @@ export class LoyKrathongScene {
   ========================================================== */
   setupLighting() {
     // 1. Hemisphere Light: แสงบรรยากาศสมจริง ท้องฟ้าราตรีสีกรมท่าเข้ม + แสงสะท้อนผิวน้ำด้านล่าง
-    const hemiLight = new THREE.HemisphereLight(0x283e68, 0x0a1422, 1.25);
+    const hemiLight = new THREE.HemisphereLight(0x283e68, 0x0a1e38, 1.25);
     this.scene.add(hemiLight);
 
     const ambientLight = new THREE.AmbientLight(0x38527a, 0.85);
@@ -743,12 +743,15 @@ export class LoyKrathongScene {
     const riverGeo = new THREE.PlaneGeometry(180, 180, 40, 40);
     riverGeo.rotateX(-Math.PI / 2);
 
+    // สีครามเข้ม แบบสีน้ำทะเลลึก (Deep Ocean Indigo / Navy Marine Blue)
     this.waterMat = new THREE.MeshStandardMaterial({
-      color: 0x061c33,
+      color: 0x0c4477, // สีครามเข้มน้ำทะเลสดใส
+      emissive: 0x052646, // แสงเรืองครามลึกใต้ผิวน้ำ ป้องกันน้ำกลายเป็นสีดำมืดเวลากลางคืน
+      emissiveIntensity: 0.90,
       normalMap: this.waterNormalTexture,
-      normalScale: new THREE.Vector2(0.40, 0.40),
-      metalness: 0.84,
-      roughness: 0.12,
+      normalScale: new THREE.Vector2(0.55, 0.55),
+      metalness: 0.12,
+      roughness: 0.18,
       flatShading: false,
     });
 
@@ -756,6 +759,18 @@ export class LoyKrathongScene {
     this.waterMesh.position.y = 0;
     this.waterMesh.receiveShadow = true;
     this.scene.add(this.waterMesh);
+
+    // ท้องน้ำลึกก้นแม่น้ำสีครามลึก (Deep Ocean Riverbed) ป้องกันมองทะลุเป็นความว่างเปล่าสีดำ
+    const bedGeo = new THREE.PlaneGeometry(190, 190);
+    bedGeo.rotateX(-Math.PI / 2);
+    const bedMat = new THREE.MeshStandardMaterial({
+      color: 0x031c36,
+      roughness: 0.90,
+      metalness: 0.05,
+    });
+    const riverBed = new THREE.Mesh(bedGeo, bedMat);
+    riverBed.position.y = -1.2;
+    this.scene.add(riverBed);
 
     this.riverPositions = riverGeo.attributes.position;
     this.baseRiverCoords = this.riverPositions.array.slice();
