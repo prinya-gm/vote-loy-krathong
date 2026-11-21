@@ -2794,6 +2794,9 @@ export class LoyKrathongScene {
     group.add(ring);
 
     group.position.set(data.x !== undefined ? data.x : 0, 0, data.z !== undefined ? data.z : 10);
+    // ปรับลดขนาดกระทงลงให้เหลือประมาณ 75% ของขนาดเดิมตามความต้องการของผู้ใช้งาน
+    group.scale.set(0.75, 0.75, 0.75);
+
     group.userData.speedZ = (data.speed || 0.009) * (0.85 + Math.random() * 0.3);
     group.userData.driftSpeedX = (Math.random() - 0.5) * 0.004;
     group.userData.curlFreq = 0.35 + Math.random() * 0.35;
@@ -3315,9 +3318,9 @@ export class LoyKrathongScene {
       wavingHand = femaleRig.wavingHand;
     }
 
-    // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) =====
+    // ===== ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ (Billboard Sprite) ไม่บดบังโมเดลคน =====
     const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0);
-    badgeSprite.position.set(0, isMale ? 1.76 : 1.72, 0);
+    badgeSprite.position.set(0, isMale ? 2.52 : 2.48, 0);
     avatarGroup.add(badgeSprite);
 
     avatarGroup.userData = {
