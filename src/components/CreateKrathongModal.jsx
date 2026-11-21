@@ -1,41 +1,30 @@
 import React, { useState, useRef } from "react";
-import { Camera, Upload, X, Sparkles, Loader2 } from "lucide-react";
-
-const KRATHONG_COLORS = [
-  { name: "ทองเรืองรอง", hex: "#f59e0b" },
-  { name: "ชมพูดอกบัว", hex: "#ec4899" },
-  { name: "มรกตธรรมชาติ", hex: "#10b981" },
-  { name: "ม่วงอัญชัน", hex: "#8b5cf6" },
-  { name: "ฟ้าราตรี", hex: "#06b6d4" },
-  { name: "แดงเพลิง", hex: "#ef4444" },
-];
-
-const FEMALE_STYLES = [
-  { id: "chakraphat", name: "ชุดไทยจักรพรรดิ", desc: "สไบสองชั้น ปักดิ้นทองหรูหรา" },
-  { id: "chakri", name: "ชุดไทยจักรี / ศิวาลัย", desc: "สไบเฉียงผ้าไหมเรียบหรู สง่างาม" },
-];
-
-const MALE_STYLES = [
-  { id: "rajpatan", name: "ชุดราชปะแตนคลาสสิก", desc: "เสื้อคอตั้ง โจงกระเบนไหม คาดเอวทอง" },
-  { id: "pra-ratchatan", name: "ชุดไทยพระราชทาน", desc: "เสื้อไหมสังวาลย์ทอง ภูมิฐาน" },
-];
-
-const COSTUME_COLORS = [
-  { name: "ทองเรืองรอง", hex: "#f59e0b" },
-  { name: "แดงทับทิม", hex: "#e11d48" },
-  { name: "มรกตธรรมชาติ", hex: "#10b981" },
-  { name: "ชมพูกลีบบัว", hex: "#ec4899" },
-  { name: "ฟ้าราตรี", hex: "#06b6d4" },
-  { name: "ม่วงดอกรัก", hex: "#8b5cf6" },
-];
+import { Camera, Upload, X, Sparkles, Loader2, Check } from "lucide-react";
+import {
+  MALE_TOPS,
+  MALE_BOTTOMS,
+  FEMALE_TOPS,
+  FEMALE_BOTTOMS,
+  KRATHONG_BASES,
+  FLOWER_DECORATIONS,
+  MaleTopIcon,
+  MaleBottomIcon,
+  FemaleTopIcon,
+  FemaleBottomIcon,
+  KrathongBaseIcon,
+  FlowerDecorationIcon,
+  CombinedAvatarPreview,
+  CombinedKrathongPreview,
+} from "./KrathongAssets";
 
 export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedColor, setSelectedColor] = useState(KRATHONG_COLORS[0].hex);
   const [gender, setGender] = useState("female");
-  const [costumeStyle, setCostumeStyle] = useState("chakraphat");
-  const [costumeColor, setCostumeColor] = useState(COSTUME_COLORS[0].hex);
+  const [topStyle, setTopStyle] = useState("female-top-1");
+  const [bottomStyle, setBottomStyle] = useState("female-bottom-1");
+  const [krathongStyle, setKrathongStyle] = useState("krathong-banana-leaf");
+  const [flowerStyle, setFlowerStyle] = useState("flower-pink-lotus");
   const [previewImage, setPreviewImage] = useState(null);
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +34,17 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
   const videoRef = useRef(null);
 
   if (!isOpen) return null;
+
+  const handleGenderChange = (newGender) => {
+    setGender(newGender);
+    if (newGender === "male") {
+      setTopStyle("male-top-1");
+      setBottomStyle("male-bottom-1");
+    } else {
+      setTopStyle("female-top-1");
+      setBottomStyle("female-bottom-1");
+    }
+  };
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0];
@@ -115,14 +115,23 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
 
     try {
       setIsSubmitting(true);
+
+      // Find color from selected Krathong / Costume
+      const currentKrathong = KRATHONG_BASES.find((k) => k.id === krathongStyle);
+      const currentTop = (gender === "male" ? MALE_TOPS : FEMALE_TOPS).find((t) => t.id === topStyle);
+
       await onSubmit({
         name,
         description,
         file,
-        color: selectedColor,
+        color: currentKrathong?.colorHex || "#f59e0b",
         gender,
-        costumeStyle,
-        costumeColor,
+        costumeStyle: topStyle,
+        costumeColor: currentTop?.colorHex || "#f59e0b",
+        topStyle,
+        bottomStyle,
+        krathongStyle,
+        flowerStyle,
       });
       onClose();
     } catch (err) {
@@ -133,18 +142,23 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
     }
   };
 
+  const activeTops = gender === "male" ? MALE_TOPS : FEMALE_TOPS;
+  const activeBottoms = gender === "male" ? MALE_BOTTOMS : FEMALE_BOTTOMS;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-slate-900/95 border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 max-h-[92dvh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-2xl bg-slate-900/98 border border-amber-500/40 rounded-2xl sm:rounded-3xl shadow-2xl text-slate-100 max-h-[94dvh] flex flex-col overflow-hidden">
         {/* Fixed Header */}
-        <div className="shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-900/90">
+        <div className="shrink-0 flex items-center justify-between p-3.5 sm:p-5 border-b border-slate-800 bg-slate-900/90">
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl">🪷</span>
+            <span className="text-2xl sm:text-3xl">🪷</span>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-amber-200 to-yellow-500 bg-clip-text text-transparent">
-                สร้างกระทง & เข้าร่วมประกวด
+              <h2 className="text-base sm:text-xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                สร้างกระทง & ออกแบบชุดไทย
               </h2>
-              <p className="text-xs text-slate-400">ถ่ายรูปหรืออัปโหลดรูปขึ้นกระทงเพื่อเริ่มรับคะแนนโหวต</p>
+              <p className="text-[11px] sm:text-xs text-slate-400">
+                เลือกแบบชุดไทย (บน-ล่าง) และแบบกระทง & ดอกไม้มงคลตามใจคุณ
+              </p>
             </div>
           </div>
           <button
@@ -161,36 +175,37 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
         {/* Form with Scrollable Body & Sticky Submit Footer */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Scrollable Form Body */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-            {/* Photo Section */}
-            <div>
-              <label className="block text-sm font-medium text-amber-200 mb-2">
-                รูปภาพของคุณในกระทง <span className="text-red-400">*</span>
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-5 custom-scrollbar">
+            
+            {/* 1. PHOTO & NAME SECTION */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 space-y-3">
+              <label className="block text-xs sm:text-sm font-bold text-amber-300">
+                1. รูปถ่ายและชื่อของคุณ <span className="text-red-400">*</span>
               </label>
 
               {cameraActive ? (
-                <div className="relative rounded-xl overflow-hidden bg-black aspect-video sm:aspect-square max-h-64 flex flex-col items-center justify-center">
+                <div className="relative rounded-xl overflow-hidden bg-black aspect-video sm:aspect-square max-h-56 flex flex-col items-center justify-center">
                   <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline />
-                  <div className="absolute bottom-3 sm:bottom-4 flex gap-2.5 sm:gap-3">
+                  <div className="absolute bottom-3 flex gap-2.5">
                     <button
                       type="button"
                       onClick={capturePhoto}
-                      className="px-4 sm:px-5 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-full shadow-lg flex items-center gap-2 text-sm sm:text-base cursor-pointer active:scale-95"
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-full shadow-lg flex items-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95"
                     >
                       <Camera className="w-4 h-4" /> แชะภาพเลย
                     </button>
                     <button
                       type="button"
                       onClick={stopCamera}
-                      className="px-3.5 sm:px-4 py-2 bg-slate-800/90 hover:bg-slate-700 text-white rounded-full text-xs sm:text-sm cursor-pointer"
+                      className="px-3.5 py-2 bg-slate-800/90 hover:bg-slate-700 text-white rounded-full text-xs cursor-pointer"
                     >
                       ยกเลิก
                     </button>
                   </div>
                 </div>
               ) : previewImage ? (
-                <div className="relative rounded-xl overflow-hidden border-2 border-amber-500/40 max-h-56 sm:max-h-64 flex items-center justify-center bg-black/40 p-2 mx-auto group">
-                  <img src={previewImage} alt="Preview" className="max-h-52 sm:max-h-60 w-auto object-contain rounded-lg shadow" />
+                <div className="relative rounded-xl overflow-hidden border-2 border-amber-500/40 max-h-48 sm:max-h-56 flex items-center justify-center bg-black/40 p-2 mx-auto group">
+                  <img src={previewImage} alt="Preview" className="max-h-44 sm:max-h-52 w-auto object-contain rounded-lg shadow" />
                   <button
                     type="button"
                     onClick={() => {
@@ -204,29 +219,29 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={startCamera}
-                    className="flex flex-col items-center justify-center p-4 sm:p-5 border-2 border-dashed border-amber-500/30 hover:border-amber-400 bg-slate-800/50 hover:bg-slate-800/80 rounded-xl transition cursor-pointer group active:scale-95"
+                    className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-amber-500/30 hover:border-amber-400 bg-slate-800/50 hover:bg-slate-800/80 rounded-xl transition cursor-pointer group active:scale-95"
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mb-2 group-hover:scale-110 transition">
-                      <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mb-1.5 group-hover:scale-110 transition">
+                      <Camera className="w-4 h-4" />
                     </div>
-                    <span className="text-xs sm:text-sm font-semibold">ถ่ายรูปจากกล้อง</span>
-                    <span className="text-[10px] sm:text-xs text-slate-400 mt-0.5">มือถือ / เว็บแคม</span>
+                    <span className="text-xs font-semibold">ถ่ายรูปจากกล้อง</span>
+                    <span className="text-[10px] text-slate-400">มือถือ / เว็บแคม</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center p-4 sm:p-5 border-2 border-dashed border-amber-500/30 hover:border-amber-400 bg-slate-800/50 hover:bg-slate-800/80 rounded-xl transition cursor-pointer group active:scale-95"
+                    className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-amber-500/30 hover:border-amber-400 bg-slate-800/50 hover:bg-slate-800/80 rounded-xl transition cursor-pointer group active:scale-95"
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mb-2 group-hover:scale-110 transition">
-                      <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mb-1.5 group-hover:scale-110 transition">
+                      <Upload className="w-4 h-4" />
                     </div>
-                    <span className="text-xs sm:text-sm font-semibold">อัปโหลดรูปภาพ</span>
-                    <span className="text-[10px] sm:text-xs text-slate-400 mt-0.5">PNG, JPG, WEBP</span>
+                    <span className="text-xs font-semibold">อัปโหลดรูปภาพ</span>
+                    <span className="text-[10px] text-slate-400">PNG, JPG, WEBP</span>
                   </button>
                 </div>
               )}
@@ -238,166 +253,282 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                 className="hidden"
                 onChange={handleFileChange}
               />
+
+              <div>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="กรอกชื่อ / ฉายา / กลุ่มของคุณ (เช่น น้องฟ้า ชุดไทยสวยสะกด)"
+                  className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-xs sm:text-sm"
+                  maxLength={40}
+                />
+              </div>
             </div>
 
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-amber-200 mb-1">
-                ชื่อ / ฉายา / กลุ่ม <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="เช่น น้องพลอย ชุดไทยสวยสะกด, หรือ พี่ต้น & น้องฟ้า"
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm"
-                maxLength={40}
-              />
-            </div>
-
-            {/* โมเดลคนสวมชุดไทยบนท่าน้ำ (Gender, Style & Silk Color Selection) */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3.5">
+            {/* 2. THAI COSTUME CUSTOMIZATION (UPPER & LOWER - 5 STYLES EACH) */}
+            <div className="p-3.5 sm:p-5 rounded-2xl bg-gradient-to-b from-amber-500/10 via-slate-800/50 to-slate-900/60 border border-amber-500/35 space-y-4">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-bold text-amber-300">
-                  ✨ ปรับแต่งโมเดลชุดไทยของคุณบนท่าน้ำ
-                </label>
-                <span className="text-[11px] text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                  โมเดล 3D เสมือนจริง
-                </span>
-              </div>
-
-              {/* 1. เลือกเพศโมเดล */}
-              <div>
-                <span className="block text-xs font-medium text-slate-300 mb-1.5">1. เพศโมเดลสวมชุดไทย:</span>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-amber-300 flex items-center gap-1.5">
+                    <span>👑</span> 2. เลือกแบบชุดไทย (แยกบน-ล่าง มีรูปตัวอย่าง)
+                  </h3>
+                  <p className="text-[11px] text-slate-400">เลือกจับคู่เสื้อและผ้านุ่ง/โจงกระเบนได้ตามสไตล์คุณ</p>
+                </div>
+                <div className="flex gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700">
                   <button
                     type="button"
-                    onClick={() => {
-                      setGender("female");
-                      setCostumeStyle("chakraphat");
-                    }}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-95 ${
+                    onClick={() => handleGenderChange("female")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                       gender === "female"
-                        ? "border-amber-400 bg-amber-500/25 text-amber-200 ring-2 ring-amber-400/30 shadow-md"
-                        : "border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800"
+                        ? "bg-amber-500 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <span className="text-base sm:text-lg">👩</span>
-                    <span>ผู้หญิง (ชุดไทยสไบ)</span>
+                    👩 หญิง (5 แบบ)
                   </button>
-
                   <button
                     type="button"
-                    onClick={() => {
-                      setGender("male");
-                      setCostumeStyle("rajpatan");
-                    }}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-95 ${
+                    onClick={() => handleGenderChange("male")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                       gender === "male"
-                        ? "border-amber-400 bg-amber-500/25 text-amber-200 ring-2 ring-amber-400/30 shadow-md"
-                        : "border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800"
+                        ? "bg-amber-500 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <span className="text-base sm:text-lg">👨</span>
-                    <span>ผู้ชาย (ราชปะแตน)</span>
+                    👨 ชาย (5 แบบ)
                   </button>
                 </div>
               </div>
 
-              {/* 2. เลือกรูปแบบชุดไทย */}
-              <div>
-                <span className="block text-xs font-medium text-slate-300 mb-1.5">2. รูปแบบชุดไทย:</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {(gender === "female" ? FEMALE_STYLES : MALE_STYLES).map((st) => (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => setCostumeStyle(st.id)}
-                      className={`text-left p-2.5 rounded-xl border transition cursor-pointer active:scale-95 ${
-                        costumeStyle === st.id
-                          ? "border-amber-400 bg-amber-500/20 text-amber-100 ring-1 ring-amber-400/40"
-                          : "border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-800"
-                      }`}
-                    >
-                      <div className="text-xs font-bold text-amber-200">{st.name}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{st.desc}</div>
-                    </button>
-                  ))}
+              {/* 2.1 เสื้อ / สไบ ส่วนบน (Upper Garment - 5 Options with Preview Images) */}
+              <div className="space-y-2">
+                <span className="block text-xs font-bold text-amber-200">
+                  เสื้อ / สไบ ส่วนบน (เลือก 1 ใน 5 แบบ):
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {activeTops.map((top) => {
+                    const isSelected = topStyle === top.id;
+                    return (
+                      <button
+                        key={top.id}
+                        type="button"
+                        onClick={() => setTopStyle(top.id)}
+                        className={`relative flex flex-col items-center p-2 rounded-xl border text-center transition cursor-pointer active:scale-95 group ${
+                          isSelected
+                            ? "border-amber-400 bg-amber-500/25 ring-2 ring-amber-400/40 shadow-lg scale-102"
+                            : "border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <div className="w-12 h-12 flex items-center justify-center my-1 group-hover:scale-105 transition">
+                          {gender === "male" ? (
+                            <MaleTopIcon id={top.id} className="w-12 h-12" />
+                          ) : (
+                            <FemaleTopIcon id={top.id} className="w-12 h-12" />
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold text-amber-100 line-clamp-1 leading-tight">
+                          {top.name}
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">
+                          {top.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* 3. เลือกสีผ้าไหมชุดไทยมงคล */}
-              <div>
-                <span className="block text-xs font-medium text-slate-300 mb-1.5">3. สีผ้าไหมชุดไทย:</span>
-                <div className="flex flex-wrap gap-2">
-                  {COSTUME_COLORS.map((c) => (
-                    <button
-                      key={c.hex}
-                      type="button"
-                      onClick={() => setCostumeColor(c.hex)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${
-                        costumeColor === c.hex
-                          ? "border-amber-300 ring-2 ring-amber-400/40 bg-slate-800 scale-105"
-                          : "border-slate-700 bg-slate-800/60 opacity-80 hover:opacity-100"
-                      }`}
-                    >
-                      <span
-                        className="w-3.5 h-3.5 rounded-full inline-block shadow-sm shrink-0 border border-white/20"
-                        style={{ backgroundColor: c.hex }}
-                      />
-                      <span>{c.name}</span>
-                    </button>
-                  ))}
+              {/* 2.2 โจงกระเบน / ผ้าซิ่น ส่วนล่าง (Lower Garment - 5 Options with Preview Images) */}
+              <div className="space-y-2">
+                <span className="block text-xs font-bold text-amber-200">
+                  {gender === "male" ? "โจงกระเบน / กางเกง ส่วนล่าง (เลือก 1 ใน 5 แบบ):" : "ผ้าซิ่น / ผ้านุ่ง ส่วนล่าง (เลือก 1 ใน 5 แบบ):"}
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {activeBottoms.map((bottom) => {
+                    const isSelected = bottomStyle === bottom.id;
+                    return (
+                      <button
+                        key={bottom.id}
+                        type="button"
+                        onClick={() => setBottomStyle(bottom.id)}
+                        className={`relative flex flex-col items-center p-2 rounded-xl border text-center transition cursor-pointer active:scale-95 group ${
+                          isSelected
+                            ? "border-amber-400 bg-amber-500/25 ring-2 ring-amber-400/40 shadow-lg scale-102"
+                            : "border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <div className="w-12 h-12 flex items-center justify-center my-1 group-hover:scale-105 transition">
+                          {gender === "male" ? (
+                            <MaleBottomIcon id={bottom.id} className="w-12 h-12" />
+                          ) : (
+                            <FemaleBottomIcon id={bottom.id} className="w-12 h-12" />
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold text-amber-100 line-clamp-1 leading-tight">
+                          {bottom.name}
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">
+                          {bottom.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Live Combined Avatar Preview Card */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-xl bg-slate-900/80 border border-amber-500/20">
+                <CombinedAvatarPreview gender={gender} topId={topStyle} bottomId={bottomStyle} className="w-32 shrink-0" />
+                <div className="flex-1 text-center sm:text-left">
+                  <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">ชุดไทยที่เลือกจับคู่</span>
+                  <h4 className="text-sm font-bold text-white mt-0.5">
+                    {activeTops.find((t) => t.id === topStyle)?.name}
+                  </h4>
+                  <p className="text-xs text-amber-200 mt-0.5">
+                    คู่กับ {activeBottoms.find((b) => b.id === bottomStyle)?.name}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {activeTops.find((t) => t.id === topStyle)?.desc}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Description / Wish */}
+            {/* 3. KRATHONG BASE & FLOWER DECORATION (5 STYLES EACH) */}
+            <div className="p-3.5 sm:p-5 rounded-2xl bg-gradient-to-b from-cyan-950/30 via-slate-800/50 to-slate-900/60 border border-cyan-500/35 space-y-4">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-cyan-300 flex items-center gap-1.5">
+                  <span>🪷</span> 3. เลือกแบบกระทง & ดอกไม้มงคล (มีรูปตัวอย่าง)
+                </h3>
+                <p className="text-[11px] text-slate-400">เลือกฐานกระทงและช่อดอกไม้มงคลที่ประดับอยู่บนกระทงของคุณ</p>
+              </div>
+
+              {/* 3.1 รูปแบบกระทง (Krathong Base - 5 Options with Preview Images) */}
+              <div className="space-y-2">
+                <span className="block text-xs font-bold text-cyan-200">
+                  รูปแบบกระทง (เลือก 1 ใน 5 แบบ):
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {KRATHONG_BASES.map((base) => {
+                    const isSelected = krathongStyle === base.id;
+                    return (
+                      <button
+                        key={base.id}
+                        type="button"
+                        onClick={() => setKrathongStyle(base.id)}
+                        className={`relative flex flex-col items-center p-2 rounded-xl border text-center transition cursor-pointer active:scale-95 group ${
+                          isSelected
+                            ? "border-cyan-400 bg-cyan-500/25 ring-2 ring-cyan-400/40 shadow-lg scale-102"
+                            : "border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <div className="w-12 h-12 flex items-center justify-center my-1 group-hover:scale-105 transition">
+                          <KrathongBaseIcon id={base.id} className="w-12 h-12" />
+                        </div>
+                        <span className="text-[11px] font-bold text-cyan-100 line-clamp-1 leading-tight">
+                          {base.name}
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">
+                          {base.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3.2 ดอกไม้ประดับกระทง (Flower Decoration - 5 Options with Preview Images) */}
+              <div className="space-y-2">
+                <span className="block text-xs font-bold text-cyan-200">
+                  ดอกไม้ประดับกระทง (เลือก 1 ใน 5 แบบ):
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {FLOWER_DECORATIONS.map((flower) => {
+                    const isSelected = flowerStyle === flower.id;
+                    return (
+                      <button
+                        key={flower.id}
+                        type="button"
+                        onClick={() => setFlowerStyle(flower.id)}
+                        className={`relative flex flex-col items-center p-2 rounded-xl border text-center transition cursor-pointer active:scale-95 group ${
+                          isSelected
+                            ? "border-cyan-400 bg-cyan-500/25 ring-2 ring-cyan-400/40 shadow-lg scale-102"
+                            : "border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <div className="w-12 h-12 flex items-center justify-center my-1 group-hover:scale-105 transition">
+                          <FlowerDecorationIcon id={flower.id} className="w-12 h-12" />
+                        </div>
+                        <span className="text-[11px] font-bold text-cyan-100 line-clamp-1 leading-tight">
+                          {flower.name}
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">
+                          {flower.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Live Combined Krathong Preview Card */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-xl bg-slate-900/80 border border-cyan-500/20">
+                <CombinedKrathongPreview krathongId={krathongStyle} flowerId={flowerStyle} className="w-36 shrink-0" />
+                <div className="flex-1 text-center sm:text-left">
+                  <span className="text-[10px] uppercase tracking-wider text-cyan-400 font-bold">กระทงและดอกไม้ที่จัดแต่ง</span>
+                  <h4 className="text-sm font-bold text-white mt-0.5">
+                    {KRATHONG_BASES.find((k) => k.id === krathongStyle)?.name}
+                  </h4>
+                  <p className="text-xs text-cyan-200 mt-0.5">
+                    ประดับด้วย {FLOWER_DECORATIONS.find((f) => f.id === flowerStyle)?.name}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {FLOWER_DECORATIONS.find((f) => f.id === flowerStyle)?.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. WISH / DESCRIPTION */}
             <div>
-              <label className="block text-sm font-medium text-amber-200 mb-1">
-                คำอธิษฐาน / ข้อความแนะนำตัว
+              <label className="block text-xs sm:text-sm font-bold text-amber-200 mb-1">
+                4. คำอธิษฐานขอขมาพระแม่คงคา
               </label>
               <textarea
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="ขอขมาพระแม่คงคา และขอพรให้ทุกคนมีความสุข หรือ ชวนเพื่อนๆ มาโหวตให้เค้าหน่อยนะ..."
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm"
+                placeholder="ขอขมาพระแม่คงคา และขอพรให้ทุกคนมีความสุข หรือ ชวนเพื่อนๆ มาช่วยโหวตให้เค้าหน่อยนะ..."
+                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-xs sm:text-sm"
                 maxLength={150}
               />
             </div>
-
-            {/* Color Selection */}
-            <div>
-              <label className="block text-sm font-medium text-amber-200 mb-2">
-                โทนสีกระทง & ดอกไม้
-              </label>
-              <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                {KRATHONG_COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    type="button"
-                    onClick={() => setSelectedColor(c.hex)}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${
-                      selectedColor === c.hex
-                        ? "border-amber-300 ring-2 ring-amber-400/40 bg-slate-800 scale-105"
-                        : "border-slate-700 bg-slate-800/60 opacity-80 hover:opacity-100"
-                    }`}
-                  >
-                    <span
-                      className="w-3.5 h-3.5 rounded-full inline-block shadow-sm shrink-0"
-                      style={{ backgroundColor: c.hex }}
-                    />
-                    <span>{c.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
-          {/* Sticky Action Footer (Never sunken, always visible) */}
-          <div className="shrink-0 p-4 sm:p-5 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
+          {/* Sticky Action Footer */}
+          <div className="shrink-0 p-3.5 sm:p-5 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
             <button
               type="submit"
               disabled={isSubmitting}

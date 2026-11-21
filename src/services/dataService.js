@@ -25,8 +25,12 @@ const defaultEntries = [
     votes: 48,
     color: "#ec4899", // pink
     gender: "female",
-    costumeStyle: "chakraphat",
+    costumeStyle: "female-top-2",
     costumeColor: "#ec4899",
+    topStyle: "female-top-2",
+    bottomStyle: "female-bottom-5",
+    krathongStyle: "krathong-lotus",
+    flowerStyle: "flower-pink-lotus",
     x: 0,
     z: 8,
     speed: 0.008,
@@ -40,8 +44,12 @@ const defaultEntries = [
     votes: 62,
     color: "#10b981", // emerald
     gender: "male",
-    costumeStyle: "rajpatan",
+    costumeStyle: "male-top-1",
     costumeColor: "#10b981",
+    topStyle: "male-top-1",
+    bottomStyle: "male-bottom-4",
+    krathongStyle: "krathong-banana-leaf",
+    flowerStyle: "flower-jasmine-champaca",
     x: -8,
     z: 14,
     speed: 0.006,
@@ -55,8 +63,12 @@ const defaultEntries = [
     votes: 35,
     color: "#f59e0b", // amber
     gender: "male",
-    costumeStyle: "pra-ratchatan",
+    costumeStyle: "male-top-2",
     costumeColor: "#f59e0b",
+    topStyle: "male-top-2",
+    bottomStyle: "male-bottom-3",
+    krathongStyle: "krathong-gold-rose",
+    flowerStyle: "flower-gold-marigold",
     x: 10,
     z: 4,
     speed: 0.01,
@@ -70,8 +82,12 @@ const defaultEntries = [
     votes: 89,
     color: "#8b5cf6", // purple
     gender: "female",
-    costumeStyle: "chakri",
+    costumeStyle: "female-top-1",
     costumeColor: "#8b5cf6",
+    topStyle: "female-top-1",
+    bottomStyle: "female-bottom-1",
+    krathongStyle: "krathong-banana-stem",
+    flowerStyle: "flower-purple-orchid",
     x: -14,
     z: 2,
     speed: 0.007,
@@ -158,8 +174,12 @@ export const addKrathongEntry = async ({
   file,
   color,
   gender = "female",
-  costumeStyle = "chakri",
-  costumeColor = "#f59e0b"
+  costumeStyle = "female-top-1",
+  costumeColor = "#f59e0b",
+  topStyle,
+  bottomStyle,
+  krathongStyle,
+  flowerStyle
 }) => {
   let photoUrl = "";
   
@@ -183,6 +203,11 @@ export const addKrathongEntry = async ({
     }
   }
 
+  const chosenTop = topStyle || costumeStyle || (gender === "male" ? "male-top-1" : "female-top-1");
+  const chosenBottom = bottomStyle || (gender === "male" ? "male-bottom-1" : "female-bottom-1");
+  const chosenKrathong = krathongStyle || "krathong-banana-leaf";
+  const chosenFlower = flowerStyle || "flower-pink-lotus";
+
   // Random initial river coordinates
   const newEntry = {
     name: name.trim() || "ผู้ร่วมลอยกระทง",
@@ -190,8 +215,12 @@ export const addKrathongEntry = async ({
     photoUrl: photoUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
     color: color || "#f59e0b",
     gender: gender || "female",
-    costumeStyle: costumeStyle || "chakri",
+    costumeStyle: chosenTop,
     costumeColor: costumeColor || color || "#f59e0b",
+    topStyle: chosenTop,
+    bottomStyle: chosenBottom,
+    krathongStyle: chosenKrathong,
+    flowerStyle: chosenFlower,
     votes: 0,
     x: (Math.random() - 0.5) * 30,
     z: 20 + Math.random() * 10, // start from upstream

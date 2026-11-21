@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { Heart, X, Share2, Award, Calendar, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
+import {
+  MALE_TOPS,
+  MALE_BOTTOMS,
+  FEMALE_TOPS,
+  FEMALE_BOTTOMS,
+  KRATHONG_BASES,
+  FLOWER_DECORATIONS,
+} from "./KrathongAssets";
 
 export default function KrathongDetailModal({ 
   krathong, 
@@ -14,6 +22,14 @@ export default function KrathongDetailModal({
   const [copied, setCopied] = useState(false);
 
   if (!krathong) return null;
+
+  const isMale = krathong.gender === "male";
+  const topList = isMale ? MALE_TOPS : FEMALE_TOPS;
+  const bottomList = isMale ? MALE_BOTTOMS : FEMALE_BOTTOMS;
+  const topItem = topList.find((t) => t.id === krathong.topStyle) || topList[0];
+  const bottomItem = bottomList.find((b) => b.id === krathong.bottomStyle) || bottomList[0];
+  const krathongItem = KRATHONG_BASES.find((k) => k.id === krathong.krathongStyle) || KRATHONG_BASES[0];
+  const flowerItem = FLOWER_DECORATIONS.find((f) => f.id === krathong.flowerStyle) || FLOWER_DECORATIONS[0];
 
   const handleVoteClick = async () => {
     if (hasVoted) return;
@@ -104,13 +120,13 @@ export default function KrathongDetailModal({
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: krathong.color || "#f59e0b" }}
               />
-              <span className="text-white font-medium">กระทงลอยน้ำ</span>
+              <span className="text-white font-medium">{krathongItem?.name || "กระทงลอยน้ำ"}</span>
             </div>
           </div>
         </div>
 
         {/* Info */}
-        <div className="p-6">
+        <div className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -128,6 +144,20 @@ export default function KrathongDetailModal({
                 <span>{krathong.votes || 0}</span>
               </div>
               <span className="text-[10px] text-amber-200 uppercase tracking-wider font-semibold">คะแนนโหวต</span>
+            </div>
+          </div>
+
+          {/* Customization Details Chips */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/80">
+              <div className="text-[10px] text-amber-400 font-bold">✨ แบบชุดไทย (บน-ล่าง)</div>
+              <div className="text-white font-semibold line-clamp-1 mt-0.5">{topItem.name}</div>
+              <div className="text-slate-400 text-[10px] line-clamp-1">{bottomItem.name}</div>
+            </div>
+            <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/80">
+              <div className="text-[10px] text-cyan-400 font-bold">🪷 กระทง & ดอกไม้</div>
+              <div className="text-white font-semibold line-clamp-1 mt-0.5">{krathongItem.name}</div>
+              <div className="text-slate-400 text-[10px] line-clamp-1">{flowerItem.name}</div>
             </div>
           </div>
 
