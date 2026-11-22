@@ -660,11 +660,11 @@ export class LoyKrathongScene {
   ========================================================== */
   setupLighting() {
     // 1. Hemisphere Light: แสงบรรยากาศราตรีสลัวนุ่มนวล ไม่มืดเกินไป และไม่สว่างจ้าเหมือนกลางวัน
-    const hemiLight = new THREE.HemisphereLight(0x1a2c4e, 0x092648, 0.45);
+    const hemiLight = new THREE.HemisphereLight(0x283e68, 0x142036, 0.58);
     this.scene.add(hemiLight);
 
     // 2. Ambient Light: แสงแอมเบียนต์รอบทิศทางพอเหมาะ มองเห็นรายละเอียดชัดเจนโดยคงบรรยากาศกลางคืน
-    const ambientLight = new THREE.AmbientLight(0x223554, 0.35);
+    const ambientLight = new THREE.AmbientLight(0x33486c, 0.50);
     this.scene.add(ambientLight);
 
     // Single Pre-allocated Firework Flash Light (Zero Runtime Shader Recompilations)
@@ -692,6 +692,14 @@ export class LoyKrathongScene {
     const riverGlowLight = new THREE.DirectionalLight(0xffa834, 0.40);
     riverGlowLight.position.set(-15, 20, 20);
     this.scene.add(riverGlowLight);
+
+    // แสงฟลัดไลต์หน้าริมน้ำส่องกระทบใบหน้าและชุดโมเดลผู้สมัครโดยตรง (Zero GPU Overhead Frontal Fill Light)
+    // ปิด castShadow: false เพื่อไม่ให้เกิด Shadow Pass เพิ่มเติมแม้แต่เฟรมเดียว ประหยัด GPU 100%
+    const frontalPromenadeFill = new THREE.DirectionalLight(0xffeed8, 1.05);
+    frontalPromenadeFill.position.set(18, 14, 25);
+    frontalPromenadeFill.target.position.set(-16, 2, 5);
+    this.scene.add(frontalPromenadeFill);
+    this.scene.add(frontalPromenadeFill.target);
 
     // แสงสปอตไลต์ส่องพระเจดีย์สีทองอร่ามในคืนเพ็ญ
     const templeFlood = new THREE.PointLight(0xffd56b, 2.8, 80, 1.2);
@@ -3748,9 +3756,20 @@ export class LoyKrathongScene {
   createThaiPeople() {
     this.thaiPeople = [];
 
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.65 });
+    const skinMat = new THREE.MeshStandardMaterial({
+      color: 0xdfb088,
+      roughness: 0.60,
+      emissive: new THREE.Color(0xdfb088),
+      emissiveIntensity: 0.16,
+    });
     const hairMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.75, roughness: 0.25 });
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.75,
+      roughness: 0.25,
+      emissive: new THREE.Color(0xf59e0b),
+      emissiveIntensity: 0.20,
+    });
 
     const characterConfigs = [
       // --- กลุ่มชาวบ้านเดินเล่นบนทางเดินริมตลิ่งหลัก (Promenade Walkers - X <= -23.2, Y = 1.5 สวมเสื้อม่อฮ่อม & โจงกระเบนน้ำตาล) ---
@@ -5362,13 +5381,48 @@ export class LoyKrathongScene {
     const primaryColorHex = entry.costumeColor || entry.color || "#f59e0b";
     const primaryColor = new THREE.Color(primaryColorHex);
 
-    // วัสดุคุณภาพสูงสำหรับกายวิภาคและชุดไทย
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.58, metalness: 0.04 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.40, metalness: 0.05 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.18 });
-    const whiteStockingMat = new THREE.MeshStandardMaterial({ color: 0xf4f4f5, roughness: 0.55 });
-    const shoeMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.35, metalness: 0.18 });
-    const rubyMat = new THREE.MeshStandardMaterial({ color: 0xbe123c, roughness: 0.15, metalness: 0.65 });
+    // วัสดุคุณภาพสูงสำหรับกายวิภาคและชุดไทย พร้อมออร่าเรืองแสงละมุนตา (Zero GPU Overhead Self-Illumination)
+    const skinMat = new THREE.MeshStandardMaterial({
+      color: 0xdfb088,
+      roughness: 0.52,
+      metalness: 0.04,
+      emissive: new THREE.Color(0xdfb088),
+      emissiveIntensity: 0.22, // ผิวพรรณเปล่งปลั่ง นวลตาในยามค่ำคืน
+    });
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x16161a,
+      roughness: 0.38,
+      metalness: 0.05,
+      emissive: new THREE.Color(0x282830),
+      emissiveIntensity: 0.08,
+    });
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.88,
+      roughness: 0.18,
+      emissive: new THREE.Color(0xf59e0b),
+      emissiveIntensity: 0.28, // ชฎา สังวาล และเครื่องประดับทองคำทอประกาย
+    });
+    const whiteStockingMat = new THREE.MeshStandardMaterial({
+      color: 0xf4f4f5,
+      roughness: 0.55,
+      emissive: new THREE.Color(0xf4f4f5),
+      emissiveIntensity: 0.18,
+    });
+    const shoeMat = new THREE.MeshStandardMaterial({
+      color: 0x18181b,
+      roughness: 0.35,
+      metalness: 0.18,
+      emissive: new THREE.Color(0x18181b),
+      emissiveIntensity: 0.06,
+    });
+    const rubyMat = new THREE.MeshStandardMaterial({
+      color: 0xbe123c,
+      roughness: 0.15,
+      metalness: 0.65,
+      emissive: new THREE.Color(0xbe123c),
+      emissiveIntensity: 0.30,
+    });
 
     // Color definitions for 5 Male Tops / 5 Male Bottoms / 5 Female Tops / 5 Female Bottoms
     const maleTopColors = {
@@ -5410,20 +5464,30 @@ export class LoyKrathongScene {
 
     const topMat = new THREE.MeshStandardMaterial({
       color: topColorHex,
-      roughness: 0.44,
-      metalness: 0.18,
+      roughness: 0.42,
+      metalness: 0.16,
+      emissive: new THREE.Color(topColorHex),
+      emissiveIntensity: 0.22, // สไบ/เสื้อไหมไทยเปล่งสีสันสดใส
     });
     const bottomMat = new THREE.MeshStandardMaterial({
       color: bottomColorHex,
-      roughness: 0.42,
-      metalness: 0.22,
+      roughness: 0.40,
+      metalness: 0.18,
+      emissive: new THREE.Color(bottomColorHex),
+      emissiveIntensity: 0.20, // โจงกระเบน/ผ้าซิ่นไหม
     });
     const silkMat = bottomMat; // legacy fallback
 
     // แท่นพรมทองลายไทยยกพื้นขลิบทอง (Ceremonial Golden Dais)
     const dais = new THREE.Mesh(
       new THREE.CylinderGeometry(0.58, 0.65, 0.12, 24),
-      new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.45, metalness: 0.25 })
+      new THREE.MeshStandardMaterial({
+        color: 0x92400e,
+        roughness: 0.45,
+        metalness: 0.25,
+        emissive: new THREE.Color(0x92400e),
+        emissiveIntensity: 0.15,
+      })
     );
     dais.position.y = 0.06;
     avatarGroup.add(dais);
@@ -5464,6 +5528,14 @@ export class LoyKrathongScene {
       wavingArm = femaleRig.wavingArm;
       wavingHand = femaleRig.wavingHand;
     }
+
+    // ปลดไม่ให้เงามืดตกทับใบหน้าและชุดโมเดลผู้สมัคร (รับประกันความสว่างใส ไร้เงามืดตกทับ)
+    bodyGroup.traverse((child) => {
+      if (child.isMesh) {
+        child.receiveShadow = false;
+        child.castShadow = true;
+      }
+    });
 
     // ===== ป้ายชื่อ คะแนนโหวต พร้อมรูปถ่ายลอยเด่นเหนือป้าย (Billboard Sprite) =====
     const badgeSprite = this.createCandidateBadgeSprite(entry.name, entry.votes || 0, entry.photoUrl);
