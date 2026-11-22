@@ -27,66 +27,6 @@ import {
   subscribeToLiveFireworks
 } from "./services/dataService";
 import { isFirebaseConfigured } from "./firebase";
-// --- TEMPORARY TEST: Simulation to reach exactly 50 candidates ---
-const MOCK_THAI_NAMES = [
-  "น้องมะลิ", "พี่กล้า", "น้องบัวลอย", "คุณกานต์", "น.ส.พิมพ์ใจ", "น้องฟ้าใส", "พี่เอกชัย", "น้องแก้วตา",
-  "คุณธีรภัทร", "น้องแพรววา", "พี่ต้นกล้า", "น้องดวงดาว", "คุณอาร์ม", "น้องมิ้นท์", "พี่นัทธพงศ์", "น้องปิ่นมณี",
-  "คุณบอย", "น้องสายฝน", "พี่ก้องภพ", "น้องพลอยไพลิน", "คุณท็อป", "น้องเนยหวาน", "พี่ตั้ม", "น้องจิราภรณ์",
-  "คุณวินัย", "น้องออมสิน", "พี่เตชินท์", "น้องวิวพิมล", "คุณศุภกร", "น้องมุกดา", "พี่เจมส์", "น้องน้ำตาล",
-  "คุณไอศูรย์", "น้องเกรซ", "พี่โอ๊ค", "น้องเบลล่า", "คุณชานนท์", "น้องครีมมี่", "พี่พีรพล", "น้องสายน้ำ",
-  "คุณภูมิพัฒน์", "น้องเปิ้ล", "พี่บาสเกต", "น้องนุ่นนิภา", "คุณดนัย", "น้องก้อยหวาน", "พี่อั๋น", "น้องแนนซี่",
-  "คุณชาญชัย", "น้องมายด์"
-];
-
-function fillMockCandidatesTo50(realItems) {
-  const currentCandidates = realItems.filter((e) => e.hasContest !== false);
-  const needed = 50 - currentCandidates.length;
-  if (needed <= 0) return realItems;
-
-  const femaleTops = ["female-top-1", "female-top-2", "female-top-3", "female-top-4", "female-top-5"];
-  const femaleBottoms = ["female-bottom-1", "female-bottom-2", "female-bottom-3", "female-bottom-4", "female-bottom-5"];
-  const maleTops = ["male-top-1", "male-top-2", "male-top-3", "male-top-4", "male-top-5"];
-  const maleBottoms = ["male-bottom-1", "male-bottom-2", "male-bottom-3", "male-bottom-4", "male-bottom-5"];
-  const krathongBases = ["krathong-banana-leaf", "krathong-lotus", "krathong-coconut-shell", "krathong-ice-flower", "krathong-candle-cup"];
-  const flowerStyles = ["flower-pink-lotus", "flower-marigold", "flower-jasmine", "flower-orchid", "flower-rose"];
-
-  const mockList = [];
-  const startIdx = currentCandidates.length;
-
-  for (let i = 0; i < needed; i++) {
-    const candidateNumber = startIdx + i + 1;
-    const isMale = candidateNumber % 2 === 0;
-    const gender = isMale ? "male" : "female";
-    const topStyle = isMale ? maleTops[(i * 2) % 5] : femaleTops[i % 5];
-    const bottomStyle = isMale ? maleBottoms[(i * 3) % 5] : femaleBottoms[(i * 2) % 5];
-    const krathongStyle = krathongBases[i % 5];
-    const flowerStyle = flowerStyles[(i * 3) % 5];
-    const baseName = MOCK_THAI_NAMES[(startIdx + i) % MOCK_THAI_NAMES.length];
-
-    mockList.push({
-      id: `temp-mock-candidate-${candidateNumber}`,
-      name: `${baseName} (#${candidateNumber})`,
-      description: "ร่วมสืบสานประเพณีลอยกระทง 2569 ขอพรพระแม่คงคา ✨",
-      photoUrl: "",
-      votes: Math.floor(10 + Math.random() * 85),
-      color: "#f59e0b",
-      gender,
-      topStyle,
-      bottomStyle,
-      costumeStyle: topStyle,
-      krathongStyle,
-      flowerStyle,
-      hasContest: true,
-      hasKrathong: true,
-      x: (Math.sin(i * 1.7) * 22),
-      z: 14 + ((i * 3.7) % 32),
-      speed: 0.005 + (i % 5) * 0.0012,
-      createdAt: new Date(Date.now() - (needed - i) * 120000).toISOString(),
-    });
-  }
-
-  return [...realItems, ...mockList];
-}
 
 export default function App() {
   const containerRef = useRef(null);
@@ -161,11 +101,9 @@ export default function App() {
   // Subscribe to Krathongs data stream
   useEffect(() => {
     const unsubscribe = subscribeToEntries((items) => {
-      // TEMPORARY: Augment with mock candidates to reach 50 for environment testing
-      const augmentedItems = fillMockCandidatesTo50(items);
-      setEntries(augmentedItems);
+      setEntries(items);
       if (sceneInstanceRef.current) {
-        sceneInstanceRef.current.updateKrathongs(augmentedItems);
+        sceneInstanceRef.current.updateKrathongs(items);
       }
     });
 
