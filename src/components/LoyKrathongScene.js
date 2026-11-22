@@ -2558,10 +2558,123 @@ export class LoyKrathongScene {
       stageGroup.add(blossom);
     }
 
-    // Rear Stage Wooden Backdrop
-    const backdrop = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.4, 0.12), mats.darkWood);
-    backdrop.position.set(0, 1.65, -1.9);
-    stageGroup.add(backdrop);
+    // Rear Stage Festival Backdrop with Luminous White Panel & 3D RYTC Logo
+    const backdropGroup = new THREE.Group();
+    backdropGroup.position.set(0, 1.65, -1.9);
+
+    // 1. Wooden Backing Board
+    const backdropBacking = new THREE.Mesh(new THREE.BoxGeometry(6.3, 2.45, 0.12), mats.darkWood);
+    backdropBacking.position.set(0, 0, 0);
+    backdropGroup.add(backdropBacking);
+
+    // 2. Luminous White Backdrop Panel (แผ่นพื้นหลังเวทีสีขาวนวล สว่างไสว สะอาดตา ขับโลโก้ให้เด่นชัดตามที่ผู้ใช้กำหนด)
+    const whiteBackdropMat = new THREE.MeshStandardMaterial({
+      color: 0xfafafa,
+      roughness: 0.22,
+      metalness: 0.05,
+      emissive: new THREE.Color(0xffffff),
+      emissiveIntensity: 0.48, // สว่างนวลสะดุดตา โดดเด่นในยามค่ำคืน
+    });
+    const whiteBackdropPanel = new THREE.Mesh(
+      new THREE.BoxGeometry(6.05, 2.22, 0.08),
+      whiteBackdropMat
+    );
+    whiteBackdropPanel.position.set(0, 0, 0.03);
+    backdropGroup.add(whiteBackdropPanel);
+
+    // 3. Golden Outer Frame & Ornaments (กรอบทองคำลายไทยรอบแผ่นป้ายฉากหลัง)
+    const goldFrameMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.88,
+      roughness: 0.22,
+    });
+    // ขอบทองบน-ล่าง-ซ้าย-ขวา
+    const topFrame = new THREE.Mesh(new THREE.BoxGeometry(6.35, 0.14, 0.16), goldFrameMat);
+    topFrame.position.set(0, 1.18, 0.03);
+    backdropGroup.add(topFrame);
+
+    const bottomFrame = new THREE.Mesh(new THREE.BoxGeometry(6.35, 0.10, 0.16), goldFrameMat);
+    bottomFrame.position.set(0, -1.18, 0.03);
+    backdropGroup.add(bottomFrame);
+
+    const leftFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.36, 0.16), goldFrameMat);
+    leftFrame.position.set(-3.08, 0, 0.03);
+    backdropGroup.add(leftFrame);
+
+    const rightFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.36, 0.16), goldFrameMat);
+    rightFrame.position.set(3.08, 0, 0.03);
+    backdropGroup.add(rightFrame);
+
+    // บัวหัวมุมทองคำ 4 ด้าน
+    [
+      [-3.05, 1.15],
+      [3.05, 1.15],
+      [-3.05, -1.15],
+      [3.05, -1.15],
+    ].forEach(([cx, cy]) => {
+      const corner = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.36, 0.18), goldFrameMat);
+      corner.position.set(cx, cy, 0.04);
+      backdropGroup.add(corner);
+    });
+
+    // 4. Extruded 3D RYTC Logo with Normal Mapping, Specular Reflection & Drop Shadow
+    const textureLoader = new THREE.TextureLoader();
+    const logoTex = textureLoader.load(rytcLogoUrl);
+    logoTex.colorSpace = THREE.SRGBColorSpace;
+    const normalTex = textureLoader.load(rytcNormalUrl);
+    const shadowTex = textureLoader.load(rytcShadowUrl);
+
+    const logoW = 4.8;
+    const logoH = 0.92;
+    const logoPosY = 0.45; // วางด้านบนกึ่งกลางฉาก ให้พ้นระดับศีรษะนักแสดงและมองเห็นได้ชัดเจน
+
+    // 4A. Drop Shadow Map ให้มิติตัวอักษรลอยเด่น
+    const shadowGeo = new THREE.PlaneGeometry(logoW, logoH);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: shadowTex,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.position.set(0.03, logoPosY - 0.03, 0.073);
+    backdropGroup.add(shadowMesh);
+
+    // 4B. 3D Metallic Royal Blue Logo Face
+    const logoGeo = new THREE.PlaneGeometry(logoW, logoH);
+    const stageLogoMat = new THREE.MeshStandardMaterial({
+      map: logoTex,
+      normalMap: normalTex,
+      normalScale: new THREE.Vector2(2.0, 2.0),
+      transparent: true,
+      roughness: 0.12,
+      metalness: 0.72,
+      emissive: new THREE.Color(0x0044dd),
+      emissiveIntensity: 0.38,
+      side: THREE.DoubleSide,
+    });
+    const logoMesh = new THREE.Mesh(logoGeo, stageLogoMat);
+    logoMesh.position.set(0, logoPosY, 0.076);
+    backdropGroup.add(logoMesh);
+
+    // 5. Stage Overhead Spotlights (โคมไฟสปอตไลต์ 4 ดวงบนคานฉากหลัง ส่องเวที)
+    const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfff3a8 });
+    [-2.2, -0.75, 0.75, 2.2].forEach((lx) => {
+      const spotArm = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22), mats.blackMetal);
+      spotArm.position.set(lx, 1.28, 0.12);
+      backdropGroup.add(spotArm);
+
+      const spotCan = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 0.18, 8), mats.blackMetal);
+      spotCan.rotation.x = -0.45;
+      spotCan.position.set(lx, 1.22, 0.20);
+      backdropGroup.add(spotCan);
+
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), bulbMat);
+      bulb.position.set(lx, 1.20, 0.23);
+      backdropGroup.add(bulb);
+    });
+
+    stageGroup.add(backdropGroup);
 
     // Fake Stage Glow Panel (เรืองแสงบนเวทีแทนการใช้ PointLight)
     const stageGlow = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 3.4), mats.fakeGlow);
