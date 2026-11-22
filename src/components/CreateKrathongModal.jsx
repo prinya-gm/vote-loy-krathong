@@ -17,7 +17,14 @@ import {
   CombinedKrathongPreview,
 } from "./KrathongAssets";
 
-export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
+export default function CreateKrathongModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  candidatesCount = 0,
+  maxCandidates = 50,
+}) {
+  const isContestFull = candidatesCount >= maxCandidates;
   const [enableContest, setEnableContest] = useState(false); // ถ่ายรูปชุดไทยเพื่อร่วมโหวต
   const [enableKrathong, setEnableKrathong] = useState(false); // ร่วมลอยกระทง
   const [name, setName] = useState("");
@@ -132,6 +139,10 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
       alert("กรุณาเลือกอย่างน้อย 1 รายการครับ (ถ่ายรูปชุดไทยเพื่อร่วมโหวต หรือ ร่วมลอยกระทง)");
       return;
     }
+    if (enableContest && isContestFull) {
+      alert(`ขออภัยครับ ขณะนี้โควตาผู้สมัครชุดไทยเพื่อร่วมโหวตเต็มแล้ว (${maxCandidates}/${maxCandidates} ท่าน) แต่ท่านยังสามารถร่วมลอยกระทงได้ตามปกติครับ`);
+      return;
+    }
     if (!name.trim()) {
       alert("กรุณากรอกชื่อหรือฉายาของคุณครับ");
       return;
@@ -238,24 +249,43 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {/* ตัวเลือก 1: ถ่ายรูปชุดไทยเพื่อร่วมโหวต */}
                 <label
-                  className={`relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${
-                    enableContest
-                      ? "border-amber-400 bg-amber-500/20 shadow-md ring-1 ring-amber-400/40 text-white"
-                      : "border-slate-700 bg-slate-800/50 hover:bg-slate-800/80 text-slate-400"
+                  className={`relative flex items-center gap-3 p-3 rounded-xl border transition select-none ${
+                    isContestFull
+                      ? "opacity-55 cursor-not-allowed border-slate-700/60 bg-slate-800/30 text-slate-500"
+                      : enableContest
+                      ? "border-amber-400 bg-amber-500/20 shadow-md ring-1 ring-amber-400/40 text-white cursor-pointer"
+                      : "border-slate-700 bg-slate-800/50 hover:bg-slate-800/80 text-slate-400 cursor-pointer"
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={enableContest}
-                    onChange={(e) => setEnableContest(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-600 bg-slate-700 cursor-pointer accent-amber-500 shrink-0"
+                    disabled={isContestFull}
+                    checked={enableContest && !isContestFull}
+                    onChange={(e) => {
+                      if (isContestFull) return;
+                      setEnableContest(e.target.checked);
+                    }}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-600 bg-slate-700 disabled:opacity-40 cursor-pointer accent-amber-500 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-amber-200">
-                      <span>📸</span> ถ่ายรูปชุดไทยเพื่อร่วมโหวต
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-amber-200">
+                        <span>📸</span> ถ่ายรูปชุดไทยเพื่อร่วมโหวต
+                      </div>
+                      {isContestFull ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 shrink-0">
+                          🔒 เต็มแล้ว ({candidatesCount}/{maxCandidates})
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-400/70 shrink-0">
+                          ({candidatesCount}/{maxCandidates})
+                        </span>
+                      )}
                     </div>
                     <p className="text-[10px] text-slate-300 mt-0.5 leading-tight">
-                      มีโมเดล 3D ยืนบนท่าน้ำ พร้อมป้ายชื่อและรูปถ่ายจริงเปิดรับโหวต
+                      {isContestFull
+                        ? "โควตาผู้เข้าประกวดครบ 50 ท่านแล้ว ขอเชิญร่วมลอยกระทงแทนครับ"
+                        : "มีโมเดล 3D ยืนบนท่าน้ำ/ริมน้ำ พร้อมป้ายชื่อและรูปถ่ายจริงเปิดรับโหวต"}
                     </p>
                   </div>
                 </label>

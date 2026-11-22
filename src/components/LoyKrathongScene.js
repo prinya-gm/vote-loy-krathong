@@ -5044,19 +5044,39 @@ export class LoyKrathongScene {
      - ยืนเด่นริมท่าน้ำสีเขียว พร้อมยกมือขวาโบกทักทายผู้ชม
      - ป้ายชื่อและคะแนนโหวตลายไทยสีทองลอยเหนือศีรษะ
   ========================================================== */
-  // คำนวณตำแหน่งยืนบนลานหญ้าท่าน้ำสีเขียวโดยเฉพาะ รับประกันตำแหน่งไม่ซ้อนทับกัน 100%
+  // คำนวณตำแหน่งยืนของผู้เข้าประกวดโหวต:
+  // โซน 1: แถวหน้าติดริมน้ำบนท่าน้ำสีเขียว (15 ตำแหน่งแรก index 0 - 14)
+  // เว้นช่วงถนนสีเทาที่ตรงกับท่าน้ำ (Z: -15.0 ถึง +25.0) ไม่ให้มีใครยืนซ้อนหลังท่าน้ำ 100%
+  // โซน 2 & 3: ขอบถนนหินสีเทาเลียบแม่น้ำ (ฝั่งขวา Z >= 26.5 และฝั่งซ้าย Z <= -16.5) ยืนแถวเดียวติดริมน้ำเสมอ
   getCandidateSlotPosition(index) {
-    const spacing = 3.2; // ระยะห่าง 3.2 เมตร ระหว่างแท่นแต่ละคน ป้องกันการซ้อนทับ 100%
-    const sign = index % 2 === 1 ? 1 : -1;
-    const step = Math.ceil(index / 2);
-    const posZ = 5.0 + sign * step * spacing;
+    const PIER_CAPACITY = 15; // 15 ตำแหน่งบนลานท่าน้ำสีเขียวติดริมน้ำ (index 0 - 14)
 
-    // แถวหน้าติดริมน้ำ X = -12.4 ถ้าเกินขอบเขตให้เข้าแถวที่ 2
-    const isSecondRow = Math.abs(posZ - 5.0) > 14.5;
-    const posX = isSecondRow ? -15.2 : -12.4;
-    const adjustedZ = isSecondRow ? 5.0 + sign * (step - 5) * spacing : posZ;
+    if (index < PIER_CAPACITY) {
+      // โซนที่ 1: ลานท่าน้ำสีเขียว ยืนหน้ากระดานริมน้ำ X = -12.4, Y = 0.89
+      const spacing = 2.4; // ระยะห่าง 2.4 เมตรต่อคน
+      const sign = index % 2 === 1 ? 1 : -1;
+      const step = Math.ceil(index / 2);
+      const posZ = 5.0 + sign * step * spacing;
+      return { x: -12.4, y: 0.89, z: posZ };
+    }
 
-    return { x: posX, y: 0.89, z: isSecondRow ? adjustedZ : posZ };
+    // โซนที่ 2 & 3: ขอบถนนหินสีเทาเลียบแม่น้ำ (Single Frontline Promenade)
+    // X = -18.2 (ริมถนนหินฝั่งแม่น้ำ), Y = 1.51 (ระดับพื้นถนนหิน)
+    const overflowIndex = index - PIER_CAPACITY;
+    const roadSpacing = 2.5; // ระยะห่าง 2.5 เมตรต่อคน
+    const isRightSide = overflowIndex % 2 === 0;
+    const step = Math.floor(overflowIndex / 2);
+
+    let posZ;
+    if (isRightSide) {
+      // ฝั่งขวา (ทางไปตลาดน้ำ / South) เริ่มตั้งแต่ Z = 26.5 ขึ้นไป
+      posZ = 26.5 + step * roadSpacing;
+    } else {
+      // ฝั่งซ้าย (ทางไปวัดไทย / North) เริ่มตั้งแต่ Z = -16.5 ลงไป
+      posZ = -16.5 - step * roadSpacing;
+    }
+
+    return { x: -18.2, y: 1.51, z: posZ };
   }
 
   buildCandidateAvatar(entry, slotPos) {

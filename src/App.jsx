@@ -376,6 +376,8 @@ export default function App() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={handleCreateSubmit}
+        candidatesCount={entries.filter((e) => e.hasContest !== false).length}
+        maxCandidates={50}
       />
 
       <KrathongDetailModal
