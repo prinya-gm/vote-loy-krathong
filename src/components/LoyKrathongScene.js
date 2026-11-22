@@ -2,6 +2,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import femaleFaceTextureUrl from "../assets/textures/face_female.png";
 import maleFaceTextureUrl from "../assets/textures/face_male.png";
+import rytcLogoUrl from "../assets/textures/rytc-logo01.png";
+import rytcNormalUrl from "../assets/textures/rytc-logo01_normal.png";
+import rytcShadowUrl from "../assets/textures/rytc-logo01_shadow.png";
 
 // คลังข้อความสั้นกระชับสำหรับป้าย Dynamic Ticker เรียกร้องความสนใจเหนือศีรษะโมเดล (Option C)
 // 1. ภาษาไทย 20 ข้อความ (สั้น กระชับ ไม่ล้นป้าย 480px)
@@ -963,6 +966,18 @@ export class LoyKrathongScene {
       templeGroup.add(step);
     }
 
+    // 1B. ป้ายตราสัญลักษณ์ 3D วิทยาลัยเทคนิคระยอง (3D RYTC Logo Sign on Chedi Foundation Wall)
+    // ติดตั้งบนผนังฐานเจดีย์ฝั่งทิศใต้ (South Wall: Z = 15.02) ตรงตามรูปแนบของผู้ใช้
+    const rytcSignSouth = this.build3DRYTCLogoSign(8.6, 1.65);
+    rytcSignSouth.position.set(-12.0, 1.6, 15.02);
+    templeGroup.add(rytcSignSouth);
+
+    // ติดตั้งบนผนังฐานเจดีย์ฝั่งทิศตะวันตก (West Wall: X = -20.02) หันหน้าสู่แม่น้ำและทางเดินริมตลิ่ง
+    const rytcSignWest = this.build3DRYTCLogoSign(8.6, 1.65);
+    rytcSignWest.position.set(-20.02, 1.6, -3.0);
+    rytcSignWest.rotation.y = -Math.PI / 2;
+    templeGroup.add(rytcSignWest);
+
     // 2. Grand Sukhothai Golden Bell Chedi
     const chediGroup = new THREE.Group();
     chediGroup.position.set(-6, 3.2, -3);
@@ -1087,6 +1102,126 @@ export class LoyKrathongScene {
 
     this.scene.add(templeGroup);
     this.templeGroup = templeGroup;
+  }
+
+  /* ==========================================================
+     3D MONUMENTAL LOGO SIGN (วิทยาลัยเทคนิคระยอง - RYTC)
+     - โลโก้ 3D นูนเงาประกายแสงสีน้ำเงินเมทัลลิก (Metallic Royal Blue with Specular Reflection)
+     - สร้างด้วย Normal Map และ Drop Shadow Map ให้มิติตัวอักษรลอยเด่นเสมือนจริง
+     - แผ่นป้ายหินอ่อนสีครามลึกขลิบกรอบทองคำลายไทย พร้อมบัวทองคำ 4 มุม
+     - โคมไฟสปอตไลต์สถาปัตยกรรม (Architectural Lamps) ส่องสว่างป้ายยามค่ำคืน
+  ========================================================== */
+  build3DRYTCLogoSign(width = 8.6, height = 1.65) {
+    const signGroup = new THREE.Group();
+
+    // 1. Texture Loading with SRGB color space
+    const textureLoader = new THREE.TextureLoader();
+    const logoTex = textureLoader.load(rytcLogoUrl);
+    logoTex.colorSpace = THREE.SRGBColorSpace;
+
+    const normalTex = textureLoader.load(rytcNormalUrl);
+    const shadowTex = textureLoader.load(rytcShadowUrl);
+
+    // 2. Base Monumental Plaque (แท่นป้ายหินอ่อนขอบทองคำโบราณลายไทย)
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.88,
+      roughness: 0.22,
+    });
+    const darkStoneMat = new THREE.MeshStandardMaterial({
+      color: 0x0a1628, // Slate 950 / Deep Royal Navy Stone
+      roughness: 0.35,
+      metalness: 0.32,
+    });
+
+    // ฐานกรอบทองรอบนอก (Outer Golden Beveled Frame)
+    const frameDepth = 0.16;
+    const outerFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(width + 0.45, height + 0.35, frameDepth),
+      goldMat
+    );
+    outerFrame.position.set(0, 0, frameDepth / 2);
+    outerFrame.castShadow = true;
+    outerFrame.receiveShadow = true;
+    signGroup.add(outerFrame);
+
+    // แผ่นหินอ่อนสีครามเข้มรองพื้นในกรอบ (Inner Luxury Blue-Black Stone Inset)
+    const innerDepth = 0.18;
+    const innerPanel = new THREE.Mesh(
+      new THREE.BoxGeometry(width + 0.20, height + 0.12, innerDepth),
+      darkStoneMat
+    );
+    innerPanel.position.set(0, 0, innerDepth / 2);
+    signGroup.add(innerPanel);
+
+    // บัวหัวมุมทองคำ 4 ด้าน (Decorative Golden Corner Ornaments)
+    const cornerW = 0.45;
+    const cornerH = 0.45;
+    const cornerDepth = 0.21;
+    [
+      [-width / 2 - 0.1, height / 2 + 0.05],
+      [width / 2 + 0.1, height / 2 + 0.05],
+      [-width / 2 - 0.1, -height / 2 - 0.05],
+      [width / 2 + 0.1, -height / 2 - 0.05],
+    ].forEach(([cx, cy]) => {
+      const corner = new THREE.Mesh(
+        new THREE.BoxGeometry(cornerW, cornerH, cornerDepth),
+        goldMat
+      );
+      corner.position.set(cx, cy, cornerDepth / 2);
+      signGroup.add(corner);
+    });
+
+    // 3. Drop Shadow Plane (เงา 3D ตกกระทบแผ่นป้าย ให้ตัวอักษรลอยเด่นเป็นมิติ)
+    const shadowGeo = new THREE.PlaneGeometry(width, height);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: shadowTex,
+      transparent: true,
+      opacity: 0.70,
+      depthWrite: false,
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.position.set(0.04, -0.04, 0.185);
+    signGroup.add(shadowMesh);
+
+    // 4. Extruded 3D Logo Face with Normal Mapping & Metallic Blue Specular Reflection
+    const logoGeo = new THREE.PlaneGeometry(width, height);
+    const logoMat = new THREE.MeshStandardMaterial({
+      map: logoTex,
+      normalMap: normalTex,
+      normalScale: new THREE.Vector2(1.8, 1.8),
+      transparent: true,
+      roughness: 0.16,
+      metalness: 0.85,
+      emissive: new THREE.Color(0x0044bb),
+      emissiveIntensity: 0.40,
+      side: THREE.DoubleSide,
+    });
+    const logoMesh = new THREE.Mesh(logoGeo, logoMat);
+    logoMesh.position.set(0, 0, 0.21);
+    signGroup.add(logoMesh);
+
+    // 5. Architectural Spotlight Lamps (โคมไฟสถาปัตยกรรมส่องป้ายยามค่ำคืน)
+    const lampMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.8 });
+    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfff3a8 });
+
+    [-width * 0.35, width * 0.35].forEach((lx) => {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.55), lampMat);
+      arm.rotation.x = Math.PI / 4;
+      arm.position.set(lx, -height / 2 - 0.25, 0.35);
+      signGroup.add(arm);
+
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.28, 12), lampMat);
+      head.rotation.x = -Math.PI / 3;
+      head.position.set(lx, -height / 2 - 0.38, 0.50);
+      signGroup.add(head);
+
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), lampBulbMat);
+      bulb.position.set(lx, -height / 2 - 0.34, 0.46);
+      signGroup.add(bulb);
+    });
+
+    return signGroup;
   }
 
   /* ==========================================================
