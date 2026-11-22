@@ -1122,16 +1122,19 @@ export class LoyKrathongScene {
     const normalTex = textureLoader.load(rytcNormalUrl);
     const shadowTex = textureLoader.load(rytcShadowUrl);
 
-    // 2. Base Monumental Plaque (แท่นป้ายหินอ่อนขอบทองคำโบราณลายไทย)
+    // 2. Base Monumental Plaque (แท่นป้ายหินอ่อนสีขาวนวล สว่างไสว ขอบทองคำโบราณลายไทย)
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
       metalness: 0.88,
       roughness: 0.22,
     });
-    const darkStoneMat = new THREE.MeshStandardMaterial({
-      color: 0x0a1628, // Slate 950 / Deep Royal Navy Stone
-      roughness: 0.35,
-      metalness: 0.32,
+    // แผ่นหินอ่อนสีขาวนวล สว่างไสว สะอาดตา (Luminous White Marble Plaque)
+    const whitePlateMat = new THREE.MeshStandardMaterial({
+      color: 0xfafafa,
+      roughness: 0.18,
+      metalness: 0.06,
+      emissive: new THREE.Color(0xffffff),
+      emissiveIntensity: 0.45, // เรืองแสงสีขาวนวล ช่วยให้ป้ายสว่างชัดเจนแม้อยู่ในบรรยากาศกลางคืน
     });
 
     // ฐานกรอบทองรอบนอก (Outer Golden Beveled Frame)
@@ -1145,11 +1148,11 @@ export class LoyKrathongScene {
     outerFrame.receiveShadow = true;
     signGroup.add(outerFrame);
 
-    // แผ่นหินอ่อนสีครามเข้มรองพื้นในกรอบ (Inner Luxury Blue-Black Stone Inset)
+    // แผ่นพื้นหลังสีขาวนวลสว่างไสวในกรอบ (Inner Bright White Plaque Inset)
     const innerDepth = 0.18;
     const innerPanel = new THREE.Mesh(
       new THREE.BoxGeometry(width + 0.20, height + 0.12, innerDepth),
-      darkStoneMat
+      whitePlateMat
     );
     innerPanel.position.set(0, 0, innerDepth / 2);
     signGroup.add(innerPanel);
@@ -1172,12 +1175,12 @@ export class LoyKrathongScene {
       signGroup.add(corner);
     });
 
-    // 3. Drop Shadow Plane (เงา 3D ตกกระทบแผ่นป้าย ให้ตัวอักษรลอยเด่นเป็นมิติ)
+    // 3. Drop Shadow Plane (เงา 3D ตกกระทบแผ่นป้ายสีขาว ให้ตัวอักษรลอยเด่นเป็นมิติ)
     const shadowGeo = new THREE.PlaneGeometry(width, height);
     const shadowMat = new THREE.MeshBasicMaterial({
       map: shadowTex,
       transparent: true,
-      opacity: 0.70,
+      opacity: 0.32,
       depthWrite: false,
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
@@ -1191,10 +1194,10 @@ export class LoyKrathongScene {
       normalMap: normalTex,
       normalScale: new THREE.Vector2(1.8, 1.8),
       transparent: true,
-      roughness: 0.16,
-      metalness: 0.85,
-      emissive: new THREE.Color(0x0044bb),
-      emissiveIntensity: 0.40,
+      roughness: 0.14,
+      metalness: 0.70,
+      emissive: new THREE.Color(0x0044dd),
+      emissiveIntensity: 0.35,
       side: THREE.DoubleSide,
     });
     const logoMesh = new THREE.Mesh(logoGeo, logoMat);
