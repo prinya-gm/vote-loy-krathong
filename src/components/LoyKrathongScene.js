@@ -6560,26 +6560,30 @@ export class LoyKrathongScene {
   }
 
   updateKrathongs(entries) {
-    const currentIds = new Set(entries.map((e) => e.id));
+    const krathongEntries = entries.filter((e) => e.hasKrathong !== false);
+    const candidateEntries = entries.filter((e) => e.hasContest !== false);
 
-    // 1. จัดการ Krathong Meshes ในแม่น้ำ
+    const currentKrathongIds = new Set(krathongEntries.map((e) => e.id));
+    const currentCandidateIds = new Set(candidateEntries.map((e) => e.id));
+
+    // 1. จัดการ Krathong Meshes ในแม่น้ำ (เฉพาะรายการที่มีกระทง)
     for (const [id, mesh] of this.krathongMeshes.entries()) {
-      if (!currentIds.has(id)) {
+      if (!currentKrathongIds.has(id)) {
         this.scene.remove(mesh);
         this.krathongMeshes.delete(id);
       }
     }
 
-    // 2. จัดการ Candidate Avatars บนท่าน้ำสีเขียว
+    // 2. จัดการ Candidate Avatars บนท่าน้ำสีเขียว (เฉพาะรายการที่ร่วมประกวดโหวต)
     for (const [id, avatar] of this.candidateAvatars.entries()) {
-      if (!currentIds.has(id)) {
+      if (!currentCandidateIds.has(id)) {
         this.scene.remove(avatar.group);
         this.candidateAvatars.delete(id);
       }
     }
 
-    entries.forEach((entry, index) => {
-      // กระทงลอยในน้ำ
+    // 3. สร้างและอัปเดต Krathongs ลอยในน้ำ
+    krathongEntries.forEach((entry, index) => {
       let mesh = this.krathongMeshes.get(entry.id);
       if (!mesh) {
         if (entry.x === undefined || entry.x < -9.5 || entry.x > 48.0) {
@@ -6602,8 +6606,10 @@ export class LoyKrathongScene {
           }
         }
       }
+    });
 
-      // โมเดลผู้สมัครสวมชุดไทยยืนบนท่าน้ำสีเขียว
+    // 4. สร้างและอัปเดตโมเดลผู้สมัครสวมชุดไทยบนท่าน้ำ
+    candidateEntries.forEach((entry, index) => {
       const slotPos = this.getCandidateSlotPosition(index);
       let avatar = this.candidateAvatars.get(entry.id);
       if (!avatar) {

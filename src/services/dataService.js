@@ -180,7 +180,9 @@ export const addKrathongEntry = async ({
   topStyle,
   bottomStyle,
   krathongStyle,
-  flowerStyle
+  flowerStyle,
+  hasContest = true,
+  hasKrathong = true,
 }) => {
   let photoUrl = "";
   
@@ -223,6 +225,8 @@ export const addKrathongEntry = async ({
     krathongStyle: chosenKrathong,
     flowerStyle: chosenFlower,
     votes: 0,
+    hasContest: hasContest !== false,
+    hasKrathong: hasKrathong !== false,
     x: (Math.random() - 0.5) * 30,
     z: 20 + Math.random() * 10, // start from upstream
     speed: 0.005 + Math.random() * 0.008,
