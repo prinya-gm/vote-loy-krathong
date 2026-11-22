@@ -18,8 +18,8 @@ import {
 } from "./KrathongAssets";
 
 export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
-  const [enableContest, setEnableContest] = useState(true); // ถ่ายรูปชุดไทยเพื่อร่วมโหวต
-  const [enableKrathong, setEnableKrathong] = useState(true); // ร่วมลอยกระทง
+  const [enableContest, setEnableContest] = useState(false); // ถ่ายรูปชุดไทยเพื่อร่วมโหวต
+  const [enableKrathong, setEnableKrathong] = useState(false); // ร่วมลอยกระทง
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [gender, setGender] = useState("female");
@@ -45,8 +45,8 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
   };
 
   const resetForm = () => {
-    setEnableContest(true);
-    setEnableKrathong(true);
+    setEnableContest(false);
+    setEnableKrathong(false);
     setName("");
     setDescription("");
     setGender("female");
@@ -181,6 +181,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
 
   const activeTops = gender === "male" ? MALE_TOPS : FEMALE_TOPS;
   const activeBottoms = gender === "male" ? MALE_BOTTOMS : FEMALE_BOTTOMS;
+  const hasSelection = enableContest || enableKrathong;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
@@ -189,7 +190,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
         <div className="shrink-0 flex items-center justify-between p-3.5 sm:p-5 border-b border-slate-800 bg-slate-900/90">
           <div className="flex items-center gap-2.5">
             <span className="text-2xl sm:text-3xl">
-              {enableContest && enableKrathong ? "🪷" : (enableContest ? "👑" : "🪷")}
+              {enableContest && enableKrathong ? "🪷" : (enableContest ? "👑" : (enableKrathong ? "🪷" : "✨"))}
             </span>
             <div>
               <h2 className="text-base sm:text-xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
@@ -197,14 +198,18 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                   ? "สร้างกระทง & ออกแบบชุดไทย"
                   : (enableContest
                       ? "ถ่ายรูปชุดไทยเพื่อร่วมโหวต"
-                      : "ร่วมลอยกระทงออนไลน์")}
+                      : (enableKrathong
+                          ? "ร่วมลอยกระทงออนไลน์"
+                          : "เลือกกิจกรรมเข้าร่วม"))}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-400">
                 {enableContest && enableKrathong
                   ? "เลือกแบบชุดไทย (บน-ล่าง) และแบบกระทง & ดอกไม้มงคลตามใจคุณ"
                   : (enableContest
                       ? "แต่งกายชุดไทยสวยสง่าบนท่าน้ำเพื่อเปิดรับคะแนนโหวต"
-                      : "เลือกกระทงและดอกไม้มงคล พร้อมอธิษฐานขอพรพระแม่คงคา")}
+                      : (enableKrathong
+                          ? "เลือกกระทงและดอกไม้มงคล พร้อมอธิษฐานขอพรพระแม่คงคา"
+                          : "กรุณาทำเครื่องหมายถูกเลือกกิจกรรมด้านล่างเพื่อเริ่มต้น"))}
               </p>
             </div>
           </div>
@@ -233,11 +238,6 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {/* ตัวเลือก 1: ถ่ายรูปชุดไทยเพื่อร่วมโหวต */}
                 <label
-                  onClick={(e) => {
-                    if (enableContest && !enableKrathong) {
-                      e.preventDefault();
-                    }
-                  }}
                   className={`relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${
                     enableContest
                       ? "border-amber-400 bg-amber-500/20 shadow-md ring-1 ring-amber-400/40 text-white"
@@ -247,10 +247,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                   <input
                     type="checkbox"
                     checked={enableContest}
-                    onChange={(e) => {
-                      if (!e.target.checked && !enableKrathong) return;
-                      setEnableContest(e.target.checked);
-                    }}
+                    onChange={(e) => setEnableContest(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-600 bg-slate-700 cursor-pointer accent-amber-500 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
@@ -265,11 +262,6 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
 
                 {/* ตัวเลือก 2: ร่วมลอยกระทง */}
                 <label
-                  onClick={(e) => {
-                    if (enableKrathong && !enableContest) {
-                      e.preventDefault();
-                    }
-                  }}
                   className={`relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${
                     enableKrathong
                       ? "border-cyan-400 bg-cyan-500/20 shadow-md ring-1 ring-cyan-400/40 text-white"
@@ -279,10 +271,7 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                   <input
                     type="checkbox"
                     checked={enableKrathong}
-                    onChange={(e) => {
-                      if (!e.target.checked && !enableContest) return;
-                      setEnableKrathong(e.target.checked);
-                    }}
+                    onChange={(e) => setEnableKrathong(e.target.checked)}
                     className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400 border-slate-600 bg-slate-700 cursor-pointer accent-cyan-500 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
@@ -296,6 +285,23 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                 </label>
               </div>
             </div>
+
+            {!hasSelection ? (
+              <div className="py-10 px-4 text-center rounded-2xl bg-slate-800/30 border border-dashed border-slate-700/80 flex flex-col items-center justify-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-cyan-500/20 border border-amber-500/30 flex items-center justify-center text-2xl animate-bounce">
+                  👆
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-200">
+                    กรุณาทำเครื่องหมายถูกเลือกกิจกรรมที่คุณต้องการเข้าร่วมด้านบน
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-sm">
+                    เลือก "ถ่ายรูปชุดไทยเพื่อร่วมโหวต", "ร่วมลอยกระทง" หรือเลือกทั้ง 2 อย่าง เพื่อเริ่มกรอกข้อมูลและออกแบบ
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
 
             {/* 1. PHOTO & NAME SECTION (กรณีเลือกถ่ายรูปชุดไทยเพื่อร่วมโหวต) */}
             {enableContest ? (
@@ -670,32 +676,36 @@ export default function CreateKrathongModal({ isOpen, onClose, onSubmit }) {
                 />
               </div>
             )}
+              </>
+            )}
           </div>
 
-          {/* Sticky Action Footer */}
-          <div className="shrink-0 p-3.5 sm:p-5 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 sm:py-3.5 px-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-bold text-sm sm:text-base rounded-xl shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-98"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  กำลังบันทึกข้อมูล...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  {enableContest && enableKrathong
-                    ? "ปล่อยกระทงลงน้ำ & เริ่มเปิดโหวต"
-                    : (enableContest
-                        ? "บันทึกรูปและเปิดรับโหวตบนท่าน้ำ"
-                        : "ปล่อยกระทงลงสู่สายน้ำ")}
-                </>
-              )}
-            </button>
-          </div>
+          {/* Sticky Action Footer (แสดงเฉพาะเมื่อมีการเลือกกิจกรรมอย่างน้อย 1 อย่าง) */}
+          {hasSelection && (
+            <div className="shrink-0 p-3.5 sm:p-5 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 sm:py-3.5 px-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-bold text-sm sm:text-base rounded-xl shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-98"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    กำลังบันทึกข้อมูล...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    {enableContest && enableKrathong
+                      ? "ปล่อยกระทงลงน้ำ & เริ่มเปิดโหวต"
+                      : (enableContest
+                          ? "บันทึกรูปและเปิดรับโหวตบนท่าน้ำ"
+                          : "ปล่อยกระทงลงสู่สายน้ำ")}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>
