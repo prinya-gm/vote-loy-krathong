@@ -1834,6 +1834,15 @@ export class LoyKrathongScene {
     stoneEdge.receiveShadow = true;
     this.scene.add(stoneEdge);
 
+    // แสงไฟนวลตาประจำถนนหินเลียบแม่น้ำ 2 ฝั่ง (ส่องโมเดลผู้สมัครบนถนนให้สว่างไสวเป็นสง่า โดยไม่เปลือง PointLight)
+    const northPromenadeLight = new THREE.PointLight(0xffdfb0, 2.0, 50, 1.3);
+    northPromenadeLight.position.set(-17.5, 5.0, -35.0);
+    this.scene.add(northPromenadeLight);
+
+    const southPromenadeLight = new THREE.PointLight(0xffdfb0, 2.0, 50, 1.3);
+    southPromenadeLight.position.set(-17.5, 5.0, +45.0);
+    this.scene.add(southPromenadeLight);
+
     // --- ท่าน้ำ สีเขียว ขยายใหญ่พิเศษ (Grand Rectangular Green Waterfront Pier) ---
     // ขยายพื้นที่ท่าน้ำสีเขียวให้กว้างขวางเป็นพิเศษ เพื่อรองรับผู้สมัครโหวตทุกคนอย่างสง่างาม
     const greenPierGroup = new THREE.Group();
@@ -4609,10 +4618,14 @@ export class LoyKrathongScene {
     flame.name = "candleFlame";
     group.add(flame);
 
-    const flameLight = new THREE.PointLight(0xffa500, 2.5, 9, 1.5);
-    flameLight.position.set(0.3, 1.85, 0.2);
-    flameLight.name = "candleLight";
-    group.add(flameLight);
+    // ป้องกัน WebGL Uniform Overflow (สาเหตุจอดำบนมือถือ):
+    // จำกัด PointLight บนกระทงไม่เกิน 4 ดวงแรก ส่วนกระทงอื่นใช้ waterGlow plane และ flame mesh ซึ่งเรืองแสงสวยงามอยู่แล้ว
+    if (this.krathongMeshes && this.krathongMeshes.size < 4) {
+      const flameLight = new THREE.PointLight(0xffa500, 2.5, 9, 1.5);
+      flameLight.position.set(0.3, 1.85, 0.2);
+      flameLight.name = "candleLight";
+      group.add(flameLight);
+    }
 
     // แสงสะท้อนสีทองส้มนุ่มนวลใต้กระทงบนผิวน้ำ (Soft Golden Candle Reflection on Water Surface)
     if (this.waterGlowTexture) {
@@ -5172,12 +5185,6 @@ export class LoyKrathongScene {
     daisBorder.rotation.x = Math.PI / 2;
     avatarGroup.add(daisBorder);
 
-    // ดวงไฟสปอตไลต์ประจำตัว (Soft Studio Aura Spotlight) ให้ตัวโมเดลสว่างไสวเป็นธรรมชาติ ไม่ขาวโพลน
-    const spot = new THREE.PointLight(0xfff1dc, 1.05, 7.0, 1.5);
-    spot.position.set(0, 2.8, 1.1);
-    avatarGroup.add(spot);
-    this.flickerLights.push({ light: spot, baseIntensity: 1.05, speed: 1.5 });
-
     // วงแหวนไฮไลต์สีทองบนพื้นหญ้าเมื่อเลือกกระทง/ตัวละคร
     const ringGeo = new THREE.RingGeometry(0.65, 0.80, 24);
     ringGeo.rotateX(-Math.PI / 2);
@@ -5609,11 +5616,6 @@ export class LoyKrathongScene {
       tip.position.set(ix - 0.005, 0.082, (idx - 1) * 0.008);
       mini.add(tip);
     });
-
-    // แสงเทียนจิ๋วส่องสว่างกระทบมือและชุดไทยอย่างอบอุ่น
-    const candleGlow = new THREE.PointLight(0xffb703, 1.0, 2.0, 2.0);
-    candleGlow.position.set(0.010, 0.085, 0);
-    mini.add(candleGlow);
 
     return mini;
   }

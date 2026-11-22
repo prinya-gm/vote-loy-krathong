@@ -26,6 +26,7 @@ import {
   broadcastLiveFirework,
   subscribeToLiveFireworks
 } from "./services/dataService";
+import { isFirebaseConfigured } from "./firebase";
 // --- TEMPORARY TEST: Simulation to reach exactly 50 candidates ---
 const MOCK_THAI_NAMES = [
   "น้องมะลิ", "พี่กล้า", "น้องบัวลอย", "คุณกานต์", "น.ส.พิมพ์ใจ", "น้องฟ้าใส", "พี่เอกชัย", "น้องแก้วตา",
