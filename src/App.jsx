@@ -346,60 +346,127 @@ export default function App() {
       {/* Top Header Overlay */}
       <header className="absolute top-0 inset-x-0 p-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pointer-events-none flex items-start justify-between z-20">
         {/* App Title & Festive Branding */}
-        <div className="pointer-events-auto bg-slate-950/80 backdrop-blur-md border border-amber-500/30 rounded-2xl p-2 sm:px-4 sm:py-3 shadow-2xl flex items-center gap-2 sm:gap-3.5 max-w-[calc(100vw-105px)] sm:max-w-none">
-          {/* Requirement 2: Clicking Moon toggles Unlimited Vote Mode */}
-          <button
-            onClick={toggleUnlimitedVote}
-            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-lg transition-transform cursor-pointer active:scale-90 shrink-0 ${
-              unlimitedVoteMode
-                ? "bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-200 ring-4 ring-amber-300 shadow-amber-400/70 animate-bounce"
-                : "bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-amber-500/30 animate-pulse hover:scale-105"
-            }`}
-            title={
-              unlimitedVoteMode
-                ? "🌕 โหมดโหวตไม่จำกัดกำลังเปิดอยู่! (คลิกเพื่อปิด)"
-                : "🌕 คลิกที่ดวงจันทร์เพื่อเปิดโหมดโหวตซ้ำได้ไม่จำกัดครั้ง!"
-            }
-          >
-            🌕
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xs sm:text-base md:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
-                ลอยกระทง 2569 โหวตขวัญใจสายน้ำ
-              </h1>
-              {unlimitedVoteMode && (
-                <span className="hidden xs:inline px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold animate-pulse shrink-0">
-                  🌕 โหมดไม่จำกัด
-                </span>
-              )}
+        <div className="relative pointer-events-auto">
+          <div className="bg-slate-950/80 backdrop-blur-md border border-amber-500/30 rounded-2xl p-2 sm:px-4 sm:py-3 shadow-2xl flex items-center gap-2 sm:gap-3.5 max-w-[calc(100vw-105px)] sm:max-w-none">
+            {/* Requirement 2: Clicking Moon toggles Unlimited Vote Mode */}
+            <button
+              onClick={toggleUnlimitedVote}
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-lg transition-transform cursor-pointer active:scale-90 shrink-0 ${
+                unlimitedVoteMode
+                  ? "bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-200 ring-4 ring-amber-300 shadow-amber-400/70 animate-bounce"
+                  : "bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-amber-500/30 animate-pulse hover:scale-105"
+              }`}
+              title={
+                unlimitedVoteMode
+                  ? "🌕 โหมดโหวตไม่จำกัดกำลังเปิดอยู่! (คลิกเพื่อปิด)"
+                  : "🌕 คลิกที่ดวงจันทร์เพื่อเปิดโหมดโหวตซ้ำได้ไม่จำกัดครั้ง!"
+              }
+            >
+              🌕
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xs sm:text-base md:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
+                  ลอยกระทง 2569 โหวตขวัญใจสายน้ำ
+                </h1>
+                {unlimitedVoteMode && (
+                  <span className="hidden xs:inline px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold animate-pulse shrink-0">
+                    🌕 โหมดไม่จำกัด
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] sm:text-xs text-amber-200/80 flex items-center gap-2 truncate">
+                <span>หมุนซูม 3D | คลิกที่โมเดลเพื่อโหวต</span>
+                {!isFirebaseConfigured && (
+                  <span className="hidden xs:inline px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px]">
+                    Demo Mode
+                  </span>
+                )}
+              </p>
             </div>
-            <p className="text-[10px] sm:text-xs text-amber-200/80 flex items-center gap-2 truncate">
-              <span>หมุนซูม 3D | คลิกที่โมเดลเพื่อโหวต</span>
-              {!isFirebaseConfigured && (
-                <span className="hidden xs:inline px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px]">
-                  Demo Mode
+
+            {/* QR Code ย้ายมาแสดงในพื้นที่ Header ตามรูปแนบ ขนาดพอเหมาะสแกนได้ */}
+            {siteQrDataUrl && (
+              <div
+                onClick={() => setIsSiteQrOpen((prev) => !prev)}
+                className={`shrink-0 flex flex-col items-center gap-0.5 p-1 rounded-xl border shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                  isSiteQrOpen
+                    ? "bg-amber-100 border-amber-400 ring-2 ring-amber-400/50"
+                    : "bg-white hover:bg-amber-50 border-amber-400/90"
+                }`}
+                title={isSiteQrOpen ? "คลิกเพื่อซ่อน QR Code" : "สแกน QR Code หรือคลิกเพื่อขยายในพื้นที่นี้"}
+              >
+                <img
+                  src={siteQrDataUrl}
+                  alt="QR Code เข้าสู่เว็บ"
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                />
+                <span className="text-[7px] sm:text-[8px] font-bold text-slate-800 tracking-tight leading-none">
+                  สแกนเข้าเว็บ
                 </span>
-              )}
-            </p>
+              </div>
+            )}
           </div>
 
-          {/* QR Code ย้ายมาแสดงในพื้นที่ Header ตามรูปแนบ ขนาดพอเหมาะสแกนได้ */}
-          {siteQrDataUrl && (
-            <div
-              onClick={() => setIsSiteQrOpen(true)}
-              className="shrink-0 flex flex-col items-center gap-0.5 p-1 bg-white hover:bg-amber-50 rounded-xl border border-amber-400/90 shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all"
-              title="สแกน QR Code เพื่อเข้าสู่เว็บ (คลิกเพื่อขยาย / บันทึกรูป)"
-            >
-              <img
-                src={siteQrDataUrl}
-                alt="QR Code เข้าสู่เว็บ"
-                className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+          {/* เมื่อแตะ QR Code ให้แสดงการขยายและตัวเลือกอยู่ในพื้นที่ด้านบนนี้เท่านั้น (ไม่แสดงกลางจอ) */}
+          {isSiteQrOpen && (
+            <>
+              {/* Click outside transparent overlay to dismiss */}
+              <div
+                onClick={() => setIsSiteQrOpen(false)}
+                className="fixed inset-0 z-20 cursor-default bg-transparent"
               />
-              <span className="text-[7px] sm:text-[8px] font-bold text-slate-800 tracking-tight leading-none">
-                สแกนเข้าเว็บ
-              </span>
-            </div>
+
+              {/* Popover Card anchored right under the top header banner */}
+              <div className="absolute top-[calc(100%+8px)] left-0 z-30 w-64 sm:w-72 bg-slate-900/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-3.5 shadow-2xl animate-fadeIn flex flex-col items-center gap-2.5">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    🌕 สแกนเพื่อเข้าสู่เว็บ
+                  </span>
+                  <button
+                    onClick={() => setIsSiteQrOpen(false)}
+                    className="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="p-2 bg-white rounded-xl shadow-lg border border-amber-400/60">
+                  <img
+                    src={siteQrDataUrl}
+                    alt="QR Code สำหรับเข้าสู่เว็บ"
+                    className="w-36 h-36 sm:w-40 sm:h-40 object-contain"
+                  />
+                </div>
+
+                <div className="text-[10px] font-mono text-amber-300/80 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 w-full truncate text-center">
+                  {SITE_URL}
+                </div>
+
+                <div className="flex items-center gap-1.5 w-full pt-0.5">
+                  <button
+                    onClick={handleDownloadSiteQr}
+                    className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-200 flex items-center justify-center gap-1 transition cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-amber-400" /> บันทึกรูป
+                  </button>
+                  <button
+                    onClick={handleCopySiteUrl}
+                    className="flex-1 py-1.5 px-2 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 transition cursor-pointer shadow"
+                  >
+                    {copiedSiteLink ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> คัดลอกแล้ว!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" /> คัดลอกลิงก์
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
@@ -542,69 +609,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Website QR Code Modal (สแกนเพื่อเข้าสู่เว็บ) */}
-      {isSiteQrOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-sm bg-slate-900/95 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center gap-4">
-            <button
-              onClick={() => setIsSiteQrOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
 
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/30">
-              🌕
-            </div>
-
-            <div>
-              <h3 className="text-lg font-black bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
-                สแกน QR Code เข้าสู่เว็บ
-              </h3>
-              <p className="text-xs text-slate-300 mt-1">
-                เปิดกล้องมือถือสแกน เพื่อร่วมลอยกระทงและโหวตขวัญใจสายน้ำ 2569
-              </p>
-            </div>
-
-            {siteQrDataUrl ? (
-              <div className="p-3 bg-white rounded-2xl shadow-xl border-2 border-amber-400">
-                <img src={siteQrDataUrl} alt="QR Code สำหรับเข้าสู่เว็บ" className="w-48 h-48 object-contain" />
-              </div>
-            ) : (
-              <div className="w-48 h-48 flex items-center justify-center bg-slate-800 rounded-2xl">
-                <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
-              </div>
-            )}
-
-            <div className="text-[11px] font-mono text-amber-300/80 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 w-full truncate">
-              {SITE_URL}
-            </div>
-
-            <div className="flex items-center gap-2 w-full pt-1">
-              <button
-                onClick={handleDownloadSiteQr}
-                className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 transition cursor-pointer"
-              >
-                <Download className="w-4 h-4 text-amber-400" /> บันทึกรูป QR
-              </button>
-              <button
-                onClick={handleCopySiteUrl}
-                className="flex-1 py-2.5 px-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow"
-              >
-                {copiedSiteLink ? (
-                  <>
-                    <Check className="w-4 h-4" /> คัดลอกแล้ว!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" /> คัดลอกลิงก์
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modals & Drawers */}
       <CreateKrathongModal
