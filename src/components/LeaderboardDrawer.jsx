@@ -10,8 +10,9 @@ export default function LeaderboardDrawer({
 }) {
   if (!isOpen) return null;
 
-  // Sort by votes descending
-  const sorted = [...entries].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  // กรองเฉพาะผู้ที่เข้าร่วมประกวดโหวตเท่านั้น (ไม่รวมผู้ที่ลอยกระทงอย่างเดียว)
+  const contestEntries = entries.filter((e) => Boolean(e.hasContest));
+  const sorted = [...contestEntries].sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
   const getRankBadge = (index) => {
     switch (index) {

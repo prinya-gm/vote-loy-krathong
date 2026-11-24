@@ -4982,9 +4982,11 @@ export class LoyKrathongScene {
       group.add(tip);
     });
 
-    // ป้ายชื่อเจ้าของกระทง 3D แบบ Billboard ลอยอยู่เหนือกกระทง (❤️ <ชื่อเจ้าของกระทง>)
-    const voteBadge = this.createVoteBadgeSprite(data.name || "ผู้ร่วมลอยกระทง");
-    group.add(voteBadge);
+    // ป้ายชื่อเจ้าของกระทง 3D แบบ Billboard ลอยอยู่เหนือกกระทง (เฉพาะผู้ที่เข้าร่วมโหวตประกวดเท่านั้น)
+    if (data.hasContest) {
+      const voteBadge = this.createVoteBadgeSprite(data.name || "ผู้ร่วมลอยกระทง");
+      group.add(voteBadge);
+    }
 
     const ringGeo = new THREE.RingGeometry(1.9, 2.3, 32);
     ringGeo.rotateX(-Math.PI / 2);
@@ -7040,7 +7042,7 @@ export class LoyKrathongScene {
 
   updateKrathongs(entries) {
     const krathongEntries = entries.filter((e) => e.hasKrathong !== false);
-    const candidateEntries = entries.filter((e) => e.hasContest !== false);
+    const candidateEntries = entries.filter((e) => Boolean(e.hasContest));
 
     const currentKrathongIds = new Set(krathongEntries.map((e) => e.id));
     const currentCandidateIds = new Set(candidateEntries.map((e) => e.id));
@@ -7053,7 +7055,7 @@ export class LoyKrathongScene {
       }
     }
 
-    // 2. จัดการ Candidate Avatars บนท่าน้ำสีเขียว (เฉพาะรายการที่ร่วมประกวดโหวต)
+    // 2. จัดการ Candidate Avatars บนท่าน้ำสีเขียว (เฉพาะรายการที่ร่วมประกวดโหวตเท่านั้น)
     for (const [id, avatar] of this.candidateAvatars.entries()) {
       if (!currentCandidateIds.has(id)) {
         this.scene.remove(avatar.group);
@@ -7076,12 +7078,21 @@ export class LoyKrathongScene {
       } else {
         const oldName = mesh.userData.entry?.name || "";
         mesh.userData.entry = entry;
-        if (entry.name !== oldName) {
-          const sprite = mesh.getObjectByName("voteBadgeSprite");
-          if (sprite) {
+        const sprite = mesh.getObjectByName("voteBadgeSprite");
+        if (entry.hasContest) {
+          if (!sprite) {
+            mesh.add(this.createVoteBadgeSprite(entry.name || "ผู้ร่วมลอยกระทง"));
+          } else if (entry.name !== oldName) {
             if (sprite.material.map) sprite.material.map.dispose();
             sprite.material.map = this.createVoteBadgeTexture(entry.name || "ผู้ร่วมลอยกระทง");
             sprite.material.needsUpdate = true;
+          }
+        } else {
+          // คนที่ลอยกระทงอย่างเดียว ไม่ได้ร่วมโหวต -> เอาชื่อออก
+          if (sprite) {
+            mesh.remove(sprite);
+            if (sprite.material.map) sprite.material.map.dispose();
+            if (sprite.material) sprite.material.dispose();
           }
         }
       }

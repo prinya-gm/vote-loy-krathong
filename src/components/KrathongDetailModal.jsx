@@ -166,15 +166,17 @@ export default function KrathongDetailModal({
               <span className="text-white font-medium">{krathongItem?.name || "กระทงลอยน้ำ"}</span>
             </div>
 
-            {/* Quick QR toggle pill on top-right of image */}
-            <button
-              onClick={() => setShowQr((prev) => !prev)}
-              className="absolute top-3 right-3 px-3 py-1 bg-black/70 hover:bg-amber-500 hover:text-slate-950 backdrop-blur-md rounded-full flex items-center gap-1.5 border border-amber-400/40 text-xs font-semibold text-amber-300 transition cursor-pointer shadow-lg active:scale-95"
-              title="สแกน QR Code เพื่อโหวต"
-            >
-              <QrCode className="w-3.5 h-3.5" />
-              <span>{showQr ? "ปิด QR" : "QR สแกนโหวต"}</span>
-            </button>
+            {/* Quick QR toggle pill on top-right of image (เฉพาะผู้ร่วมโหวต) */}
+            {krathong.hasContest && (
+              <button
+                onClick={() => setShowQr((prev) => !prev)}
+                className="absolute top-3 right-3 px-3 py-1 bg-black/70 hover:bg-amber-500 hover:text-slate-950 backdrop-blur-md rounded-full flex items-center gap-1.5 border border-amber-400/40 text-xs font-semibold text-amber-300 transition cursor-pointer shadow-lg active:scale-95"
+                title="สแกน QR Code เพื่อโหวต"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>{showQr ? "ปิด QR" : "QR สแกนโหวต"}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -197,14 +199,23 @@ export default function KrathongDetailModal({
               </p>
             </div>
             
-            {/* Votes badge */}
-            <div className="text-center px-4 py-2 bg-gradient-to-b from-amber-500/20 to-amber-900/40 border border-amber-500/40 rounded-2xl shrink-0">
-              <div className="flex items-center justify-center gap-1 text-amber-400 font-black text-xl">
-                <Heart className="w-5 h-5 fill-amber-400 text-amber-400" />
-                <span>{krathong.votes || 0}</span>
+            {/* Votes badge - only show for contest participants */}
+            {krathong.hasContest ? (
+              <div className="text-center px-4 py-2 bg-gradient-to-b from-amber-500/20 to-amber-900/40 border border-amber-500/40 rounded-2xl shrink-0">
+                <div className="flex items-center justify-center gap-1 text-amber-400 font-black text-xl">
+                  <Heart className="w-5 h-5 fill-amber-400 text-amber-400" />
+                  <span>{krathong.votes || 0}</span>
+                </div>
+                <span className="text-[10px] text-amber-200 uppercase tracking-wider font-semibold">คะแนนโหวต</span>
               </div>
-              <span className="text-[10px] text-amber-200 uppercase tracking-wider font-semibold">คะแนนโหวต</span>
-            </div>
+            ) : (
+              <div className="text-center px-3.5 py-1.5 bg-cyan-500/10 border border-cyan-400/30 rounded-2xl shrink-0">
+                <span className="text-xs font-bold text-cyan-300 flex items-center gap-1">
+                  🪷 ลอยกระทง
+                </span>
+                <span className="text-[9px] text-cyan-200/70 block mt-0.5">ร่วมขอพรสายน้ำ</span>
+              </div>
+            )}
           </div>
 
           {/* QR Code Card (Expandable / Toggleable) */}
@@ -277,50 +288,58 @@ export default function KrathongDetailModal({
 
           {/* Action buttons */}
           <div className="mt-6 flex items-center gap-3">
-            <button
-              onClick={handleVoteClick}
-              disabled={isVotedDisabled || voting}
-              className={`flex-1 py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer ${
-                isVotedDisabled
-                  ? "bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 cursor-default"
-                  : "bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white shadow-pink-500/25 active:scale-95"
-              }`}
-            >
-              {voting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  กำลังบันทึกคะแนน...
-                </>
-              ) : isVotedDisabled ? (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  คุณโหวตกระทงนี้แล้ว
-                </>
-              ) : unlimitedVoteMode && hasVoted ? (
-                <>
-                  <Heart className="w-5 h-5 fill-amber-300 text-amber-200" />
-                  โหวตเพิ่มอีกครั้ง! 🌕✨
-                </>
-              ) : (
-                <>
-                  <Heart className="w-5 h-5 fill-white" />
-                  โหวตให้กระทงนี้เลย!
-                </>
-              )}
-            </button>
+            {krathong.hasContest ? (
+              <>
+                <button
+                  onClick={handleVoteClick}
+                  disabled={isVotedDisabled || voting}
+                  className={`flex-1 py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer ${
+                    isVotedDisabled
+                      ? "bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 cursor-default"
+                      : "bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white shadow-pink-500/25 active:scale-95"
+                  }`}
+                >
+                  {voting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      กำลังบันทึกคะแนน...
+                    </>
+                  ) : isVotedDisabled ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      คุณโหวตกระทงนี้แล้ว
+                    </>
+                  ) : unlimitedVoteMode && hasVoted ? (
+                    <>
+                      <Heart className="w-5 h-5 fill-amber-300 text-amber-200" />
+                      โหวตเพิ่มอีกครั้ง! 🌕✨
+                    </>
+                  ) : (
+                    <>
+                      <Heart className="w-5 h-5 fill-white" />
+                      โหวตให้กระทงนี้เลย!
+                    </>
+                  )}
+                </button>
 
-            {/* QR Code Button */}
-            <button
-              onClick={() => setShowQr((prev) => !prev)}
-              className={`p-3.5 border rounded-xl transition cursor-pointer shrink-0 ${
-                showQr
-                  ? "bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30"
-                  : "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300 hover:text-white"
-              }`}
-              title="แสดง QR Code เพื่อสแกนโหวต"
-            >
-              <QrCode className="w-5 h-5" />
-            </button>
+                {/* QR Code Button */}
+                <button
+                  onClick={() => setShowQr((prev) => !prev)}
+                  className={`p-3.5 border rounded-xl transition cursor-pointer shrink-0 ${
+                    showQr
+                      ? "bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30"
+                      : "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300 hover:text-white"
+                  }`}
+                  title="แสดง QR Code เพื่อสแกนโหวต"
+                >
+                  <QrCode className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <div className="flex-1 py-3.5 px-4 rounded-xl bg-slate-800/80 border border-slate-700/80 text-slate-300 text-center text-xs font-medium flex items-center justify-center gap-2">
+                <span>🪷</span> ร่วมลอยกระทงขอขมาพระแม่คงคา (ไม่ได้เข้าร่วมประกวดโหวต)
+              </div>
+            )}
 
             {/* Share Button */}
             <button
