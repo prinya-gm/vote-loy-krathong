@@ -4,15 +4,18 @@ import { Trophy, Heart, Sparkles, X, ChevronRight } from "lucide-react";
 export default function LeaderboardDrawer({ 
   isOpen, 
   onClose, 
-  entries, 
+  entries = [], 
   onSelectKrathong,
-  onFocusKrathong 
+  onFocusKrathong,
+  onFocusAvatar,
 }) {
   if (!isOpen) return null;
 
-  // กรองเฉพาะผู้ที่เข้าร่วมประกวดโหวตเท่านั้น (ไม่รวมผู้ที่ลอยกระทงอย่างเดียว)
-  const contestEntries = entries.filter((e) => Boolean(e.hasContest));
-  const sorted = [...contestEntries].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  // กรองเฉพาะผู้ที่เข้าร่วมการโหวตเท่านั้น (hasContest === true)
+  const candidateEntries = (entries || []).filter((e) => e.hasContest === true);
+
+  // Sort by votes descending
+  const sorted = [...candidateEntries].sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
   const getRankBadge = (index) => {
     switch (index) {
@@ -47,15 +50,22 @@ export default function LeaderboardDrawer({
     <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-slate-900/95 border-l border-amber-500/20 backdrop-blur-xl shadow-2xl flex flex-col text-slate-100 animate-slideLeft">
       {/* Header */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Trophy className="w-6 h-6 text-amber-400" />
-          <h2 className="text-lg font-bold bg-gradient-to-r from-amber-200 to-yellow-400 bg-clip-text text-transparent">
-            อันดับกระทงยอดนิยม
-          </h2>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400">
+            <Trophy className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold bg-gradient-to-r from-amber-200 to-yellow-400 bg-clip-text text-transparent">
+              อันดับผู้เข้าร่วมการโหวต
+            </h2>
+            <p className="text-[10px] text-amber-300/80">
+              ขวัญใจสายน้ำ 2569 ({sorted.length} ท่าน)
+            </p>
+          </div>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition"
+          className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -63,56 +73,74 @@ export default function LeaderboardDrawer({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {sorted.map((item, index) => (
-          <div
-            key={item.id}
-            onClick={() => {
-              onSelectKrathong(item);
-              onFocusKrathong(item.id);
-            }}
-            className={`flex items-center gap-3 p-3 rounded-2xl border transition cursor-pointer hover:scale-[1.02] ${
-              index === 0
-                ? "bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent border-amber-500/40 shadow-lg shadow-amber-500/10"
-                : "bg-slate-800/40 border-slate-800 hover:border-slate-700"
-            }`}
-          >
-            {/* Rank */}
-            <div className="shrink-0">{getRankBadge(index)}</div>
-
-            {/* Thumbnail */}
-            <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-amber-500/30 shrink-0 bg-slate-950">
-              <img
-                src={item.photoUrl}
-                alt={item.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  if (item.photoUrl && !e.target.src.includes("images.weserv.nl")) {
-                    e.target.src = `https://images.weserv.nl/?url=${encodeURIComponent(item.photoUrl)}`;
-                  }
-                }}
-              />
+        {sorted.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center text-slate-400 gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-3xl">
+              👑
             </div>
-
-            {/* Title & Desc */}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold truncate text-white">
-                {item.name}
-              </h4>
-              <p className="text-xs text-slate-400 truncate">
-                {item.description || "กระทงลอยน้ำ"}
+            <div>
+              <p className="text-sm font-bold text-slate-200">ยังไม่มีผู้เข้าร่วมการโหวต</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                ร่วมแต่งกายชุดไทยและเปิดรับคะแนนโหวตได้ที่ปุ่ม "ถ่ายรูป / ปล่อยกระทงเพื่อรับโหวต"
               </p>
             </div>
-
-            {/* Votes */}
-            <div className="text-right shrink-0">
-              <div className="flex items-center justify-end gap-1 text-pink-400 font-bold text-sm">
-                <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" />
-                <span>{item.votes || 0}</span>
-              </div>
-              <span className="text-[10px] text-slate-400">โหวต</span>
-            </div>
           </div>
-        ))}
+        ) : (
+          sorted.map((item, index) => (
+            <div
+              key={item.id}
+              onClick={() => {
+                onSelectKrathong(item);
+                if (onFocusAvatar) {
+                  onFocusAvatar(item.id);
+                } else if (onFocusKrathong) {
+                  onFocusKrathong(item.id);
+                }
+              }}
+              className={`flex items-center gap-3 p-3 rounded-2xl border transition cursor-pointer hover:scale-[1.02] ${
+                index === 0
+                  ? "bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent border-amber-500/40 shadow-lg shadow-amber-500/10"
+                  : "bg-slate-800/40 border-slate-800 hover:border-slate-700"
+              }`}
+            >
+              {/* Rank */}
+              <div className="shrink-0">{getRankBadge(index)}</div>
+
+              {/* Thumbnail */}
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-amber-500/30 shrink-0 bg-slate-950">
+                <img
+                  src={item.photoUrl}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    if (item.photoUrl && !e.target.src.includes("images.weserv.nl")) {
+                      e.target.src = `https://images.weserv.nl/?url=${encodeURIComponent(item.photoUrl)}`;
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Title & Desc */}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold truncate text-white">
+                  {item.name}
+                </h4>
+                <p className="text-xs text-slate-400 truncate">
+                  {item.description || "ผู้เข้าร่วมประกวดขวัญใจสายน้ำ"}
+                </p>
+              </div>
+
+              {/* Votes */}
+              <div className="text-right shrink-0">
+                <div className="flex items-center justify-end gap-1 text-pink-400 font-bold text-sm">
+                  <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" />
+                  <span>{item.votes || 0}</span>
+                </div>
+                <span className="text-[10px] text-slate-400">โหวต</span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

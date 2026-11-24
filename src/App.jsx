@@ -616,7 +616,7 @@ export default function App() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={handleCreateSubmit}
-        candidatesCount={entries.filter((e) => Boolean(e.hasContest)).length}
+        candidatesCount={entries.filter((e) => e.hasContest !== false).length}
         maxCandidates={50}
       />
 
@@ -636,6 +636,7 @@ export default function App() {
         entries={entries}
         onSelectKrathong={(entry) => setSelectedKrathong(entry)}
         onFocusKrathong={handleFocusKrathong}
+        onFocusAvatar={handleFocusAvatar}
       />
     </div>
   );
