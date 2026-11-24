@@ -71,12 +71,12 @@ export default function App() {
   useEffect(() => {
     QRCode.toDataURL(SITE_URL, {
       width: 360,
-      margin: 2,
+      margin: 1,
       color: {
         dark: "#091224",
         light: "#ffffff",
       },
-      errorCorrectionLevel: "H",
+      errorCorrectionLevel: "M",
     })
       .then((url) => setSiteQrDataUrl(url))
       .catch((err) => console.error("Site QR Code error:", err));
@@ -346,7 +346,7 @@ export default function App() {
       {/* Top Header Overlay */}
       <header className="absolute top-0 inset-x-0 p-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pointer-events-none flex items-start justify-between z-20">
         {/* App Title & Festive Branding */}
-        <div className="pointer-events-auto bg-slate-950/75 backdrop-blur-md border border-amber-500/30 rounded-2xl p-2.5 sm:px-5 sm:py-3.5 shadow-2xl flex items-center gap-2.5 sm:gap-3.5 max-w-[calc(100vw-110px)] sm:max-w-none">
+        <div className="pointer-events-auto bg-slate-950/80 backdrop-blur-md border border-amber-500/30 rounded-2xl p-2 sm:px-4 sm:py-3 shadow-2xl flex items-center gap-2 sm:gap-3.5 max-w-[calc(100vw-105px)] sm:max-w-none">
           {/* Requirement 2: Clicking Moon toggles Unlimited Vote Mode */}
           <button
             onClick={toggleUnlimitedVote}
@@ -365,11 +365,11 @@ export default function App() {
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
+              <h1 className="text-xs sm:text-base md:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
                 ลอยกระทง 2569 โหวตขวัญใจสายน้ำ
               </h1>
               {unlimitedVoteMode && (
-                <span className="hidden xs:inline px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold animate-pulse">
+                <span className="hidden xs:inline px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold animate-pulse shrink-0">
                   🌕 โหมดไม่จำกัด
                 </span>
               )}
@@ -383,6 +383,24 @@ export default function App() {
               )}
             </p>
           </div>
+
+          {/* QR Code ย้ายมาแสดงในพื้นที่ Header ตามรูปแนบ ขนาดพอเหมาะสแกนได้ */}
+          {siteQrDataUrl && (
+            <div
+              onClick={() => setIsSiteQrOpen(true)}
+              className="shrink-0 flex flex-col items-center gap-0.5 p-1 bg-white hover:bg-amber-50 rounded-xl border border-amber-400/90 shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all"
+              title="สแกน QR Code เพื่อเข้าสู่เว็บ (คลิกเพื่อขยาย / บันทึกรูป)"
+            >
+              <img
+                src={siteQrDataUrl}
+                alt="QR Code เข้าสู่เว็บ"
+                className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+              />
+              <span className="text-[7px] sm:text-[8px] font-bold text-slate-800 tracking-tight leading-none">
+                สแกนเข้าเว็บ
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Top Right Quick Actions */}
@@ -496,16 +514,6 @@ export default function App() {
           >
             <ZoomOut className="w-4 h-4" />
           </button>
-
-          {/* ปุ่มสแกน QR Code เพื่อเข้าสู่เว็บ (วางไว้ก่อนปุ่ม reset มุมกล้อง) */}
-          <button
-            onClick={() => setIsSiteQrOpen(true)}
-            className="p-2 sm:p-2.5 hover:bg-slate-800 rounded-xl text-amber-300 hover:text-amber-200 transition cursor-pointer flex items-center justify-center"
-            title="สแกน QR Code เพื่อเข้าสู่เว็บ"
-          >
-            <QrCode className="w-4 h-4" />
-          </button>
-
           <button
             onClick={resetCamera}
             className="p-2 sm:p-2.5 hover:bg-slate-800 rounded-xl text-slate-300 hover:text-white transition cursor-pointer"
