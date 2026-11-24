@@ -348,22 +348,12 @@ export default function App() {
         {/* App Title & Festive Branding */}
         <div className="relative pointer-events-auto">
           <div className="bg-slate-950/80 backdrop-blur-md border border-amber-500/30 rounded-2xl p-2 sm:px-4 sm:py-3 shadow-2xl flex items-center gap-2 sm:gap-3.5 max-w-[calc(100vw-105px)] sm:max-w-none">
-            {/* Requirement 2: Clicking Moon toggles Unlimited Vote Mode */}
-            <button
-              onClick={toggleUnlimitedVote}
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-lg transition-transform cursor-pointer active:scale-90 shrink-0 ${
-                unlimitedVoteMode
-                  ? "bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-200 ring-4 ring-amber-300 shadow-amber-400/70 animate-bounce"
-                  : "bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-amber-500/30 animate-pulse hover:scale-105"
-              }`}
-              title={
-                unlimitedVoteMode
-                  ? "🌕 โหมดโหวตไม่จำกัดกำลังเปิดอยู่! (คลิกเพื่อปิด)"
-                  : "🌕 คลิกที่ดวงจันทร์เพื่อเปิดโหมดโหวตซ้ำได้ไม่จำกัดครั้ง!"
-              }
+            {/* โลโก้พระจันทร์ตกแต่ง (ปิดโหมดอภิสิทธิ์ตรงนี้แล้ว เหลือเฉพาะบนดวงจันทร์บนท้องฟ้า) */}
+            <div
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-lg bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-amber-500/30 shrink-0 select-none"
             >
               🌕
-            </button>
+            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-xs sm:text-base md:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
