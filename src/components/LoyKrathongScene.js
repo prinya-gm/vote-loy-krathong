@@ -5434,13 +5434,48 @@ export class LoyKrathongScene {
     const primaryColorHex = entry.costumeColor || entry.color || "#f59e0b";
     const primaryColor = new THREE.Color(primaryColorHex);
 
-    // วัสดุคุณภาพสูงสำหรับกายวิภาคและชุดไทย
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfb088, roughness: 0.58, metalness: 0.04 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.40, metalness: 0.05 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.18 });
-    const whiteStockingMat = new THREE.MeshStandardMaterial({ color: 0xf4f4f5, roughness: 0.55 });
-    const shoeMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.35, metalness: 0.18 });
-    const rubyMat = new THREE.MeshStandardMaterial({ color: 0xbe123c, roughness: 0.15, metalness: 0.65 });
+    // วัสดุคุณภาพสูงสำหรับกายวิภาคและชุดไทย พร้อม Micro-Emissive ให้สว่างเด่นในคืนเพ็ญโดยไม่กระทบสิ่งแวดล้อม
+    const skinMat = new THREE.MeshStandardMaterial({
+      color: 0xf5cfad,
+      roughness: 0.44,
+      metalness: 0.02,
+      emissive: new THREE.Color(0xd99f6e),
+      emissiveIntensity: 0.35,
+    });
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x222228,
+      roughness: 0.35,
+      metalness: 0.08,
+      emissive: new THREE.Color(0x282832),
+      emissiveIntensity: 0.22,
+    });
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      metalness: 0.88,
+      roughness: 0.16,
+      emissive: new THREE.Color(0xf59e0b),
+      emissiveIntensity: 0.42,
+    });
+    const whiteStockingMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.45,
+      emissive: new THREE.Color(0xf4f4f5),
+      emissiveIntensity: 0.32,
+    });
+    const shoeMat = new THREE.MeshStandardMaterial({
+      color: 0x27272a,
+      roughness: 0.30,
+      metalness: 0.25,
+      emissive: new THREE.Color(0x3f3f46),
+      emissiveIntensity: 0.22,
+    });
+    const rubyMat = new THREE.MeshStandardMaterial({
+      color: 0xf43f5e,
+      roughness: 0.12,
+      metalness: 0.65,
+      emissive: new THREE.Color(0xbe123c),
+      emissiveIntensity: 0.50,
+    });
 
     // Color definitions for 5 Male Tops / 5 Male Bottoms / 5 Female Tops / 5 Female Bottoms
     const maleTopColors = {
@@ -5482,20 +5517,30 @@ export class LoyKrathongScene {
 
     const topMat = new THREE.MeshStandardMaterial({
       color: topColorHex,
-      roughness: 0.44,
-      metalness: 0.18,
+      roughness: 0.36,
+      metalness: 0.16,
+      emissive: new THREE.Color(topColorHex),
+      emissiveIntensity: 0.38,
     });
     const bottomMat = new THREE.MeshStandardMaterial({
       color: bottomColorHex,
-      roughness: 0.42,
-      metalness: 0.22,
+      roughness: 0.36,
+      metalness: 0.18,
+      emissive: new THREE.Color(bottomColorHex),
+      emissiveIntensity: 0.35,
     });
     const silkMat = bottomMat; // legacy fallback
 
     // แท่นพรมทองลายไทยยกพื้นขลิบทอง (Ceremonial Golden Dais)
     const dais = new THREE.Mesh(
       new THREE.CylinderGeometry(0.58, 0.65, 0.12, 24),
-      new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.45, metalness: 0.25 })
+      new THREE.MeshStandardMaterial({
+        color: 0xb45309,
+        roughness: 0.40,
+        metalness: 0.30,
+        emissive: new THREE.Color(0x78350f),
+        emissiveIntensity: 0.35,
+      })
     );
     dais.position.y = 0.06;
     avatarGroup.add(dais);
@@ -5507,6 +5552,48 @@ export class LoyKrathongScene {
     daisBorder.position.y = 0.12;
     daisBorder.rotation.x = Math.PI / 2;
     avatarGroup.add(daisBorder);
+
+    // แท่นพรมทองเรืองแสง (Glowing Stage Dais Surface)
+    const daisGlowSurface = new THREE.Mesh(
+      new THREE.CircleGeometry(0.56, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xfef08a,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+      })
+    );
+    daisGlowSurface.position.y = 0.121;
+    daisGlowSurface.rotation.x = -Math.PI / 2;
+    avatarGroup.add(daisGlowSurface);
+
+    // วงแหวนเรืองแสงนวลตาส่องขึ้นสู่ตัวโมเดล (Soft Golden Dais Halo)
+    const daisHalo = new THREE.Mesh(
+      new THREE.RingGeometry(0.53, 0.61, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.60,
+        side: THREE.DoubleSide,
+      })
+    );
+    daisHalo.position.y = 0.122;
+    daisHalo.rotation.x = -Math.PI / 2;
+    avatarGroup.add(daisHalo);
+
+    // ลำแสงสปอตไลต์เวทีประกวดแบบนุ่มนวล (Soft Stage Spotlight Beam Enveloping Candidate)
+    const stageBeamGeo = new THREE.CylinderGeometry(0.52, 0.42, 2.6, 16, 1, true);
+    const stageBeamMat = new THREE.MeshBasicMaterial({
+      color: 0xfff3c4,
+      transparent: true,
+      opacity: 0.06,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const stageBeam = new THREE.Mesh(stageBeamGeo, stageBeamMat);
+    stageBeam.position.y = 1.35;
+    avatarGroup.add(stageBeam);
 
     // วงแหวนไฮไลต์สีทองบนพื้นหญ้าเมื่อเลือกกระทง/ตัวละคร
     const ringGeo = new THREE.RingGeometry(0.65, 0.80, 24);
@@ -5675,12 +5762,27 @@ export class LoyKrathongScene {
     const headMesh = new THREE.Mesh(headGeo, skinMat);
     headGroup.add(headMesh);
 
-    // 2. ดวงตา 3D ประณีต (3D Expressive Recessed Eyes)
-    const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.15 });
-    const irisMat = new THREE.MeshStandardMaterial({ color: 0x542308, roughness: 0.20 });
+    // 2. ดวงตา 3D ประณีต (3D Expressive Recessed Eyes พร้อมความสว่างประกายตา)
+    const eyeWhiteMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.12,
+      emissive: new THREE.Color(0xffffff),
+      emissiveIntensity: 0.38,
+    });
+    const irisMat = new THREE.MeshStandardMaterial({
+      color: 0x542308,
+      roughness: 0.18,
+      emissive: new THREE.Color(0x6b3012),
+      emissiveIntensity: 0.30,
+    });
     const pupilMat = new THREE.MeshBasicMaterial({ color: 0x09090b });
     const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const lashMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.40 });
+    const lashMat = new THREE.MeshStandardMaterial({
+      color: 0x18181b,
+      roughness: 0.38,
+      emissive: new THREE.Color(0x18181b),
+      emissiveIntensity: 0.20,
+    });
 
     [-0.045, 0.045].forEach((eyeX, idx) => {
       const isLeft = idx === 0;
@@ -5740,7 +5842,12 @@ export class LoyKrathongScene {
     });
 
     // 3. คิ้ว 3D ปั้นรับรูปหน้า (3D Sculpted Eyebrows)
-    const browMat = new THREE.MeshStandardMaterial({ color: isMale ? 0x1f2937 : 0x27272a, roughness: 0.55 });
+    const browMat = new THREE.MeshStandardMaterial({
+      color: isMale ? 0x27272a : 0x2e2e35,
+      roughness: 0.50,
+      emissive: new THREE.Color(0x27272a),
+      emissiveIntensity: 0.22,
+    });
     [-1, 1].forEach((side) => {
       const isLeft = side === -1;
       const browInnerX = isLeft ? -0.018 : 0.018;
@@ -5772,8 +5879,20 @@ export class LoyKrathongScene {
 
     // 5. ริมฝีปาก 3D รอยยิ้มพิมพ์ใจอ่อนหวาน ยกมุมปากสดใส (3D Sweet Upturned Smiling Lips)
     const lipMat = isMale
-      ? new THREE.MeshStandardMaterial({ color: 0xa84a2d, roughness: 0.50, metalness: 0.02 })
-      : new THREE.MeshStandardMaterial({ color: 0xbe123c, roughness: 0.35, metalness: 0.05 });
+      ? new THREE.MeshStandardMaterial({
+          color: 0xb4533c,
+          roughness: 0.42,
+          metalness: 0.02,
+          emissive: new THREE.Color(0xa84a2d),
+          emissiveIntensity: 0.38,
+        })
+      : new THREE.MeshStandardMaterial({
+          color: 0xe11d48,
+          roughness: 0.26,
+          metalness: 0.04,
+          emissive: new THREE.Color(0xbe123c),
+          emissiveIntensity: 0.45,
+        });
 
     // ริมฝีปากบนโค้งกระจับ ยกมุมปากยิ้ม
     const upperLipCurve = new THREE.CatmullRomCurve3([
@@ -5892,10 +6011,25 @@ export class LoyKrathongScene {
   // สร้างกระทงจำลองจิ๋วประดับเปลวเทียนสว่างไสวสำหรับให้ตัวละครประคองในมือ (Miniature Glowing Krathong)
   buildMiniatureKrathong(goldMat, rubyMat) {
     const mini = new THREE.Group();
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.60 });
-    const flowerMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.40 });
-    const candleMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.30 });
-    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: 0x16a34a,
+      roughness: 0.50,
+      emissive: new THREE.Color(0x15803d),
+      emissiveIntensity: 0.35,
+    });
+    const flowerMat = new THREE.MeshStandardMaterial({
+      color: 0xf472b6,
+      roughness: 0.35,
+      emissive: new THREE.Color(0xec4899),
+      emissiveIntensity: 0.42,
+    });
+    const candleMat = new THREE.MeshStandardMaterial({
+      color: 0xfffbeb,
+      roughness: 0.25,
+      emissive: new THREE.Color(0xfef08a),
+      emissiveIntensity: 0.50,
+    });
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffd54f });
 
     // ฐานใบตองทรงกลม
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.070, 0.078, 0.022, 16), leafMat);
