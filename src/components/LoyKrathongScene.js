@@ -79,14 +79,78 @@ const CANDIDATE_CALLOUT_EMOJI = [
   "💖 💫 🌸"
 ];
 
+// คลังสถานที่และจุดชมวิวสำคัญสำหรับระบบทัวร์ชมงานอัตโนมัติ (Cinematic Landmarks)
+export const TOUR_LANDMARKS = [
+  {
+    id: "pier",
+    name: "ท่าน้ำขวัญใจสายน้ำ & ผู้สมัครประกวด",
+    subtitle: "ชมแถวโมเดลผู้สมัครในชุดไทยอันวิจิตรตระการตายืนเรียงแถวริมตลิ่ง",
+    camPos: new THREE.Vector3(-4.0, 4.2, 22.0),
+    targetPos: new THREE.Vector3(-15.5, 2.2, 5.0),
+    duration: 16.0,
+  },
+  {
+    id: "river",
+    name: "สายน้ำเจ้าพระยา & กระทงประทีป",
+    subtitle: "กระทงประทีปแสงเทียนระยิบระยับลอยละล่องบูชาพระแม่คงคา",
+    camPos: new THREE.Vector3(7.5, 4.8, 17.0),
+    targetPos: new THREE.Vector3(0, 1.2, 1.0),
+    duration: 16.0,
+  },
+  {
+    id: "chedi",
+    name: "พระเจดีย์ทองคำสุโขทัย & ตราสัญลักษณ์ RYTC",
+    subtitle: "พระมหาเจดีย์ยอดระฆังทองอร่ามและป้ายศิลา 3D วิทยาลัยเทคนิคระยอง",
+    camPos: new THREE.Vector3(-18.0, 5.2, 25.0),
+    targetPos: new THREE.Vector3(-11.5, 4.0, 10.0),
+    duration: 16.0,
+  },
+  {
+    id: "stage",
+    name: "เวทีการแสดงดนตรีสดริมน้ำ",
+    subtitle: "การแสดงศิลปวัฒนธรรมไทยหน้า Backdrop ตราสัญลักษณ์วิทยาลัยเทคนิคระยอง",
+    camPos: new THREE.Vector3(-36.5, 3.8, 44.0),
+    targetPos: new THREE.Vector3(-42.2, 2.8, 52.5),
+    duration: 16.0,
+  },
+  {
+    id: "market",
+    name: "ต้นไม้มงคลเกลียวทอง & ตลาดย้อนยุค",
+    subtitle: "สีสันแห่งค่ำคืนงานเทศกาล ซุ้มร้านค้า และต้นไม้เกลียวทองส่องสว่าง",
+    camPos: new THREE.Vector3(-26.0, 4.6, 28.0),
+    targetPos: new THREE.Vector3(-37.5, 3.5, 46.0),
+    duration: 16.0,
+  },
+  {
+    id: "panorama",
+    name: "ทัศนียภาพกว้างคืนเพ็ญเดือนสิบสอง",
+    subtitle: "ชมบรรยากาศทั่วทั้งงานเทศกาล ทะเลหมอก และแสงจันทร์วันเพ็ญ",
+    camPos: new THREE.Vector3(2.0, 14.0, 38.0),
+    targetPos: new THREE.Vector3(-10.0, 4.0, 0),
+    duration: 16.0,
+  },
+];
+
 export class LoyKrathongScene {
-  constructor(container, onSelectKrathong) {
+  constructor(container, onSelectKrathong, callbacks = {}) {
     this.container = container;
     this.onSelectKrathong = onSelectKrathong;
+    this.onMoonClick = callbacks.onMoonClick || null;
+    this.onTourLandmarkChange = callbacks.onTourLandmarkChange || null;
+    this.onTourStateChange = callbacks.onTourStateChange || null;
     this.krathongMeshes = new Map();
     this.clock = new THREE.Clock();
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
+
+    // ระบบเคลื่อนไหวมุมกล้องอัตโนมัติความเร็วต่ำ (Slow Cinematic Auto Tour System)
+    this.isAutoTourActive = false;
+    this.tourIndex = 0;
+    this.tourTime = 0;
+    this.tourStartCam = new THREE.Vector3();
+    this.tourStartTarget = new THREE.Vector3();
+    this.tourTransitionDuration = 7.5; // 7.5 วินาทีในการค่อยๆ ร่อนกล้องอย่างนุ่มนวล
+    this.moonHalo = null;
 
     // Dynamic animated object collections
     this.skyLanterns = [];
@@ -149,6 +213,13 @@ export class LoyKrathongScene {
     this.controls.minDistance = 6;
     this.controls.maxDistance = 110;
     this.controls.target.set(0, 3, 0);
+
+    // หากผู้ใช้เริ่มสัมผัสหน้าจอหรือลากเมาส์ ให้หยุดทัวร์อัตโนมัติ เพื่อคืนการควบคุมให้ผู้ใช้ทันที
+    this.controls.addEventListener("start", () => {
+      if (this.isAutoTourActive) {
+        this.stopAutoTour();
+      }
+    });
 
     // 5. Generate Procedural Textures (Thai Architecture, Flora, Realistic Palm Fronds)
     this.createTextures();
@@ -813,6 +884,7 @@ export class LoyKrathongScene {
     halo.scale.set(52, 52, 1.0);
     halo.position.copy(this.moon.position);
     this.scene.add(halo);
+    this.moonHalo = halo;
   }
 
   createTwinklingStars() {
@@ -6964,6 +7036,17 @@ export class LoyKrathongScene {
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
+    // 1. ตรวจสอบการคลิกที่ดวงจันทร์ (Moon Easter Egg -> Unlimited Vote Mode)
+    if (this.moon) {
+      const moonHits = this.raycaster.intersectObject(this.moon, false);
+      if (moonHits.length > 0) {
+        if (this.onMoonClick) {
+          this.onMoonClick();
+        }
+        return;
+      }
+    }
+
     // ตรวจสอบการคลิกเฉพาะโมเดลคนบนท่าน้ำสีเขียวเท่านั้น
     // (ยกเลิกการคลิกแล้วเด้ง popup ที่กระทงในน้ำ เพื่อให้ผู้ใช้ลากหมุนมุมกล้องในน้ำได้อย่างอิสระ ไม่เด้ง popup มากวนใจ)
     const interactables = [];
@@ -7026,6 +7109,83 @@ export class LoyKrathongScene {
   }
 
   /* ==========================================================
+     SLOW CINEMATIC AUTO TOUR SYSTEM (เคลื่อนกล้องชมสถานที่สำคัญอัตโนมัติ)
+  ========================================================== */
+  startAutoTour() {
+    this.isAutoTourActive = true;
+    this.tourTime = 0;
+    this.tourStartCam.copy(this.camera.position);
+    this.tourStartTarget.copy(this.controls.target);
+    if (this.onTourStateChange) {
+      this.onTourStateChange(true);
+    }
+    if (this.onTourLandmarkChange) {
+      this.onTourLandmarkChange(TOUR_LANDMARKS[this.tourIndex], this.tourIndex, TOUR_LANDMARKS.length);
+    }
+  }
+
+  stopAutoTour() {
+    this.isAutoTourActive = false;
+    if (this.onTourStateChange) {
+      this.onTourStateChange(false);
+    }
+  }
+
+  toggleAutoTour() {
+    if (this.isAutoTourActive) {
+      this.stopAutoTour();
+    } else {
+      this.startAutoTour();
+    }
+    return this.isAutoTourActive;
+  }
+
+  nextTourLandmark() {
+    this.tourIndex = (this.tourIndex + 1) % TOUR_LANDMARKS.length;
+    this.tourTime = 0;
+    this.tourStartCam.copy(this.camera.position);
+    this.tourStartTarget.copy(this.controls.target);
+    if (this.onTourLandmarkChange) {
+      this.onTourLandmarkChange(TOUR_LANDMARKS[this.tourIndex], this.tourIndex, TOUR_LANDMARKS.length);
+    }
+  }
+
+  prevTourLandmark() {
+    this.tourIndex = (this.tourIndex - 1 + TOUR_LANDMARKS.length) % TOUR_LANDMARKS.length;
+    this.tourTime = 0;
+    this.tourStartCam.copy(this.camera.position);
+    this.tourStartTarget.copy(this.controls.target);
+    if (this.onTourLandmarkChange) {
+      this.onTourLandmarkChange(TOUR_LANDMARKS[this.tourIndex], this.tourIndex, TOUR_LANDMARKS.length);
+    }
+  }
+
+  jumpToTourLandmark(index) {
+    if (index >= 0 && index < TOUR_LANDMARKS.length) {
+      this.tourIndex = index;
+      this.tourTime = 0;
+      this.tourStartCam.copy(this.camera.position);
+      this.tourStartTarget.copy(this.controls.target);
+      if (this.onTourLandmarkChange) {
+        this.onTourLandmarkChange(TOUR_LANDMARKS[this.tourIndex], this.tourIndex, TOUR_LANDMARKS.length);
+      }
+    }
+  }
+
+  triggerMoonCelebration() {
+    if (this.moonHalo) {
+      this.moonHalo.scale.set(78, 78, 1.0);
+      setTimeout(() => {
+        if (this.moonHalo) this.moonHalo.scale.set(52, 52, 1.0);
+      }, 1500);
+    }
+    this.launchFireworkBehindTrees({
+      color: "#facc15",
+      title: "🌕 พลุฉลองพระจันทร์เต็มดวง",
+    });
+  }
+
+  /* ==========================================================
      ANIMATION LOOP ("วัตถุทุกอย่างมีความเคลื่อนไหว & ระบบป้องกันการชน/ทับซ้อน")
   ========================================================== */
   animate() {
@@ -7036,6 +7196,38 @@ export class LoyKrathongScene {
 
     // 1. Controls
     this.controls.update();
+
+    // 1B. ระบบเคลื่อนไหวมุมกล้องอัตโนมัติความเร็วต่ำ (Slow, Gentle & Cinematic Camera Tour)
+    if (this.isAutoTourActive) {
+      this.tourTime += dt;
+      const current = TOUR_LANDMARKS[this.tourIndex];
+      const totalDuration = current.duration || 16.0;
+
+      if (this.tourTime >= totalDuration) {
+        this.tourTime = 0;
+        this.tourIndex = (this.tourIndex + 1) % TOUR_LANDMARKS.length;
+        this.tourStartCam.copy(this.camera.position);
+        this.tourStartTarget.copy(this.controls.target);
+        if (this.onTourLandmarkChange) {
+          this.onTourLandmarkChange(TOUR_LANDMARKS[this.tourIndex], this.tourIndex, TOUR_LANDMARKS.length);
+        }
+      }
+
+      const t = Math.min(this.tourTime / this.tourTransitionDuration, 1.0);
+      // Smooth Hermite easing (3t^2 - 2t^3) ให้การเคลื่อนกล้องนุ่มนวลมากที่สุด ไม่กระตุก ไม่ทำให้ผู้ใช้เวียนหัว
+      const ease = t * t * (3 - 2 * t);
+
+      // ค่อยๆ ปรับ Controls target เข้าหาตำแหน่งแลนด์มาร์ก
+      this.controls.target.lerpVectors(this.tourStartTarget, current.targetPos, ease);
+
+      // ค่อยๆ เคลื่อนกล้องเข้าหาตำแหน่งชมวิว พร้อมการลอยลำเบาๆ แบบโดรนถ่ายภาพยนตร์ (Cinematic Gentle Sway)
+      const desiredCam = current.camPos.clone();
+      const sway = time * 0.12 + this.tourIndex * 1.2;
+      desiredCam.x += Math.sin(sway) * 0.45;
+      desiredCam.z += Math.cos(sway) * 0.45;
+
+      this.camera.position.lerpVectors(this.tourStartCam, desiredCam, ease);
+    }
 
     // 2. Animated River Water Waves (ผิวน้ำกระเพื่อมไหวพร้อมระลอกคลื่นสะท้อนแสง)
     if (this.waterNormalTexture) {

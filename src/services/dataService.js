@@ -106,11 +106,13 @@ export const getVotedIds = () => {
   }
 };
 
-export const hasVotedFor = (id) => {
+export const hasVotedFor = (id, allowMultiple = false) => {
+  if (allowMultiple) return false;
   return getVotedIds().includes(id);
 };
 
-export const recordVoteLocally = (id) => {
+export const recordVoteLocally = (id, allowMultiple = false) => {
+  if (allowMultiple) return;
   const current = getVotedIds();
   if (!current.includes(id)) {
     current.push(id);
@@ -254,8 +256,8 @@ export const addKrathongEntry = async ({
 };
 
 // Vote for an entry
-export const voteForEntry = async (id) => {
-  if (hasVotedFor(id)) {
+export const voteForEntry = async (id, allowMultiple = false) => {
+  if (!allowMultiple && hasVotedFor(id)) {
     throw new Error("คุณได้โหวตให้กับกระทงนี้ไปแล้ว!");
   }
 
@@ -265,7 +267,9 @@ export const voteForEntry = async (id) => {
       await updateDoc(docRef, {
         votes: increment(1)
       });
-      recordVoteLocally(id);
+      if (!allowMultiple) {
+        recordVoteLocally(id);
+      }
       return true;
     } catch (e) {
       console.warn("Firestore vote failed, updating local state", e);
@@ -281,7 +285,9 @@ export const voteForEntry = async (id) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
     window.dispatchEvent(new Event("storage"));
   }
-  recordVoteLocally(id);
+  if (!allowMultiple) {
+    recordVoteLocally(id);
+  }
   return true;
 };
 

@@ -12,9 +12,14 @@ import {
   VolumeX,
   Settings,
   Flame,
-  Trees
+  Trees,
+  Video,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack
 } from "lucide-react";
-import { LoyKrathongScene } from "./components/LoyKrathongScene";
+import { LoyKrathongScene, TOUR_LANDMARKS } from "./components/LoyKrathongScene";
 import CreateKrathongModal from "./components/CreateKrathongModal";
 import KrathongDetailModal from "./components/KrathongDetailModal";
 import LeaderboardDrawer from "./components/LeaderboardDrawer";
@@ -43,13 +48,62 @@ export default function App() {
   const audioRef = useRef(null);
   const lastFireworkLaunchRef = useRef(0);
 
+  // Requirement 2: Unlimited Vote Mode (Easter Egg by clicking the moon)
+  const [unlimitedVoteMode, setUnlimitedVoteMode] = useState(() => {
+    return typeof window !== "undefined" && localStorage.getItem("unlimited_vote_mode") === "true";
+  });
+  const [moonToastMessage, setMoonToastMessage] = useState(null);
+  const moonToastTimeoutRef = useRef(null);
+
+  // Requirement 3: Slow Cinematic Auto Tour Mode
+  const [isAutoTourActive, setIsAutoTourActive] = useState(false);
+  const [currentTourLandmark, setCurrentTourLandmark] = useState(null);
+
+  const toggleUnlimitedVote = () => {
+    setUnlimitedVoteMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("unlimited_vote_mode", next ? "true" : "false");
+      if (next) {
+        showMoonToast("🌕 เปิดโหมดอภิสิทธิ์พระจันทร์เพ็ญ! สามารถโหวตซ้ำได้ไม่จำกัดจำนวนครั้ง ✨");
+        if (sceneInstanceRef.current) {
+          sceneInstanceRef.current.triggerMoonCelebration();
+        }
+      } else {
+        showMoonToast("🌑 ปิดโหมดโหวตไม่จำกัด (กลับสู่โหมดกติกาปกติ 1 คน 1 โหวต)");
+      }
+      return next;
+    });
+  };
+
+  const showMoonToast = (msg) => {
+    setMoonToastMessage(msg);
+    if (moonToastTimeoutRef.current) clearTimeout(moonToastTimeoutRef.current);
+    moonToastTimeoutRef.current = setTimeout(() => {
+      setMoonToastMessage(null);
+    }, 4500);
+  };
+
   // Initialize 3D Scene
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const scene = new LoyKrathongScene(containerRef.current, (entry) => {
-      setSelectedKrathong(entry);
-    });
+    const scene = new LoyKrathongScene(
+      containerRef.current,
+      (entry) => {
+        setSelectedKrathong(entry);
+      },
+      {
+        onMoonClick: () => {
+          toggleUnlimitedVote();
+        },
+        onTourLandmarkChange: (landmark) => {
+          setCurrentTourLandmark(landmark);
+        },
+        onTourStateChange: (isActive) => {
+          setIsAutoTourActive(isActive);
+        },
+      }
+    );
     sceneInstanceRef.current = scene;
 
     return () => {
@@ -112,20 +166,38 @@ export default function App() {
     };
   }, []);
 
+  // Requirement 1: Handle QR code scan / deep link (?vote=ID or ?id=ID)
+  useEffect(() => {
+    if (entries.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const voteId = params.get("vote") || params.get("id");
+    if (voteId) {
+      const target = entries.find((e) => e.id === voteId);
+      if (target) {
+        setSelectedKrathong(target);
+        if (sceneInstanceRef.current) {
+          sceneInstanceRef.current.focusOnCandidateAvatar(target.id);
+        }
+      }
+    }
+  }, [entries]);
+
   // Check voted status when selected krathong changes
   useEffect(() => {
     if (selectedKrathong) {
-      setHasVotedCurrent(hasVotedFor(selectedKrathong.id));
+      setHasVotedCurrent(hasVotedFor(selectedKrathong.id, unlimitedVoteMode));
     }
-  }, [selectedKrathong, entries]);
+  }, [selectedKrathong, entries, unlimitedVoteMode]);
 
   const handleCreateSubmit = async (data) => {
     await addKrathongEntry(data);
   };
 
   const handleVote = async (id) => {
-    await voteForEntry(id);
-    setHasVotedCurrent(true);
+    await voteForEntry(id, unlimitedVoteMode);
+    if (!unlimitedVoteMode) {
+      setHasVotedCurrent(true);
+    }
     // Refresh selected krathong votes
     setSelectedKrathong((prev) => (prev ? { ...prev, votes: (prev.votes || 0) + 1 } : null));
     if (sceneInstanceRef.current) {
@@ -145,6 +217,26 @@ export default function App() {
     }
   };
 
+  // Requirement 3: Auto Tour Controls
+  const toggleAutoTour = () => {
+    if (sceneInstanceRef.current) {
+      const active = sceneInstanceRef.current.toggleAutoTour();
+      setIsAutoTourActive(active);
+    }
+  };
+
+  const handleNextTourLandmark = () => {
+    if (sceneInstanceRef.current) {
+      sceneInstanceRef.current.nextTourLandmark();
+    }
+  };
+
+  const handlePrevTourLandmark = () => {
+    if (sceneInstanceRef.current) {
+      sceneInstanceRef.current.prevTourLandmark();
+    }
+  };
+
   // Subscribe to Live Realtime Fireworks across all devices (Firebase + BroadcastChannel)
   useEffect(() => {
     const unsubscribe = subscribeToLiveFireworks((event) => {
@@ -160,49 +252,48 @@ export default function App() {
         if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
         toastTimeoutRef.current = setTimeout(() => {
           setRemoteFireworkToast(null);
-        }, 2400);
+        }, 3200);
       }
     });
 
     return () => {
-      unsubscribe();
+      if (typeof unsubscribe === "function") unsubscribe();
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     };
   }, []);
 
-  const resetCamera = () => {
-    if (sceneInstanceRef.current) {
-      sceneInstanceRef.current.camera.position.set(0, 18, 38);
-      sceneInstanceRef.current.controls.target.set(0, 2, 0);
-    }
-  };
-
+  // Handler for launching celebratory fireworks
   const handleLaunchFirework = () => {
     const now = Date.now();
-    if (now - lastFireworkLaunchRef.current < 320) return;
+    if (now - lastFireworkLaunchRef.current < 400) return;
     lastFireworkLaunchRef.current = now;
+
     if (sceneInstanceRef.current) {
-      const payload = sceneInstanceRef.current.launchFirework();
-      if (payload) {
-        broadcastLiveFirework("sky", payload);
-      }
+      const fwData = sceneInstanceRef.current.launchFirework();
+      broadcastLiveFirework(fwData);
     }
   };
 
   const handleLaunchTreeFirework = () => {
     const now = Date.now();
-    if (now - lastFireworkLaunchRef.current < 320) return;
+    if (now - lastFireworkLaunchRef.current < 400) return;
     lastFireworkLaunchRef.current = now;
+
     if (sceneInstanceRef.current) {
-      const payload = sceneInstanceRef.current.launchFireworkBehindTrees();
-      if (payload) {
-        broadcastLiveFirework("tree", payload);
-      }
+      const fwData = sceneInstanceRef.current.launchFireworkBehindTrees();
+      broadcastLiveFirework(fwData);
+    }
+  };
+
+  const resetCamera = () => {
+    if (sceneInstanceRef.current) {
+      sceneInstanceRef.current.stopAutoTour();
+      sceneInstanceRef.current.camera.position.set(0, 19, 42);
+      sceneInstanceRef.current.controls.target.set(0, 3, 0);
     }
   };
 
   const toggleSound = () => {
-    // Play / pause Kang Khao Kin Kluay (instrumental Thai traditional music)
     if (!audioRef.current) {
       const audio = new Audio(`${import.meta.env.BASE_URL}audio/kangkaw-kin-kluay.mp3`);
       audio.loop = true;
@@ -210,12 +301,11 @@ export default function App() {
       audioRef.current = audio;
     }
 
-    const audio = audioRef.current;
     if (soundEnabled) {
-      audio.pause();
+      audioRef.current.pause();
       setSoundEnabled(false);
     } else {
-      audio
+      audioRef.current
         .play()
         .then(() => {
           setSoundEnabled(true);
@@ -234,16 +324,36 @@ export default function App() {
       {/* Top Header Overlay */}
       <header className="absolute top-0 inset-x-0 p-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pointer-events-none flex items-start justify-between z-20">
         {/* App Title & Festive Branding */}
-        <div className="pointer-events-auto bg-slate-950/70 backdrop-blur-md border border-amber-500/30 rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center gap-2.5 sm:gap-3.5 max-w-[calc(100vw-110px)] sm:max-w-none">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-xl sm:text-2xl shadow-lg shadow-amber-500/30 animate-pulse shrink-0">
+        <div className="pointer-events-auto bg-slate-950/75 backdrop-blur-md border border-amber-500/30 rounded-2xl p-2.5 sm:px-5 sm:py-3.5 shadow-2xl flex items-center gap-2.5 sm:gap-3.5 max-w-[calc(100vw-110px)] sm:max-w-none">
+          {/* Requirement 2: Clicking Moon toggles Unlimited Vote Mode */}
+          <button
+            onClick={toggleUnlimitedVote}
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-lg transition-transform cursor-pointer active:scale-90 shrink-0 ${
+              unlimitedVoteMode
+                ? "bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-200 ring-4 ring-amber-300 shadow-amber-400/70 animate-bounce"
+                : "bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-amber-500/30 animate-pulse hover:scale-105"
+            }`}
+            title={
+              unlimitedVoteMode
+                ? "🌕 โหมดโหวตไม่จำกัดกำลังเปิดอยู่! (คลิกเพื่อปิด)"
+                : "🌕 คลิกที่ดวงจันทร์เพื่อเปิดโหมดโหวตซ้ำได้ไม่จำกัดครั้ง!"
+            }
+          >
             🌕
-          </div>
+          </button>
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
-              ลอยกระทง 2569 โหวตขวัญใจสายน้ำ
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-lg font-black tracking-wide bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent truncate">
+                ลอยกระทง 2569 โหวตขวัญใจสายน้ำ
+              </h1>
+              {unlimitedVoteMode && (
+                <span className="hidden xs:inline px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold animate-pulse">
+                  🌕 โหมดไม่จำกัด
+                </span>
+              )}
+            </div>
             <p className="text-[10px] sm:text-xs text-amber-200/80 flex items-center gap-2 truncate">
-              <span>หมุนซูม 3D | คลิกที่กระทงเพื่อโหวต</span>
+              <span>หมุนซูม 3D | คลิกที่โมเดลเพื่อโหวต</span>
               {!isFirebaseConfigured && (
                 <span className="hidden xs:inline px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px]">
                   Demo Mode
@@ -283,19 +393,65 @@ export default function App() {
         </div>
       </header>
 
+      {/* Moon Easter Egg Toast Notification */}
+      {moonToastMessage && (
+        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-40 px-5 py-2.5 bg-slate-900/95 text-amber-300 rounded-full border-2 border-amber-400/80 shadow-2xl shadow-amber-500/40 text-xs sm:text-sm backdrop-blur-md flex items-center gap-2 pointer-events-none animate-fadeIn">
+          <span className="text-base sm:text-lg">🌕</span>
+          <span className="font-bold">{moonToastMessage}</span>
+        </div>
+      )}
+
       {/* Live Remote Firework Toast Alert */}
       {remoteFireworkToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 px-4 py-2 bg-slate-900/90 text-amber-300 rounded-full border border-amber-400/40 shadow-xl shadow-amber-500/25 text-xs sm:text-sm backdrop-blur-md flex items-center gap-2 pointer-events-none animate-bounce">
+        <div className="fixed top-32 left-1/2 -translate-x-1/2 z-40 px-4 py-2 bg-slate-900/90 text-amber-300 rounded-full border border-amber-400/40 shadow-xl shadow-amber-500/25 text-xs sm:text-sm backdrop-blur-md flex items-center gap-2 pointer-events-none animate-bounce">
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
           <span className="font-medium">{remoteFireworkToast}</span>
         </div>
       )}
 
-      {/* 3D Navigation & Firework Controls Widget (Responsive: Bottom-Right on mobile, Bottom-Left on tablet/desktop) */}
+      {/* Requirement 3: Floating Auto Tour HUD Banner */}
+      {isAutoTourActive && currentTourLandmark && (
+        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-md p-3 sm:p-3.5 bg-slate-950/90 border-2 border-amber-500/60 rounded-2xl shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-fadeIn">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs sm:text-sm">
+              <Compass className="w-4 h-4 text-amber-300 animate-spin" />
+              <span className="truncate">{currentTourLandmark.name}</span>
+            </div>
+            <p className="text-[10px] sm:text-xs text-slate-300 truncate mt-0.5">
+              {currentTourLandmark.subtitle}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={handlePrevTourLandmark}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition cursor-pointer"
+              title="ชมสถานที่ก่อนหน้า"
+            >
+              <SkipBack className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleNextTourLandmark}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition cursor-pointer"
+              title="ชมสถานที่ถัดไป"
+            >
+              <SkipForward className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={toggleAutoTour}
+              className="px-2.5 py-1.5 rounded-lg bg-rose-600/80 hover:bg-rose-500 text-white font-bold text-[11px] sm:text-xs transition cursor-pointer shadow"
+              title="หยุดทัวร์และควบคุมกล้องด้วยตนเอง"
+            >
+              หยุดทัวร์
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3D Navigation, Auto Tour & Firework Controls Widget */}
       <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col items-center gap-2">
-        {/* Firework Launch Buttons - วางเรียงเป็นแนวตั้งเหนือปุ่ม Zoom */}
+        {/* Firework Launch Buttons */}
         <div className="flex flex-col items-center gap-2">
-          {/* 1. จุดดอกไม้ไฟกลางสายน้ำ (ความสูงลดลงเหลือ 70%) */}
+          {/* 1. จุดดอกไม้ไฟกลางสายน้ำ */}
           <button
             onClick={handleLaunchFirework}
             className="group relative p-2.5 sm:p-3 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white shadow-xl shadow-orange-500/40 hover:shadow-orange-500/60 ring-2 ring-amber-300/80 active:scale-90 transition-all cursor-pointer flex items-center justify-center animate-pulse"
@@ -321,6 +477,19 @@ export default function App() {
 
         {/* Zoom & Camera Controls Pill */}
         <div className="bg-slate-900/85 backdrop-blur-md border border-slate-800 rounded-2xl p-1 sm:p-1.5 flex flex-col shadow-2xl">
+          {/* Requirement 3: Auto Tour Button */}
+          <button
+            onClick={toggleAutoTour}
+            className={`p-2 sm:p-2.5 rounded-xl transition cursor-pointer flex items-center justify-center ${
+              isAutoTourActive
+                ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/40 ring-2 ring-amber-300 animate-pulse"
+                : "hover:bg-slate-800 text-slate-300 hover:text-white"
+            }`}
+            title={isAutoTourActive ? "⏸️ กำลังทัวร์ชมงาน (คลิกเพื่อหยุด)" : "🎥 ทัวร์ชมสถานที่สำคัญอัตโนมัติ (มุมกล้องลื่นไหล)"}
+          >
+            <Compass className={`w-4 h-4 ${isAutoTourActive ? "animate-spin" : ""}`} />
+          </button>
+
           <button
             onClick={() => {
               if (sceneInstanceRef.current) {
@@ -351,12 +520,12 @@ export default function App() {
             <RotateCcw className="w-4 h-4" />
           </button>
         </div>
-        <div className="hidden sm:block text-[10px] text-slate-400 bg-slate-900/70 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-slate-800">
-          คลิกลากเพื่อหมุน | สกอร์เมาส์เพื่อซูม
+        <div className="hidden sm:block text-[10px] text-slate-400 bg-slate-900/70 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-slate-800 text-center">
+          {isAutoTourActive ? "กำลังทัวร์อัตโนมัติ" : "คลิกลากเพื่อหมุน | สกอร์เพื่อซูม"}
         </div>
       </div>
 
-      {/* Main Bottom Floating Action Bar (Lifted above mobile safe area & fully responsive) */}
+      {/* Main Bottom Floating Action Bar */}
       <div className="absolute bottom-[max(1.25rem,calc(0.75rem+env(safe-area-inset-bottom,0px)))] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center w-full px-4 max-w-md pointer-events-none">
         {/* Launch / Create Krathong CTA Button */}
         <button
@@ -387,6 +556,7 @@ export default function App() {
         hasVoted={hasVotedCurrent}
         onFocusKrathong={handleFocusKrathong}
         onFocusAvatar={handleFocusAvatar}
+        unlimitedVoteMode={unlimitedVoteMode}
       />
 
       <LeaderboardDrawer
