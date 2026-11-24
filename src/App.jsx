@@ -12,8 +12,15 @@ import {
   VolumeX,
   Settings,
   Flame,
-  Trees
+  Trees,
+  QrCode,
+  Download,
+  Copy,
+  Check,
+  X,
+  Loader2
 } from "lucide-react";
+import QRCode from "qrcode";
 import { LoyKrathongScene } from "./components/LoyKrathongScene";
 import CreateKrathongModal from "./components/CreateKrathongModal";
 import KrathongDetailModal from "./components/KrathongDetailModal";
@@ -52,6 +59,42 @@ export default function App() {
 
   // Requirement 3: Slow Cinematic Auto Tour Mode
   const [isAutoTourActive, setIsAutoTourActive] = useState(false);
+
+  // Website QR Code Modal (สแกนเพื่อเข้าสู่เว็บ)
+  const [isSiteQrOpen, setIsSiteQrOpen] = useState(false);
+  const [siteQrDataUrl, setSiteQrDataUrl] = useState(null);
+  const [copiedSiteLink, setCopiedSiteLink] = useState(false);
+
+  const SITE_URL = "https://prinya-gm.github.io/vote-loy-krathong/";
+
+  // Generate website QR Code on mount
+  useEffect(() => {
+    QRCode.toDataURL(SITE_URL, {
+      width: 360,
+      margin: 2,
+      color: {
+        dark: "#091224",
+        light: "#ffffff",
+      },
+      errorCorrectionLevel: "H",
+    })
+      .then((url) => setSiteQrDataUrl(url))
+      .catch((err) => console.error("Site QR Code error:", err));
+  }, []);
+
+  const handleCopySiteUrl = () => {
+    navigator.clipboard.writeText(SITE_URL);
+    setCopiedSiteLink(true);
+    setTimeout(() => setCopiedSiteLink(false), 2000);
+  };
+
+  const handleDownloadSiteQr = () => {
+    if (!siteQrDataUrl) return;
+    const link = document.createElement("a");
+    link.download = "qrcode-vote-loy-krathong-2569.png";
+    link.href = siteQrDataUrl;
+    link.click();
+  };
 
   const toggleUnlimitedVote = () => {
     setUnlimitedVoteMode((prev) => {
@@ -388,8 +431,6 @@ export default function App() {
         </div>
       )}
 
-
-
       {/* 3D Navigation, Auto Tour & Firework Controls Widget */}
       <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col items-center gap-2">
         {/* Firework Launch Buttons */}
@@ -455,6 +496,16 @@ export default function App() {
           >
             <ZoomOut className="w-4 h-4" />
           </button>
+
+          {/* ปุ่มสแกน QR Code เพื่อเข้าสู่เว็บ (วางไว้ก่อนปุ่ม reset มุมกล้อง) */}
+          <button
+            onClick={() => setIsSiteQrOpen(true)}
+            className="p-2 sm:p-2.5 hover:bg-slate-800 rounded-xl text-amber-300 hover:text-amber-200 transition cursor-pointer flex items-center justify-center"
+            title="สแกน QR Code เพื่อเข้าสู่เว็บ"
+          >
+            <QrCode className="w-4 h-4" />
+          </button>
+
           <button
             onClick={resetCamera}
             className="p-2 sm:p-2.5 hover:bg-slate-800 rounded-xl text-slate-300 hover:text-white transition cursor-pointer"
@@ -482,6 +533,70 @@ export default function App() {
           <Sparkles className="w-4 h-4 text-slate-950 animate-bounce shrink-0" />
         </button>
       </div>
+
+      {/* Website QR Code Modal (สแกนเพื่อเข้าสู่เว็บ) */}
+      {isSiteQrOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-sm bg-slate-900/95 border-2 border-amber-500/50 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center gap-4">
+            <button
+              onClick={() => setIsSiteQrOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/30">
+              🌕
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
+                สแกน QR Code เข้าสู่เว็บ
+              </h3>
+              <p className="text-xs text-slate-300 mt-1">
+                เปิดกล้องมือถือสแกน เพื่อร่วมลอยกระทงและโหวตขวัญใจสายน้ำ 2569
+              </p>
+            </div>
+
+            {siteQrDataUrl ? (
+              <div className="p-3 bg-white rounded-2xl shadow-xl border-2 border-amber-400">
+                <img src={siteQrDataUrl} alt="QR Code สำหรับเข้าสู่เว็บ" className="w-48 h-48 object-contain" />
+              </div>
+            ) : (
+              <div className="w-48 h-48 flex items-center justify-center bg-slate-800 rounded-2xl">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+              </div>
+            )}
+
+            <div className="text-[11px] font-mono text-amber-300/80 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 w-full truncate">
+              {SITE_URL}
+            </div>
+
+            <div className="flex items-center gap-2 w-full pt-1">
+              <button
+                onClick={handleDownloadSiteQr}
+                className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-amber-400" /> บันทึกรูป QR
+              </button>
+              <button
+                onClick={handleCopySiteUrl}
+                className="flex-1 py-2.5 px-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow"
+              >
+                {copiedSiteLink ? (
+                  <>
+                    <Check className="w-4 h-4" /> คัดลอกแล้ว!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" /> คัดลอกลิงก์
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals & Drawers */}
       <CreateKrathongModal
