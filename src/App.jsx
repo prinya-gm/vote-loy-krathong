@@ -12,14 +12,9 @@ import {
   VolumeX,
   Settings,
   Flame,
-  Trees,
-  Video,
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack
+  Trees
 } from "lucide-react";
-import { LoyKrathongScene, TOUR_LANDMARKS } from "./components/LoyKrathongScene";
+import { LoyKrathongScene } from "./components/LoyKrathongScene";
 import CreateKrathongModal from "./components/CreateKrathongModal";
 import KrathongDetailModal from "./components/KrathongDetailModal";
 import LeaderboardDrawer from "./components/LeaderboardDrawer";
@@ -57,7 +52,6 @@ export default function App() {
 
   // Requirement 3: Slow Cinematic Auto Tour Mode
   const [isAutoTourActive, setIsAutoTourActive] = useState(false);
-  const [currentTourLandmark, setCurrentTourLandmark] = useState(null);
 
   const toggleUnlimitedVote = () => {
     setUnlimitedVoteMode((prev) => {
@@ -95,9 +89,6 @@ export default function App() {
       {
         onMoonClick: () => {
           toggleUnlimitedVote();
-        },
-        onTourLandmarkChange: (landmark) => {
-          setCurrentTourLandmark(landmark);
         },
         onTourStateChange: (isActive) => {
           setIsAutoTourActive(isActive);
@@ -222,18 +213,6 @@ export default function App() {
     if (sceneInstanceRef.current) {
       const active = sceneInstanceRef.current.toggleAutoTour();
       setIsAutoTourActive(active);
-    }
-  };
-
-  const handleNextTourLandmark = () => {
-    if (sceneInstanceRef.current) {
-      sceneInstanceRef.current.nextTourLandmark();
-    }
-  };
-
-  const handlePrevTourLandmark = () => {
-    if (sceneInstanceRef.current) {
-      sceneInstanceRef.current.prevTourLandmark();
     }
   };
 
@@ -409,43 +388,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Requirement 3: Floating Auto Tour HUD Banner */}
-      {isAutoTourActive && currentTourLandmark && (
-        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-md p-3 sm:p-3.5 bg-slate-950/90 border-2 border-amber-500/60 rounded-2xl shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-fadeIn">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs sm:text-sm">
-              <Compass className="w-4 h-4 text-amber-300 animate-spin" />
-              <span className="truncate">{currentTourLandmark.name}</span>
-            </div>
-            <p className="text-[10px] sm:text-xs text-slate-300 truncate mt-0.5">
-              {currentTourLandmark.subtitle}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handlePrevTourLandmark}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition cursor-pointer"
-              title="ชมสถานที่ก่อนหน้า"
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleNextTourLandmark}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition cursor-pointer"
-              title="ชมสถานที่ถัดไป"
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={toggleAutoTour}
-              className="px-2.5 py-1.5 rounded-lg bg-rose-600/80 hover:bg-rose-500 text-white font-bold text-[11px] sm:text-xs transition cursor-pointer shadow"
-              title="หยุดทัวร์และควบคุมกล้องด้วยตนเอง"
-            >
-              หยุดทัวร์
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* 3D Navigation, Auto Tour & Firework Controls Widget */}
       <div className="absolute bottom-24 right-3 sm:bottom-[max(1.5rem,calc(1rem+env(safe-area-inset-bottom,0px)))] sm:left-6 sm:right-auto z-20 flex flex-col items-center gap-2">
